@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Park Management — Invitation</title>
+<link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<h1>Parking Invitation</h1>
+<div id="invite-status"></div>
+
+<div id="invite-content" style="display:none">
+  <h2>Terms &amp; Conditions</h2>
+  <div style="border:1px solid #ccc;padding:1rem;margin-bottom:1rem;font-size:0.875rem;max-height:200px;overflow-y:auto">
+    <p>By registering, you agree to the parking rules and regulations of this facility.</p>
+    <p>Your assigned spot is for your exclusive use. Subletting is not permitted.</p>
+    <p>Payment is due on the 1st of each month. Late payments may result in spot revocation.</p>
+    <p>The facility management reserves the right to revoke access for violations.</p>
+  </div>
+
+  <h2>Your Assigned Spot</h2>
+  <div style="overflow-x:auto">
+    <svg id="parking-svg" viewBox="0 0 600 500" style="width:100%;max-width:600px;height:auto;display:block;border:1px solid #ccc"></svg>
+  </div>
+  <p id="spot-label" style="font-weight:bold;margin-top:0.5rem"></p>
+
+  <h2>Register</h2>
+  <form id="register-form">
+    <div class="form-group"><label>Username</label><input id="r-username" required/></div>
+    <div class="form-group"><label>Password</label><input id="r-password" type="password" required/></div>
+    <div class="form-group"><label>Full Name</label><input id="r-name" required/></div>
+    <div class="form-group"><label>Phone</label><input id="r-phone"/></div>
+    <div class="form-group"><label>Address</label><input id="r-address"/></div>
+    <button type="submit">Register</button>
+    <div id="reg-msg"></div>
+  </form>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/parking.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/invite.js"></script>
+<script>
+(async () => {
+  const status = document.getElementById('invite-status');
+  const token = getTokenFromUrl();
+  if (!token) {
+    status.className = 'error';
+    status.textContent = 'No invite token found.';
+    return;
+  }
+
+  try {
+    const invite = await validateInvite(token);
+    const spots = await readFile('data/spots.json');
+    const spot = spots.find(s => s.id === invite.spotId);
+    document.getElementById('spot-label').textContent = `Your spot: ${spot ? spot.label : invite.spotId}`;
+    await initParking(invite.spotId);
+    document.getElementById('invite-content').style.display = 'block';
+  } catch(err) {
+    status.className = 'error';
+    status.textContent = err.message;
+    return;
+  }
+
+  document.getElementById('register-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = document.getElementById('reg-msg');
+    try {
+      await registerViaInvite({
+        token,
+        username: document.getElementById('r-username').value.trim(),
+        password: document.getElementById('r-password').value,
+        name:     document.getElementById('r-name').value.trim(),
+        phone:    document.getElementById('r-phone').value.trim(),
+        address:  document.getElementById('r-address').value.trim()
+      });
+      msg.className = 'success';
+      msg.textContent = 'Registration complete! An admin will activate your account. You can then log in at the main page.';
+      document.getElementById('register-form').style.display = 'none';
+    } catch(err) {
+      msg.className = 'error';
+      msg.textContent = err.message;
+    }
+  });
+})();
+</script>
+</body>
+</html>
