@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Park Management — Admin</title>
+<link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<h1>Admin Dashboard</h1>
+<nav>
+  <a href="parking.html">Map</a>
+  <a href="admin.html">Admin</a>
+  <a href="#" onclick="logout()">Logout</a>
+</nav>
+
+<nav style="margin-bottom:2rem">
+  <a href="#" onclick="showTab('users')">Users</a>
+  <a href="#" onclick="showTab('spots')">Spots</a>
+  <a href="#" onclick="showTab('payments')">Payments</a>
+  <a href="#" onclick="showTab('invites')">Invites</a>
+</nav>
+
+<div id="tab-users" class="tab">
+  <h2>Users</h2>
+  <div id="user-list"></div>
+  <h3>Create User</h3>
+  <form id="create-user-form">
+    <div class="form-group"><label>Username</label><input id="cu-username" required/></div>
+    <div class="form-group"><label>Password</label><input id="cu-password" type="password" required/></div>
+    <div class="form-group"><label>Name</label><input id="cu-name" required/></div>
+    <div class="form-group"><label>Phone</label><input id="cu-phone"/></div>
+    <div class="form-group"><label>Address</label><input id="cu-address"/></div>
+    <div class="form-group">
+      <label>Role</label>
+      <select id="cu-role">
+        <option value="renter">Renter</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button type="submit">Create</button>
+    <div id="cu-msg"></div>
+  </form>
+</div>
+
+<div id="tab-spots" class="tab" style="display:none">
+  <h2>Spot Assignments</h2>
+  <div id="spot-list"></div>
+</div>
+
+<div id="tab-payments" class="tab" style="display:none">
+  <h2>Payment Overview</h2>
+  <div style="overflow-x:auto"><div id="payment-matrix"></div></div>
+</div>
+
+<div id="tab-invites" class="tab" style="display:none">
+  <h2>Generate Invite</h2>
+  <div class="form-group">
+    <label>Select Free Spot</label>
+    <select id="invite-spot"></select>
+  </div>
+  <button onclick="doGenerateInvite()">Generate Link</button>
+  <div id="invite-result" style="margin-top:1rem;word-break:break-all"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+<script>
+const currentUser = requireAuth('admin');
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.style.display = 'none');
+  document.getElementById('tab-' + name).style.display = 'block';
+  if (name === 'users')    renderUsers();
+  if (name === 'spots')    renderSpots();
+  if (name === 'payments') renderPayments();
+  if (name === 'invites')  renderInviteSpots();
+}
+showTab('users');
+
+// ── DOM helpers ───────────────────────────────────────────────────────────────
+function el(tag, props, ...children) {
+  props = props || {};
+  const node = document.createElement(tag);
+  Object.entries(props).forEach(([k, v]) => {
+    if (k === 'className') node.className = v;
+    else if (k === 'textContent') node.textContent = v;
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v);
+  });
+  children.forEach(c => node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
+  return node;
+}
+
+function td(text) { return el('td', { textContent: text }); }
+function th(text) { return el('th', { textContent: text }); }
+
+// ── Users tab ─────────────────────────────────────────────────────────────────
+async function renderUsers() {
+  const users = await loadUsers();
+  const container = document.getElementById('user-list');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  const table = el('table');
+  const headRow = el('tr');
+  ['Username','Name','Role','Active','Actions'].forEach(h => headRow.appendChild(th(h)));
+  table.appendChild(headRow);
+
+  users.forEach(u => {
+    const row = el('tr');
+    row.appendChild(td(u.username));
+    row.appendChild(td(u.name));
+    row.appendChild(td(u.role));
+    row.appendChild(td(u.active ? 'Yes' : 'No'));
+
+    const actionCell = el('td');
+    if (u.role !== 'master') {
+      const toggleBtn = el('button', {
+        className: 'secondary',
+        textContent: u.active ? 'Deactivate' : 'Activate',
+        onclick: async () => { await toggleUserActive(u.id); renderUsers(); }
+      });
+      actionCell.appendChild(toggleBtn);
+    }
+    if (currentUser.role === 'master' && u.role !== 'master') {
+      const newRole = u.role === 'admin' ? 'renter' : 'admin';
+      const roleBtn = el('button', {
+        className: 'secondary',
+        textContent: `Make ${newRole.charAt(0).toUpperCase() + newRole.slice(1)}`,
+        onclick: async () => { await setUserRole(u.id, newRole, currentUser.role); renderUsers(); }
+      });
+      actionCell.appendChild(document.createTextNode(' '));
+      actionCell.appendChild(roleBtn);
+    }
+    row.appendChild(actionCell);
+    table.appendChild(row);
+  });
+  container.appendChild(table);
+}
+
+document.getElementById('create-user-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = document.getElementById('cu-msg');
+  try {
+    await createUser({
+      username: document.getElementById('cu-username').value.trim(),
+      password: document.getElementById('cu-password').value,
+      name:     document.getElementById('cu-name').value.trim(),
+      phone:    document.getElementById('cu-phone').value.trim(),
+      address:  document.getElementById('cu-address').value.trim(),
+      role:     document.getElementById('cu-role').value
+    });
+    msg.className = 'success';
+    msg.textContent = 'User created (inactive — activate above)';
+    e.target.reset();
+    renderUsers();
+  } catch(err) { msg.className = 'error'; msg.textContent = err.message; }
+});
+
+// ── Spots tab ─────────────────────────────────────────────────────────────────
+async function renderSpots() {
+  const [spots, users] = await Promise.all([readFile('data/spots.json'), loadUsers()]);
+  const container = document.getElementById('spot-list');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  const table = el('table');
+  const headRow = el('tr');
+  ['Spot','State','Assigned To','Actions'].forEach(h => headRow.appendChild(th(h)));
+  table.appendChild(headRow);
+
+  spots.forEach(s => {
+    const renter = users.find(u => u.id === s.assignedUserId);
+    const row = el('tr');
+    row.appendChild(td(s.label));
+    row.appendChild(td(s.state));
+    row.appendChild(td(renter ? renter.name : '—'));
+
+    const actionCell = el('td');
+    if (s.assignedUserId) {
+      const unBtn = el('button', {
+        className: 'secondary',
+        textContent: 'Unassign',
+        onclick: async () => { await unassignSpot(s.id); renderSpots(); }
+      });
+      actionCell.appendChild(unBtn);
+    } else {
+      const select = el('select');
+      select.setAttribute('id', `assign-user-${s.id}`);
+      const defaultOpt = el('option', { value: '' }, '-- user --');
+      select.appendChild(defaultOpt);
+      users.filter(u => u.active && u.role === 'renter').forEach(u => {
+        select.appendChild(el('option', { value: u.id }, u.name));
+      });
+      const assignBtn = el('button', {
+        className: 'secondary',
+        textContent: 'Assign',
+        onclick: async () => {
+          const sel = document.getElementById(`assign-user-${s.id}`);
+          if (sel && sel.value) { await assignSpot(s.id, sel.value); renderSpots(); }
+        }
+      });
+      actionCell.appendChild(select);
+      actionCell.appendChild(document.createTextNode(' '));
+      actionCell.appendChild(assignBtn);
+    }
+    row.appendChild(actionCell);
+    table.appendChild(row);
+  });
+  container.appendChild(table);
+}
+
+// ── Payments tab ──────────────────────────────────────────────────────────────
+async function renderPayments() {
+  const { payments, spots } = await getPaymentMatrix();
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ month: d.getMonth() + 1, year: d.getFullYear() });
+  }
+
+  const container = document.getElementById('payment-matrix');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  const table = el('table');
+  const headRow = el('tr');
+  headRow.appendChild(th('Spot'));
+  months.forEach(m => headRow.appendChild(th(`${m.year}-${String(m.month).padStart(2,'0')}`)));
+  table.appendChild(headRow);
+
+  spots.forEach(s => {
+    const row = el('tr');
+    row.appendChild(td(s.label));
+    months.forEach(m => {
+      const p = payments.find(x => x.spotId === s.id && x.month === m.month && x.year === m.year);
+      const cell = el('td');
+      if (p) {
+        cell.textContent = `Paid ${p.paidDate}`;
+      } else if (!s.assignedUserId) {
+        cell.textContent = '—';
+      } else {
+        const markBtn = el('button', {
+          className: 'secondary',
+          textContent: 'Mark',
+          onclick: async () => {
+            await markPaid(s.id, s.assignedUserId, m.month, m.year, currentUser.id);
+            renderPayments();
+          }
+        });
+        cell.appendChild(markBtn);
+      }
+      row.appendChild(cell);
+    });
+    table.appendChild(row);
+  });
+  container.appendChild(table);
+}
+
+// ── Invites tab ───────────────────────────────────────────────────────────────
+async function renderInviteSpots() {
+  const spots = await readFile('data/spots.json');
+  const sel = document.getElementById('invite-spot');
+  while (sel.firstChild) sel.removeChild(sel.firstChild);
+  spots.filter(s => !s.assignedUserId).forEach(s => {
+    sel.appendChild(el('option', { value: s.id }, s.label));
+  });
+}
+
+async function doGenerateInvite() {
+  const spotId = document.getElementById('invite-spot').value;
+  const url = await generateInvite(spotId);
+  const resultEl = document.getElementById('invite-result');
+  while (resultEl.firstChild) resultEl.removeChild(resultEl.firstChild);
+  resultEl.appendChild(document.createTextNode('Invite link: '));
+  resultEl.appendChild(document.createElement('br'));
+  resultEl.appendChild(el('a', { href: url, target: '_blank' }, url));
+}
+</script>
+</body>
+</html>
