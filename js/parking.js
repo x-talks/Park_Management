@@ -29,7 +29,7 @@ function buildSVG(spots, users, currentUser) {
   lane.setAttribute('x', LANE_LEFT);
   lane.setAttribute('y', 0);
   lane.setAttribute('width', LANE_RIGHT - LANE_LEFT);
-  lane.setAttribute('height', 600);
+  lane.setAttribute('height', 500);
   lane.setAttribute('fill', '#f8f8f8');
   lane.setAttribute('stroke', '#ccc');
   lane.setAttribute('stroke-width', '1');
