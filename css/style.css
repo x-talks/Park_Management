@@ -1,0 +1,71 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: monospace;
+  background: #fff;
+  color: #000;
+  margin: 0;
+  line-height: 1.6;
+  max-width: 960px;
+  margin-inline: auto;
+  padding: 1rem clamp(1rem, 5vw, 2rem);
+}
+
+h1, h2, h3 { font-family: monospace; font-weight: bold; }
+h1 { font-size: clamp(1.2rem, 4vw, 2rem); border-bottom: 1px solid #000; padding-bottom: 0.5rem; }
+h2 { font-size: clamp(1rem, 3vw, 1.5rem); border-bottom: 1px solid #ccc; padding-bottom: 0.25rem; }
+
+a { color: #000; }
+
+input, select, textarea {
+  font-family: monospace;
+  font-size: 1rem;
+  border: 1px solid #000;
+  padding: 0.4rem 0.6rem;
+  width: 100%;
+  background: #fff;
+  color: #000;
+}
+
+button {
+  font-family: monospace;
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
+  border: 1px solid #000;
+  padding: 0.4rem 0.9rem;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+  min-height: 2.5rem;
+}
+button:hover { background: #333; }
+button.secondary { background: #fff; color: #000; }
+button.secondary:hover { background: #eee; }
+
+.error { color: #000; border: 1px solid #000; padding: 0.5rem; margin-top: 0.5rem; font-size: 0.875rem; }
+.success { border: 1px solid #000; padding: 0.5rem; margin-top: 0.5rem; font-size: 0.875rem; }
+
+table { width: 100%; border-collapse: collapse; font-size: clamp(0.75rem, 2vw, 0.9rem); overflow-x: auto; display: block; }
+th, td { border: 1px solid #ccc; padding: 0.3rem 0.5rem; text-align: left; white-space: nowrap; }
+th { background: #000; color: #fff; }
+
+nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+nav a { text-decoration: none; font-weight: bold; border-bottom: 1px solid #000; }
+
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-weight: bold; margin-bottom: 0.25rem; font-size: 0.875rem; }
+
+/* SVG parking */
+.spot { transition: fill 0.15s; }
+.spot.free { fill: #e0e0e0; stroke: #000; stroke-width: 1.5; }
+.spot.occupied { fill: #333; stroke: #000; stroke-width: 1.5; }
+.spot.highlighted { fill: #000; stroke: #fff; stroke-width: 2; }
+.spot-label { font-family: monospace; font-size: 11px; fill: #fff; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.spot.free .spot-label { fill: #000; }
+
+#info-panel {
+  margin-top: 1rem;
+  border: 1px solid #000;
+  padding: 0.75rem;
+  min-height: 3rem;
+  font-size: 0.875rem;
+}
