@@ -24,7 +24,7 @@ jobs:
 
       - name: Inject PAT into config.js
         run: |
-          sed -i "s/__PAT_PLACEHOLDER__/${{ secrets.GITHUB_DATA_PAT }}/" js/config.js
+          sed -i "s|__PAT_PLACEHOLDER__|${{ secrets.GITHUB_DATA_PAT }}|" js/config.js
 
       - uses: actions/configure-pages@v4
 
