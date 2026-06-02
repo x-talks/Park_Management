@@ -30,7 +30,7 @@ const SIDE_MARGIN = 36;             // was ~20; more breathing room left/right
 const BOTTOM_ROW_Y = LANE_BOTTOM + 50;
 
 function spotId(label) {
-  return label === 'X' ? 'sA' : label === 'Y' ? 'sB' : `s${label}`;
+  return label === 'A' ? 'sA' : label === 'B' ? 'sB' : `s${label}`;
 }
 
 function getSpotData(spots, label) {
@@ -92,10 +92,7 @@ function buildSVG(spots, users, currentUser) {
   svg.appendChild(arrow);
 
   // ── Diagonal spot factory ──
-  // refIdx alternates 0/1 to cover all edges+corners across neighbouring spots:
-  //   even (0): show edges a(top)/c(bottom) + corners 1(TL)/3(BR)
-  //   odd  (1): show edges b(right)/d(left) + corners 2(TR)/4(BL)
-  function makeSpot(label, cx, cy, angle, refIdx) {
+  function makeSpot(label, cx, cy, angle) {
     const spotData = getSpotData(spots, label);
 
     const g = document.createElementNS(svgNS, 'g');
@@ -103,16 +100,11 @@ function buildSVG(spots, users, currentUser) {
     g.setAttribute('data-id', spotData.id);
     g.setAttribute('transform', `rotate(${angle}, ${cx}, ${cy})`);
 
-    const rx = cx - SPOT_W / 2;
-    const ry = cy - SPOT_H / 2;
-    const rw = SPOT_W;
-    const rh = SPOT_H;
-
     const rect = document.createElementNS(svgNS, 'rect');
-    rect.setAttribute('x', rx);
-    rect.setAttribute('y', ry);
-    rect.setAttribute('width', rw);
-    rect.setAttribute('height', rh);
+    rect.setAttribute('x', cx - SPOT_W / 2);
+    rect.setAttribute('y', cy - SPOT_H / 2);
+    rect.setAttribute('width', SPOT_W);
+    rect.setAttribute('height', SPOT_H);
     rect.setAttribute('rx', '2');
 
     const text = document.createElementNS(svgNS, 'text');
@@ -124,43 +116,6 @@ function buildSVG(spots, users, currentUser) {
     g.appendChild(rect);
     g.appendChild(text);
 
-    // Edge labels
-    const edgeStyle = 'font-family:monospace;font-size:6px;fill:#666;pointer-events:none;';
-    function edgeText(x, y, anchor, baseline, content) {
-      const t = document.createElementNS(svgNS, 'text');
-      t.setAttribute('x', x); t.setAttribute('y', y);
-      t.setAttribute('text-anchor', anchor);
-      t.setAttribute('dominant-baseline', baseline);
-      t.setAttribute('style', edgeStyle);
-      t.textContent = content;
-      return t;
-    }
-    function cornerText(x, y, anchor, baseline, content) {
-      const t = document.createElementNS(svgNS, 'text');
-      t.setAttribute('x', x); t.setAttribute('y', y);
-      t.setAttribute('text-anchor', anchor);
-      t.setAttribute('dominant-baseline', baseline);
-      t.setAttribute('style', 'font-family:monospace;font-size:6px;fill:#999;pointer-events:none;');
-      t.textContent = content;
-      return t;
-    }
-
-    if (refIdx % 2 === 0) {
-      // edges a (top) and c (bottom)
-      g.appendChild(edgeText(cx, ry + 2,      'middle', 'hanging',    'a'));
-      g.appendChild(edgeText(cx, ry + rh - 2, 'middle', 'text-bottom', 'c'));
-      // corners 1 (TL) and 3 (BR)
-      g.appendChild(cornerText(rx + 2,      ry + 2,      'start', 'hanging',    '1'));
-      g.appendChild(cornerText(rx + rw - 2, ry + rh - 2, 'end',   'text-bottom','3'));
-    } else {
-      // edges b (right) and d (left)
-      g.appendChild(edgeText(rx + rw - 2, cy, 'end',   'middle', 'b'));
-      g.appendChild(edgeText(rx + 2,      cy, 'start', 'middle', 'd'));
-      // corners 2 (TR) and 4 (BL)
-      g.appendChild(cornerText(rx + rw - 2, ry + 2,      'end',   'hanging',    '2'));
-      g.appendChild(cornerText(rx + 2,      ry + rh - 2, 'start', 'text-bottom','4'));
-    }
-
     if (currentUser) {
       g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser));
     }
@@ -171,14 +126,14 @@ function buildSVG(spots, users, currentUser) {
   LEFT_SPOTS.forEach((label, i) => {
     const cy = START_Y + i * STEP_Y;
     const cx = LANE_LEFT - SPOT_W / 2 - 4;
-    svg.appendChild(makeSpot(label, cx, cy, -ANGLE, i));
+    svg.appendChild(makeSpot(label, cx, cy, -ANGLE));
   });
 
   // Right diagonal row (left edge touching lane right wall)
   RIGHT_SPOTS.forEach((label, i) => {
     const cy = START_Y + i * STEP_Y;
     const cx = LANE_RIGHT + SPOT_W / 2 + 4;
-    svg.appendChild(makeSpot(label, cx, cy, ANGLE, i));
+    svg.appendChild(makeSpot(label, cx, cy, ANGLE));
   });
 
   // ── Bottom row: B (wedge), 22, 21 (perpendicular), A (wedge) ──
@@ -214,7 +169,7 @@ function buildSVG(spots, users, currentUser) {
   }
 
   // Custom-sized perpendicular spot to fit the lane width
-  function makeBottomLanePerpSpot(label, x, y, w, h, refIdx) {
+  function makeBottomLanePerpSpot(label, x, y, w, h) {
     const spotData = getSpotData(spots, label);
     const g = document.createElementNS(svgNS, 'g');
     g.setAttribute('class', `spot ${spotData.state}`);
@@ -236,37 +191,6 @@ function buildSVG(spots, users, currentUser) {
     g.appendChild(rect);
     g.appendChild(text);
 
-    // Edge/corner reference labels
-    const eStyle = 'font-family:monospace;font-size:6px;fill:#666;pointer-events:none;';
-    const cStyle = 'font-family:monospace;font-size:6px;fill:#999;pointer-events:none;';
-    function et(px, py, anchor, baseline, val) {
-      const t = document.createElementNS(svgNS, 'text');
-      t.setAttribute('x', px); t.setAttribute('y', py);
-      t.setAttribute('text-anchor', anchor);
-      t.setAttribute('dominant-baseline', baseline);
-      t.setAttribute('style', eStyle);
-      t.textContent = val; return t;
-    }
-    function ct(px, py, anchor, baseline, val) {
-      const t = document.createElementNS(svgNS, 'text');
-      t.setAttribute('x', px); t.setAttribute('y', py);
-      t.setAttribute('text-anchor', anchor);
-      t.setAttribute('dominant-baseline', baseline);
-      t.setAttribute('style', cStyle);
-      t.textContent = val; return t;
-    }
-    if (refIdx % 2 === 0) {
-      g.appendChild(et(x + w / 2, y + 2,       'middle', 'hanging',    'a'));
-      g.appendChild(et(x + w / 2, y + h - 2,   'middle', 'text-bottom','c'));
-      g.appendChild(ct(x + 2,     y + 2,        'start',  'hanging',   '1'));
-      g.appendChild(ct(x + w - 2, y + h - 2,   'end',    'text-bottom','3'));
-    } else {
-      g.appendChild(et(x + w - 2, y + h / 2,   'end',   'middle', 'b'));
-      g.appendChild(et(x + 2,     y + h / 2,   'start', 'middle', 'd'));
-      g.appendChild(ct(x + w - 2, y + 2,       'end',   'hanging',    '2'));
-      g.appendChild(ct(x + 2,     y + h - 2,   'start', 'text-bottom','4'));
-    }
-
     if (currentUser) {
       g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser));
     }
@@ -280,24 +204,24 @@ function buildSVG(spots, users, currentUser) {
 
   // 22 (left half of lane), 21 (right half of lane)
   svg.appendChild(makeBottomLanePerpSpot('22',
-    LANE_LEFT + 4, bottomY, perpW, bottomH, 0));
+    LANE_LEFT + 4, bottomY, perpW, bottomH));
   svg.appendChild(makeBottomLanePerpSpot('21',
-    laneCenterX + 4, bottomY, perpW, bottomH, 1));
+    laneCenterX + 4, bottomY, perpW, bottomH));
 
-  // Y — wedge: front edge flush with 22 (was B)
-  svg.appendChild(makeWedge('Y', [
-    [bxLeft,      bottomY],
-    [LANE_LEFT,   bottomY],
-    [LANE_LEFT,   bottomY + bottomH],
-    [bxLeft,      byBottom]
+  // B — wedge: front edge (top) flush with 22/21 top, outer wall extends to byBottom
+  svg.appendChild(makeWedge('B', [
+    [bxLeft,      bottomY],           // outer top-left corner
+    [LANE_LEFT,   bottomY],           // front edge flush with 22 top
+    [LANE_LEFT,   bottomY + bottomH], // front edge flush with 22 bottom
+    [bxLeft,      byBottom]           // outer bottom-left corner
   ]));
 
-  // X — wedge: front edge flush with 21 (was A)
-  svg.appendChild(makeWedge('X', [
-    [LANE_RIGHT,  bottomY],
-    [bxRight,     bottomY],
-    [bxRight,     byBottom],
-    [LANE_RIGHT,  bottomY + bottomH]
+  // A — wedge: front edge (top) flush with 22/21 top, outer wall extends to byBottom
+  svg.appendChild(makeWedge('A', [
+    [LANE_RIGHT,  bottomY],           // front edge flush with 21 top
+    [bxRight,     bottomY],           // outer top-right corner
+    [bxRight,     byBottom],          // outer bottom-right corner
+    [LANE_RIGHT,  bottomY + bottomH]  // front edge flush with 21 bottom
   ]));
 }
 
