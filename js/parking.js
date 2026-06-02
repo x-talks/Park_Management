@@ -43,8 +43,8 @@ function buildSVG(spots, users, currentUser) {
   const svg = document.getElementById('parking-svg');
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
-  const bxLeft   = LANE_LEFT  - SPOT_W - SIDE_MARGIN;
-  const bxRight  = LANE_RIGHT + SPOT_W + SIDE_MARGIN;
+  const bxLeft   = LANE_LEFT  - SPOT_W - SIDE_MARGIN - 60;
+  const bxRight  = LANE_RIGHT + SPOT_W + SIDE_MARGIN + 60;
   const byTop    = LANE_TOP - 10;
   const byBottom = BOTTOM_ROW_Y + SPOT_H + 30;
 
@@ -88,7 +88,9 @@ function buildSVG(spots, users, currentUser) {
   svg.appendChild(arrow);
 
   // ── Diagonal spot factory ──
-  // All elements live inside the rotated group — no separate overlay groups.
+  // Spot number: centred inside the rect (inherits rotation).
+  // License plate: placed OUTSIDE the rect on the wall side (back edge),
+  //   counter-rotated so it reads horizontally, in a dark pill for contrast.
   function makeSpot(label, cx, cy, angle, side) {
     const spotData = getSpotData(spots, label);
     const renter = spotData.assignedUserId
@@ -111,7 +113,7 @@ function buildSVG(spots, users, currentUser) {
     rect.setAttribute('rx', '2');
     g.appendChild(rect);
 
-    // Spot number label (centred, always visible)
+    // Spot number — centred in the rect
     const numText = document.createElementNS(svgNS, 'text');
     numText.setAttribute('class', 'spot-label');
     numText.setAttribute('x', cx);
@@ -119,29 +121,52 @@ function buildSVG(spots, users, currentUser) {
     numText.textContent = label;
     g.appendChild(numText);
 
-    // License plate text at the lane-facing (front) edge, inside the rotated group.
-    // For left spots (angle=-45), front is the right side (+x).
-    // For right spots (angle=+45), front is the left side (-x).
+    // License plate — outside the rect, on the wall (back) side.
+    // Back edge: left spots → left side (cx - SPOT_W/2), right spots → right side (cx + SPOT_W/2).
+    // We counter-rotate the plate group so text reads horizontally.
     if (renter) {
       const plate = (renter.licensePlate || renter.username || '').toUpperCase();
       if (plate) {
-        const plateX = side === 'left'
-          ? cx + SPOT_W / 2 - 2   // right edge for left-side spots
-          : cx - SPOT_W / 2 + 2;  // left edge for right-side spots
-        const anchor = side === 'left' ? 'end' : 'start';
+        const backEdgeX = side === 'left'
+          ? cx - SPOT_W / 2   // wall side for left spots
+          : cx + SPOT_W / 2;  // wall side for right spots
+        const plateAnchor = side === 'left' ? 'end' : 'start';
+        const plateOffsetX = side === 'left' ? -4 : 4;
 
-        const plateText = document.createElementNS(svgNS, 'text');
-        plateText.setAttribute('x', plateX);
-        plateText.setAttribute('y', cy + 1);
-        plateText.setAttribute('text-anchor', anchor);
-        plateText.setAttribute('dominant-baseline', 'middle');
-        plateText.setAttribute('font-family', 'inherit');
-        plateText.setAttribute('font-size', '7');
-        plateText.setAttribute('font-weight', '700');
-        plateText.setAttribute('fill', '#fff');
-        plateText.setAttribute('pointer-events', 'none');
-        plateText.textContent = plate;
-        g.appendChild(plateText);
+        // Counter-rotate group so pill + text are always horizontal
+        const plateG = document.createElementNS(svgNS, 'g');
+        plateG.setAttribute('transform', `rotate(${-angle}, ${backEdgeX}, ${cy})`);
+        plateG.setAttribute('pointer-events', 'none');
+
+        // Dark pill background
+        const PILL_H = 12, PILL_PAD = 4;
+        const approxW = plate.length * 5.5 + PILL_PAD * 2;
+        const pillX = plateAnchor === 'end'
+          ? backEdgeX + plateOffsetX - approxW
+          : backEdgeX + plateOffsetX;
+        const pill = document.createElementNS(svgNS, 'rect');
+        pill.setAttribute('x', pillX);
+        pill.setAttribute('y', cy - PILL_H / 2);
+        pill.setAttribute('width', approxW);
+        pill.setAttribute('height', PILL_H);
+        pill.setAttribute('rx', '3');
+        pill.setAttribute('fill', 'rgba(0,0,0,0.72)');
+        plateG.appendChild(pill);
+
+        const pt = document.createElementNS(svgNS, 'text');
+        pt.setAttribute('x', backEdgeX + plateOffsetX);
+        pt.setAttribute('y', cy + 0.5);
+        pt.setAttribute('text-anchor', plateAnchor);
+        pt.setAttribute('dominant-baseline', 'middle');
+        pt.setAttribute('font-family', 'inherit');
+        pt.setAttribute('font-size', '8');
+        pt.setAttribute('font-weight', '800');
+        pt.setAttribute('fill', '#fff');
+        pt.setAttribute('letter-spacing', '0.5');
+        pt.textContent = plate;
+        plateG.appendChild(pt);
+
+        g.appendChild(plateG);
       }
     }
 
@@ -185,22 +210,36 @@ function buildSVG(spots, users, currentUser) {
     const cx = points.reduce((a, p) => a + p[0], 0) / points.length;
     const cy = points.reduce((a, p) => a + p[1], 0) / points.length;
 
+    // Spot number — upper area
     const numText = document.createElementNS(svgNS, 'text');
     numText.setAttribute('class', 'spot-label');
     numText.setAttribute('x', cx);
-    numText.setAttribute('y', cy - 8);
+    numText.setAttribute('y', renter ? cy - 10 : cy);
     numText.textContent = label;
     g.appendChild(numText);
 
     if (renter) {
       const plate = (renter.licensePlate || renter.username || '').toUpperCase();
       if (plate) {
+        const PILL_H = 13, PILL_PAD = 5;
+        const approxW = plate.length * 5.5 + PILL_PAD * 2;
+        const pill = document.createElementNS(svgNS, 'rect');
+        pill.setAttribute('x', cx - approxW / 2);
+        pill.setAttribute('y', cy + 2);
+        pill.setAttribute('width', approxW);
+        pill.setAttribute('height', PILL_H);
+        pill.setAttribute('rx', '3');
+        pill.setAttribute('fill', 'rgba(0,0,0,0.72)');
+        pill.setAttribute('pointer-events', 'none');
+        g.appendChild(pill);
+
         const pt = document.createElementNS(svgNS, 'text');
-        pt.setAttribute('x', cx); pt.setAttribute('y', cy + 8);
+        pt.setAttribute('x', cx); pt.setAttribute('y', cy + 9);
         pt.setAttribute('text-anchor', 'middle');
         pt.setAttribute('dominant-baseline', 'middle');
-        pt.setAttribute('font-size', '7'); pt.setAttribute('font-weight', '700');
+        pt.setAttribute('font-size', '8'); pt.setAttribute('font-weight', '800');
         pt.setAttribute('fill', '#fff'); pt.setAttribute('pointer-events', 'none');
+        pt.setAttribute('letter-spacing', '0.5');
         pt.textContent = plate;
         g.appendChild(pt);
       }
@@ -231,22 +270,36 @@ function buildSVG(spots, users, currentUser) {
     rect.setAttribute('rx', '2');
     g.appendChild(rect);
 
+    // Spot number — upper portion
     const numText = document.createElementNS(svgNS, 'text');
     numText.setAttribute('class', 'spot-label');
     numText.setAttribute('x', x + w / 2);
-    numText.setAttribute('y', y + h / 2 - 8);
+    numText.setAttribute('y', renter ? y + h / 2 - 12 : y + h / 2);
     numText.textContent = label;
     g.appendChild(numText);
 
     if (renter) {
       const plate = (renter.licensePlate || renter.username || '').toUpperCase();
       if (plate) {
+        const PILL_H = 13, PILL_PAD = 5;
+        const approxW = plate.length * 5.5 + PILL_PAD * 2;
+        const pill = document.createElementNS(svgNS, 'rect');
+        pill.setAttribute('x', x + w / 2 - approxW / 2);
+        pill.setAttribute('y', y + h / 2 + 2);
+        pill.setAttribute('width', approxW);
+        pill.setAttribute('height', PILL_H);
+        pill.setAttribute('rx', '3');
+        pill.setAttribute('fill', 'rgba(0,0,0,0.72)');
+        pill.setAttribute('pointer-events', 'none');
+        g.appendChild(pill);
+
         const pt = document.createElementNS(svgNS, 'text');
-        pt.setAttribute('x', x + w / 2); pt.setAttribute('y', y + h / 2 + 8);
+        pt.setAttribute('x', x + w / 2); pt.setAttribute('y', y + h / 2 + 9);
         pt.setAttribute('text-anchor', 'middle');
         pt.setAttribute('dominant-baseline', 'middle');
-        pt.setAttribute('font-size', '7'); pt.setAttribute('font-weight', '700');
+        pt.setAttribute('font-size', '8'); pt.setAttribute('font-weight', '800');
         pt.setAttribute('fill', '#fff'); pt.setAttribute('pointer-events', 'none');
+        pt.setAttribute('letter-spacing', '0.5');
         pt.textContent = plate;
         g.appendChild(pt);
       }
