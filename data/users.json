@@ -9,5 +9,21 @@
     "role": "master",
     "active": true,
     "assignedSpots": []
+  },
+  {
+    "id": "u1780404715291",
+    "username": "HD-XZ-1",
+    "passwordHash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+    "name": "Mr",
+    "lastName": "Sgsz",
+    "phone": "+491703728447",
+    "address": "BGM 67, Ludwigshafen",
+    "licensePlate": "HD-XZ-1",
+    "carModel": "VW Golf",
+    "carColor": "Blue",
+    "role": "renter",
+    "active": true,
+    "assignedSpots": [],
+    "pendingEdits": null
   }
 ]
