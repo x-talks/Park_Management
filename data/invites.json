@@ -4,5 +4,18 @@
     "spotId": "s2",
     "expiresAt": "2026-06-09T12:25:40.914Z",
     "usedBy": null
+  },
+  {
+    "token": "abc706649aa103648e80a11f5ea3c030f1d0414f2d813dcd",
+    "spotId": "s1",
+    "expiresAt": "2026-06-09T12:48:42.696Z",
+    "usedBy": null,
+    "name": "Mr",
+    "lastName": "Sgsz",
+    "phone": "+491703728447",
+    "address": "BGM 67, Ludwigshafen",
+    "licensePlate": null,
+    "carModel": "VW Golf",
+    "carColor": null
   }
 ]
