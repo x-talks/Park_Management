@@ -22,7 +22,7 @@
     "carModel": "VW Golf",
     "carColor": "Blue",
     "role": "renter",
-    "active": true,
+    "active": false,
     "assignedSpots": [],
     "pendingEdits": null
   },
