@@ -534,3 +534,21 @@ tr:hover td { background: var(--gray-50); }
 
 /* ── pw-cell ──────────────────────────────────────────────────────────────── */
 .pw-cell { font-family: monospace; font-size: 0.8rem; color: var(--gray-600); }
+
+/* ── Maps button ──────────────────────────────────────────────────────────── */
+.maps-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #1a73e8;
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background var(--transition), box-shadow var(--transition);
+}
+.maps-btn:hover { background: #1558b0; box-shadow: var(--shadow); text-decoration: none; color: #fff; }
