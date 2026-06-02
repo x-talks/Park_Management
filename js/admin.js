@@ -36,7 +36,6 @@ async function deleteUser(userId) {
   const user = users.find(u => u.id === userId);
   if (!user) throw new Error('User not found');
   if (user.role === 'master') throw new Error('Cannot delete master admin');
-  // Unassign any spots first
   for (const spotId of (user.assignedSpots || [])) {
     await unassignSpot(spotId);
   }
@@ -68,6 +67,11 @@ async function approvePendingEdit(userId) {
 
 async function rejectPendingEdit(userId) {
   await patchRow('data/users.json', userId, { pendingEdits: null });
+}
+
+async function setTerminationDate(userId, date) {
+  // date: 'YYYY-MM-DD' or null to clear
+  await patchRow('data/users.json', userId, { terminationDate: date || null });
 }
 
 // ── Spot assignment ───────────────────────────────────────────────────────────
@@ -113,16 +117,24 @@ async function unassignSpot(spotId) {
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 
-async function markPaid(spotId, userId, month, year, adminId) {
+// type: 'commission' | 'rent'
+async function markPaid(spotId, userId, month, year, adminId, type) {
+  type = type || 'rent';
   const payments = await readFile('data/payments.json');
-  const existing = payments.find(p => p.spotId === spotId && p.month === month && p.year === year);
+  const existing = payments.find(p =>
+    p.spotId === spotId && p.month === month && p.year === year && p.type === type
+  );
   if (existing) throw new Error('Already marked paid');
-  const id = 'p' + Date.now();
+  const id = 'p' + Date.now() + '_' + type;
   await upsertRow('data/payments.json', {
-    id, spotId, userId, month, year,
+    id, spotId, userId, month, year, type,
     paidDate: new Date().toISOString().slice(0, 10),
     markedByAdminId: adminId
   });
+}
+
+async function unmarkPaid(paymentId) {
+  await deleteRow('data/payments.json', paymentId);
 }
 
 async function getPaymentMatrix() {
@@ -148,10 +160,8 @@ async function createAndInviteUser({ name, lastName, phone, address, spotId, lic
 
   await upsertRow('data/invites.json', {
     id, token, spotId, expiresAt, usedBy: null,
-    name: name || '',
-    lastName: lastName || '',
-    phone: phone || '',
-    address: address || '',
+    name: name || '', lastName: lastName || '',
+    phone: phone || '', address: address || '',
     licensePlate: licensePlate || null,
     carModel: carModel || null,
     carColor: carColor || null

@@ -403,8 +403,22 @@ tr:hover td { background: var(--gray-50); }
 .wa-btn:hover { background: #1da851; text-decoration: none; }
 
 /* ── Payment table ────────────────────────────────────────────────────────── */
-.payment-cell-paid   { background: var(--green-bg); color: var(--green); font-weight: 600; font-size: 0.75rem; }
-.payment-cell-unpaid { text-align: center; }
+.payment-cell-paid   { background: var(--green-bg); color: var(--green); font-weight: 600; font-size: 0.75rem; vertical-align: middle; }
+.payment-cell-unpaid { background: var(--red-bg); vertical-align: middle; }
+
+/* Icon buttons — uniform size */
+.icon-btn {
+  font-size: 0.9rem;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  min-width: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
 
 /* ── Spot badge ───────────────────────────────────────────────────────────── */
 .spot-badge {

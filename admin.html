@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Park Management — Admin</title>
 <link rel="stylesheet" href="css/style.css"/>
+<style>
+/* Icon button strip */
+.icon-btn { font-size:1rem; padding:0.3rem 0.5rem; min-width:2rem; min-height:2rem; line-height:1; }
+.action-cell { white-space:nowrap; }
+.action-cell .btn-row { gap:0.25rem; flex-wrap:nowrap; }
+/* Year selector */
+.year-select-wrap { display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; font-size:0.85rem; }
+.year-select-wrap label { font-weight:600; color:var(--gray-600); text-transform:uppercase; font-size:0.75rem; letter-spacing:.04em; }
+.year-select-wrap select { width:auto; }
+/* Payment table cells */
+.pay-col { min-width:110px; }
+.commission-row td { background:var(--blue-bg); }
+.termination-chip { font-size:0.68rem; background:var(--amber-bg); color:var(--amber); border:1px solid #fde68a; border-radius:999px; padding:0.1rem 0.45rem; white-space:nowrap; }
+</style>
 </head>
 <body>
 
@@ -19,7 +33,6 @@
 
 <div class="page-wrap">
 
-  <!-- Tab bar -->
   <div class="tab-bar">
     <button class="tab-btn" id="tab-btn-users">
       Users <span id="pending-badge" class="badge" style="display:none">0</span>
@@ -28,14 +41,21 @@
     <button class="tab-btn" id="tab-btn-payments">Payments</button>
   </div>
 
-  <!-- Users tab -->
+  <!-- ── Users tab ── -->
   <div id="tab-users" class="tab-panel">
+
     <div class="card">
       <div class="card-header">
         <h2>Users</h2>
         <span id="last-refresh" style="font-size:0.75rem;color:var(--gray-600)"></span>
       </div>
       <div id="user-list"></div>
+    </div>
+
+    <!-- Button legend -->
+    <div class="card" style="padding:0.75rem 1.25rem;font-size:0.8rem;">
+      <strong>Button legend:</strong>
+      <span style="margin-left:0.75rem">⏸ Deactivate &nbsp;▶ Activate &nbsp;✏ Edit &nbsp;🔑 Reset PW &nbsp;✂ Set termination &nbsp;✓ Approve &nbsp;✕ Reject &nbsp;🗑 Delete</span>
     </div>
 
     <div class="card">
@@ -52,7 +72,7 @@
           <select id="cu-spot" required><option value="">— select —</option></select>
         </div>
         <p style="font-size:0.8rem;color:var(--gray-600);margin:0 0 0.75rem">
-          Car details are optional — user must complete any missing fields during registration.
+          Car details are optional — user must complete missing fields during registration.
         </p>
         <div class="grid-3">
           <div class="form-group"><label>License Plate</label><input id="cu-plate" placeholder="HD-XY-123"/></div>
@@ -70,7 +90,7 @@
     </div>
   </div>
 
-  <!-- Spots tab -->
+  <!-- ── Spots tab ── -->
   <div id="tab-spots" class="tab-panel" style="display:none">
     <div class="card">
       <div class="card-header"><h2>Spot Assignments</h2></div>
@@ -78,10 +98,21 @@
     </div>
   </div>
 
-  <!-- Payments tab -->
+  <!-- ── Payments tab ── -->
   <div id="tab-payments" class="tab-panel" style="display:none">
     <div class="card">
-      <div class="card-header"><h2>Payment Overview</h2></div>
+      <div class="card-header">
+        <h2>Payment Overview</h2>
+        <div class="year-select-wrap">
+          <label>Year</label>
+          <select id="payment-year"></select>
+        </div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--gray-600);margin-bottom:0.75rem">
+        <span style="display:inline-block;width:10px;height:10px;background:var(--blue-bg);border:1px solid #bfdbfe;border-radius:2px;vertical-align:middle;margin-right:4px"></span>Commission row &nbsp;
+        <span style="display:inline-block;width:10px;height:10px;background:var(--green-bg);border:1px solid #b2dfca;border-radius:2px;vertical-align:middle;margin-right:4px"></span>Paid &nbsp;
+        <span style="display:inline-block;width:10px;height:10px;background:var(--red-bg);border:1px solid #f5c6c2;border-radius:2px;vertical-align:middle;margin-right:4px"></span>Pending
+      </div>
       <div id="payment-matrix"></div>
     </div>
   </div>
@@ -113,7 +144,6 @@ function showTab(name) {
 );
 showTab('users');
 
-// Real-time: refresh every 30s + on focus
 setInterval(() => { if (activeTab === 'users') renderUsers(); }, 30000);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
@@ -124,19 +154,20 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // ── DOM helpers ───────────────────────────────────────────────────────────────
-function td(text, cls) {
+function mkTd(text, cls) {
   const c = document.createElement('td');
   c.textContent = text ?? '—';
   if (cls) c.className = cls;
   return c;
 }
-function th(text) {
-  const c = document.createElement('th'); c.textContent = text; return c;
-}
-function btn(label, cls, onClick) {
+function mkTh(text) { const c = document.createElement('th'); c.textContent = text; return c; }
+
+// Icon button: consistent 2rem square
+function iconBtn(icon, title, cls, onClick) {
   const b = document.createElement('button');
-  b.textContent = label;
-  b.className = 'sm ' + (cls || '');
+  b.className = 'icon-btn ' + (cls || 'secondary');
+  b.title = title;
+  b.textContent = icon;
   b.addEventListener('click', onClick);
   return b;
 }
@@ -147,6 +178,22 @@ function chip(text, cls) {
   return s;
 }
 
+// ── Spot sort: occupied first, then numeric label ascending ───────────────────
+function sortSpots(spots) {
+  return [...spots].sort((a, b) => {
+    const aOcc = a.assignedUserId ? 0 : 1;
+    const bOcc = b.assignedUserId ? 0 : 1;
+    if (aOcc !== bOcc) return aOcc - bOcc;
+    // numeric sort on label (A/B after numbers)
+    const aNum = parseInt(a.label);
+    const bNum = parseInt(b.label);
+    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+    if (!isNaN(aNum)) return -1;
+    if (!isNaN(bNum)) return 1;
+    return a.label.localeCompare(b.label);
+  });
+}
+
 // ── Users tab ─────────────────────────────────────────────────────────────────
 async function renderUsers() {
   const [users, spots] = await Promise.all([loadUsers(), readFile('data/spots.json')]);
@@ -155,9 +202,7 @@ async function renderUsers() {
   const badge = document.getElementById('pending-badge');
   badge.textContent = pending.length;
   badge.style.display = pending.length > 0 ? 'inline-flex' : 'none';
-
-  document.getElementById('last-refresh').textContent =
-    'Updated ' + new Date().toLocaleTimeString();
+  document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
 
   const container = document.getElementById('user-list');
   container.innerHTML = '';
@@ -167,81 +212,104 @@ async function renderUsers() {
   const table = document.createElement('table');
 
   const headRow = document.createElement('tr');
-  ['Plate / User','Name','Phone','Spots','Car','Password','Status','Actions'].forEach(h => headRow.appendChild(th(h)));
+  ['Plate','Name','Phone','Spots','Car','Password','Status','Actions'].forEach(h => headRow.appendChild(mkTh(h)));
   table.appendChild(headRow);
 
   users.forEach(u => {
-    const assignedSpotLabels = (u.assignedSpots || [])
-      .map(sid => { const s = spots.find(x => x.id === sid); return s ? `Spot ${s.label}` : sid; })
+    const spotLabels = (u.assignedSpots || [])
+      .map(sid => { const s = spots.find(x => x.id === sid); return s ? s.label : sid; })
       .join(', ') || '—';
     const isMaster = u.role === 'master';
 
     const row = document.createElement('tr');
     if (u.pendingEdits) row.className = 'pending-row';
 
-    row.appendChild(td(u.licensePlate || u.username));
-    row.appendChild(td((`${u.name || ''} ${u.lastName || ''}`).trim() || '—'));
-    row.appendChild(td(u.phone || '—'));
-    row.appendChild(td(assignedSpotLabels));
-    row.appendChild(td(u.carModel ? `${u.carModel} / ${u.carColor || '?'}` : '—'));
+    row.appendChild(mkTd(u.licensePlate || u.username));
+    row.appendChild(mkTd((`${u.name || ''} ${u.lastName || ''}`).trim() || '—'));
+    row.appendChild(mkTd(u.phone || '—'));
+    row.appendChild(mkTd(spotLabels));
+    row.appendChild(mkTd(u.carModel ? `${u.carModel} / ${u.carColor || '?'}` : '—'));
 
     const pwCell = document.createElement('td');
-    pwCell.className = 'pw-cell';
-    pwCell.textContent = u.lastPassword || '—';
+    pwCell.className = 'pw-cell'; pwCell.textContent = u.lastPassword || '—';
     row.appendChild(pwCell);
 
-    // Status chip
+    // Status
     const statusCell = document.createElement('td');
     statusCell.appendChild(chip(u.active ? 'Active' : 'Inactive', u.active ? 'active' : 'inactive'));
-    if (u.pendingEdits) statusCell.appendChild(document.createTextNode(' '));
-    if (u.pendingEdits) statusCell.appendChild(chip('Edit pending', 'pending'));
+    if (u.terminationDate) {
+      statusCell.appendChild(document.createTextNode(' '));
+      const tc = document.createElement('span');
+      tc.className = 'termination-chip';
+      tc.title = 'Contract ends: ' + u.terminationDate;
+      tc.textContent = '⏹ ' + u.terminationDate;
+      statusCell.appendChild(tc);
+    }
+    if (u.pendingEdits) {
+      statusCell.appendChild(document.createTextNode(' '));
+      statusCell.appendChild(chip('Edit pending', 'pending'));
+    }
     row.appendChild(statusCell);
 
+    // Actions
     const ac = document.createElement('td');
+    ac.className = 'action-cell';
     const btnRow = document.createElement('div');
     btnRow.className = 'btn-row';
 
     if (!isMaster) {
-      btnRow.appendChild(btn(u.active ? 'Deactivate' : 'Activate', 'secondary', async () => {
-        await toggleUserActive(u.id); renderUsers();
+      btnRow.appendChild(iconBtn(
+        u.active ? '⏸' : '▶',
+        u.active ? 'Deactivate' : 'Activate',
+        'secondary',
+        async () => { await toggleUserActive(u.id); renderUsers(); }
+      ));
+
+      btnRow.appendChild(iconBtn('✏', 'Edit user', 'secondary', () => {
+        const er = document.getElementById('edit-' + u.id);
+        if (er) er.style.display = er.style.display === 'none' ? 'table-row' : 'none';
       }));
 
-      btnRow.appendChild(btn('Edit', 'secondary', () => {
-        const editRow = document.getElementById('edit-' + u.id);
-        if (editRow) {
-          const open = editRow.style.display !== 'none';
-          editRow.style.display = open ? 'none' : 'table-row';
-        }
-      }));
-
-      btnRow.appendChild(btn('Reset PW', 'secondary', async () => {
+      btnRow.appendChild(iconBtn('🔑', 'Reset password', 'secondary', async () => {
         const pw = prompt(`New password for ${u.licensePlate || u.username}:`);
         if (!pw) return;
         try { await resetPassword(u.id, pw, currentUser.role); renderUsers(); }
         catch(e) { alert(e.message); }
       }));
 
-      btnRow.appendChild(btn('Delete', 'danger', async () => {
-        if (!confirm(`Delete "${u.licensePlate || u.username}"? This cannot be undone.`)) return;
-        try { await deleteUser(u.id); renderUsers(); }
+      btnRow.appendChild(iconBtn('✂', 'Set termination date', 'secondary', async () => {
+        const current = u.terminationDate || '';
+        const d = prompt(
+          `Termination date for ${u.licensePlate || u.username}\n` +
+          `(User must give 2-months notice. Leave blank to clear.)\n` +
+          `Format: YYYY-MM-DD`,
+          current
+        );
+        if (d === null) return; // cancelled
+        try { await setTerminationDate(u.id, d.trim() || null); renderUsers(); }
         catch(e) { alert(e.message); }
       }));
 
       if (u.pendingEdits) {
         const { requestedAt, ...changes } = u.pendingEdits;
         const summary = Object.entries(changes).map(([k, v]) => `${k}: ${u[k] || '—'} → ${v}`).join(' · ');
-        const diffSpan = document.createElement('div');
-        diffSpan.style.cssText = 'font-size:0.72rem;color:var(--amber);margin-top:0.25rem;width:100%';
-        diffSpan.textContent = 'Pending: ' + summary;
-        btnRow.appendChild(diffSpan);
-
-        btnRow.appendChild(btn('Approve', 'success-btn', async () => {
+        const diffDiv = document.createElement('div');
+        diffDiv.style.cssText = 'font-size:0.7rem;color:var(--amber);margin-top:0.2rem;width:100%';
+        diffDiv.textContent = summary;
+        btnRow.appendChild(diffDiv);
+        btnRow.appendChild(iconBtn('✓', 'Approve edit', 'success-btn', async () => {
           await approvePendingEdit(u.id); renderUsers();
         }));
-        btnRow.appendChild(btn('Reject', 'secondary', async () => {
+        btnRow.appendChild(iconBtn('✕', 'Reject edit', 'secondary', async () => {
           await rejectPendingEdit(u.id); renderUsers();
         }));
       }
+
+      btnRow.appendChild(iconBtn('🗑', 'Delete user', 'danger', async () => {
+        if (!confirm(`Delete "${u.licensePlate || u.username}"? This cannot be undone.`)) return;
+        try { await deleteUser(u.id); renderUsers(); }
+        catch(e) { alert(e.message); }
+      }));
     }
 
     ac.appendChild(btnRow);
@@ -253,58 +321,45 @@ async function renderUsers() {
       const editRow = document.createElement('tr');
       editRow.id = 'edit-' + u.id;
       editRow.style.display = 'none';
-
       const editCell = document.createElement('td');
       editCell.setAttribute('colspan', '8');
-
       const inner = document.createElement('div');
       inner.className = 'edit-row-inner';
-
       const grid = document.createElement('div');
       grid.className = 'edit-grid';
 
       [
-        ['First Name',    'name',         u.name],
-        ['Last Name',     'lastName',     u.lastName],
-        ['Phone',         'phone',        u.phone],
-        ['Address',       'address',      u.address],
-        ['License Plate', 'licensePlate', u.licensePlate || u.username],
-        ['Car Model',     'carModel',     u.carModel],
-        ['Car Color',     'carColor',     u.carColor],
+        ['First Name','name',u.name],['Last Name','lastName',u.lastName],
+        ['Phone','phone',u.phone],['Address','address',u.address],
+        ['License Plate','licensePlate',u.licensePlate||u.username],
+        ['Car Model','carModel',u.carModel],['Car Color','carColor',u.carColor],
       ].forEach(([label, key, val]) => {
-        const g = document.createElement('div');
-        g.className = 'form-group';
+        const g = document.createElement('div'); g.className = 'form-group';
         const lbl = document.createElement('label'); lbl.textContent = label;
         const inp = document.createElement('input');
         inp.id = `ef-${u.id}-${key}`; inp.value = val || '';
-        g.appendChild(lbl); g.appendChild(inp);
-        grid.appendChild(g);
+        g.appendChild(lbl); g.appendChild(inp); grid.appendChild(g);
       });
 
       const msgEl = document.createElement('span');
       msgEl.style.fontSize = '0.8rem';
       const saveBtns = document.createElement('div');
-      saveBtns.className = 'btn-row';
-      saveBtns.style.marginTop = '0.5rem';
-
-      saveBtns.appendChild(btn('Save', '', async () => {
-        const get = key => document.getElementById(`ef-${u.id}-${key}`).value.trim();
+      saveBtns.className = 'btn-row'; saveBtns.style.marginTop = '0.5rem';
+      saveBtns.appendChild(iconBtn('💾', 'Save', '', async () => {
+        const get = k => document.getElementById(`ef-${u.id}-${k}`).value.trim();
         try {
           await updateUser(u.id, {
-            name: get('name'), lastName: get('lastName'), phone: get('phone'),
-            address: get('address'), licensePlate: get('licensePlate'),
-            carModel: get('carModel'), carColor: get('carColor'),
+            name:get('name'), lastName:get('lastName'), phone:get('phone'),
+            address:get('address'), licensePlate:get('licensePlate'),
+            carModel:get('carModel'), carColor:get('carColor'),
           });
           renderUsers();
-        } catch(e) { msgEl.textContent = e.message; msgEl.style.color = 'var(--red)'; }
+        } catch(e) { msgEl.textContent = e.message; msgEl.style.color='var(--red)'; }
       }));
-      saveBtns.appendChild(btn('Cancel', 'secondary', () => { editRow.style.display = 'none'; }));
+      saveBtns.appendChild(iconBtn('✕', 'Cancel', 'secondary', () => { editRow.style.display='none'; }));
       saveBtns.appendChild(msgEl);
-
-      inner.appendChild(grid);
-      inner.appendChild(saveBtns);
-      editCell.appendChild(inner);
-      editRow.appendChild(editCell);
+      inner.appendChild(grid); inner.appendChild(saveBtns);
+      editCell.appendChild(inner); editRow.appendChild(editCell);
       table.appendChild(editRow);
     }
   });
@@ -318,7 +373,7 @@ async function loadFreeSpots() {
   const spots = await readFile('data/spots.json');
   const sel = document.getElementById('cu-spot');
   sel.innerHTML = '<option value="">— select —</option>';
-  spots.filter(s => !s.assignedUserId).forEach(s => {
+  sortSpots(spots).filter(s => !s.assignedUserId).forEach(s => {
     const opt = document.createElement('option');
     opt.value = s.id; opt.textContent = `Spot ${s.label}`;
     sel.appendChild(opt);
@@ -328,10 +383,8 @@ async function loadFreeSpots() {
 // ── Create user + invite ──────────────────────────────────────────────────────
 document.getElementById('create-user-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const msg = document.getElementById('cu-msg');
-  msg.textContent = '';
-  const resultBox = document.getElementById('invite-result-box');
-  resultBox.style.display = 'none';
+  const msg = document.getElementById('cu-msg'); msg.textContent = '';
+  const resultBox = document.getElementById('invite-result-box'); resultBox.style.display = 'none';
   const submitBtn = e.target.querySelector('button[type=submit]');
   submitBtn.disabled = true; submitBtn.textContent = 'Creating…';
   try {
@@ -353,9 +406,7 @@ document.getElementById('create-user-form').addEventListener('submit', async e =
     document.getElementById('invite-wa-link').href = `https://wa.me/?text=${waText}`;
     resultBox.style.display = 'block';
     msg.className = 'alert success'; msg.textContent = 'Invite created successfully.';
-    e.target.reset();
-    loadFreeSpots();
-    renderUsers();
+    e.target.reset(); loadFreeSpots(); renderUsers();
   } catch(err) {
     msg.className = 'alert error'; msg.textContent = err.message;
   } finally {
@@ -374,87 +425,100 @@ async function renderSpots() {
   const table = document.createElement('table');
 
   const headRow = document.createElement('tr');
-  ['Spot','State','Assigned To','License Plate','Monthly Rent','Actions'].forEach(h => headRow.appendChild(th(h)));
+  ['Spot','State','Assigned To','Plate','Monthly Rent','Actions'].forEach(h => headRow.appendChild(mkTh(h)));
   table.appendChild(headRow);
 
-  spots.forEach(s => {
+  sortSpots(spots).forEach(s => {
     const renter = users.find(u => u.id === s.assignedUserId);
     const row = document.createElement('tr');
-    row.appendChild(td(s.label));
+    row.appendChild(mkTd(s.label));
 
     const stateCell = document.createElement('td');
     stateCell.appendChild(chip(s.state === 'free' ? 'Free' : 'Occupied', s.state === 'free' ? 'free' : 'occupied'));
     row.appendChild(stateCell);
 
-    row.appendChild(td(renter ? (`${renter.name || ''} ${renter.lastName || ''}`).trim() : '—'));
-    row.appendChild(td(renter ? (renter.licensePlate || renter.username) : '—'));
-    row.appendChild(td(s.monthlyRent != null ? `€${Number(s.monthlyRent).toFixed(2)}` : '€80.00'));
+    row.appendChild(mkTd(renter ? (`${renter.name||''} ${renter.lastName||''}`).trim() : '—'));
+    row.appendChild(mkTd(renter ? (renter.licensePlate || renter.username) : '—'));
+    row.appendChild(mkTd(s.monthlyRent != null ? `€${Number(s.monthlyRent).toFixed(2)}` : '€80.00'));
 
     const ac = document.createElement('td');
     const bRow = document.createElement('div');
     bRow.className = 'btn-row';
 
     if (s.assignedUserId) {
-      bRow.appendChild(btn('Unassign', 'secondary', async () => {
+      bRow.appendChild(iconBtn('⛔', 'Unassign spot', 'secondary', async () => {
+        if (!confirm(`Unassign spot ${s.label}?`)) return;
         await unassignSpot(s.id); renderSpots();
       }));
     } else {
-      // Assign to existing user
       const sel = document.createElement('select');
-      sel.style.width = 'auto';
-      const defaultOpt = document.createElement('option');
-      defaultOpt.value = ''; defaultOpt.textContent = '— user —';
-      sel.appendChild(defaultOpt);
+      sel.style.cssText = 'width:auto;font-size:0.8rem';
+      sel.appendChild(Object.assign(document.createElement('option'), {value:'',textContent:'— user —'}));
       users.filter(u => u.active && u.role === 'renter').forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u.id;
-        opt.textContent = `${u.name || ''} (${u.licensePlate || u.username})`.trim();
-        sel.appendChild(opt);
+        sel.appendChild(Object.assign(document.createElement('option'), {
+          value: u.id,
+          textContent: `${u.name||''} (${u.licensePlate||u.username})`.trim()
+        }));
       });
       bRow.appendChild(sel);
-      bRow.appendChild(btn('Assign', 'secondary', async () => {
+      bRow.appendChild(iconBtn('✓', 'Assign to user', 'success-btn', async () => {
         if (!sel.value) { alert('Select a user first.'); return; }
         try { await assignSpot(s.id, sel.value); renderSpots(); }
         catch(e) { alert(e.message); }
       }));
     }
 
-    // Set monthly rent
+    // Set rent inline
     const rentInput = document.createElement('input');
     rentInput.type = 'number'; rentInput.min = '0'; rentInput.step = '0.01';
     rentInput.value = s.monthlyRent != null ? s.monthlyRent : 80;
-    rentInput.style.cssText = 'width:80px;display:inline-block';
+    rentInput.style.cssText = 'width:70px;display:inline-block;font-size:0.8rem';
     bRow.appendChild(rentInput);
-    bRow.appendChild(btn('Set Rent', 'secondary', async () => {
+    bRow.appendChild(iconBtn('€', 'Set monthly rent', 'secondary', async () => {
       const val = parseFloat(rentInput.value);
       if (isNaN(val) || val < 0) { alert('Invalid rent value'); return; }
       try { await patchRow('data/spots.json', s.id, { monthlyRent: val }); renderSpots(); }
       catch(e) { alert(e.message); }
     }));
 
-    ac.appendChild(bRow);
-    row.appendChild(ac);
+    ac.appendChild(bRow); row.appendChild(ac);
     table.appendChild(row);
   });
 
-  wrap.appendChild(table);
-  container.appendChild(wrap);
+  wrap.appendChild(table); container.appendChild(wrap);
 }
 
 // ── Payments tab ──────────────────────────────────────────────────────────────
+
+// Populate year selector
+(function initYearSelect() {
+  const sel = document.getElementById('payment-year');
+  const thisYear = new Date().getFullYear();
+  for (let y = thisYear; y >= thisYear - 4; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', renderPayments);
+})();
+
 async function renderPayments() {
+  const selectedYear = parseInt(document.getElementById('payment-year').value);
   const [payments, spots, users] = await Promise.all([
     readFile('data/payments.json'),
     readFile('data/spots.json'),
     loadUsers()
   ]);
-  const now = new Date();
-  const months = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({ month: d.getMonth() + 1, year: d.getFullYear(),
-      label: d.toLocaleString('default', { month: 'short', year: 'numeric' }) });
-  }
+
+  // All 12 months of the selected year
+  const months = Array.from({length: 12}, (_, i) => {
+    const d = new Date(selectedYear, i, 1);
+    return {
+      month: i + 1,
+      year: selectedYear,
+      label: d.toLocaleString('default', { month: 'short' })
+    };
+  });
 
   const container = document.getElementById('payment-matrix');
   container.innerHTML = '';
@@ -464,61 +528,135 @@ async function renderPayments() {
   const table = document.createElement('table');
 
   const headRow = document.createElement('tr');
-  headRow.appendChild(th('Spot'));
-  headRow.appendChild(th('Renter'));
-  months.forEach(m => headRow.appendChild(th(m.label)));
+  headRow.appendChild(mkTh('Spot'));
+  headRow.appendChild(mkTh('Renter'));
+  headRow.appendChild(mkTh('Commission'));
+  months.forEach(m => { const t = mkTh(m.label); t.className='pay-col'; headRow.appendChild(t); });
   table.appendChild(headRow);
 
-  // Only show assigned spots
-  spots.filter(s => s.assignedUserId).forEach(s => {
+  sortSpots(spots).filter(s => s.assignedUserId).forEach(s => {
     const renter = users.find(u => u.id === s.assignedUserId);
     const regDate = renter && renter.registeredAt ? new Date(renter.registeredAt) : null;
     const rent = s.monthlyRent || 80;
+    const termDate = renter && renter.terminationDate ? new Date(renter.terminationDate) : null;
 
-    const row = document.createElement('tr');
-    row.appendChild(td(`Spot ${s.label}`));
-    row.appendChild(td(renter ? `${renter.name || ''} ${renter.lastName || ''}`.trim() : '—'));
+    // ── Commission row ──
+    const commRow = document.createElement('tr');
+    commRow.className = 'commission-row';
+    commRow.appendChild(mkTd(`Spot ${s.label}`));
+    const renterName = renter ? `${renter.name||''} ${renter.lastName||''}`.trim() : '—';
+    const renterTd = mkTd(renterName);
+    // Show termination chip on renter cell
+    if (termDate) {
+      renterTd.appendChild(document.createTextNode(' '));
+      const tc = document.createElement('span');
+      tc.className = 'termination-chip';
+      tc.textContent = '⏹ ends ' + renter.terminationDate;
+      renterTd.appendChild(tc);
+    }
+    commRow.appendChild(renterTd);
+
+    // Commission cell
+    const commCell = document.createElement('td');
+    const commPaid = payments.find(p =>
+      p.spotId === s.id && p.type === 'commission' && p.year === selectedYear
+    );
+    if (commPaid) {
+      commCell.className = 'payment-cell-paid';
+      const textNode = document.createTextNode(`✓ ${commPaid.paidDate} `);
+      commCell.appendChild(textNode);
+      commCell.appendChild(iconBtn('↩', 'Revert payment', 'secondary', async () => {
+        if (!confirm('Revert this commission payment?')) return;
+        await unmarkPaid(commPaid.id); renderPayments();
+      }));
+    } else {
+      commCell.className = 'payment-cell-unpaid';
+      const amtDiv = document.createElement('div');
+      amtDiv.style.cssText = 'font-size:0.72rem;color:var(--gray-600);margin-bottom:0.2rem';
+      amtDiv.textContent = `€${rent.toFixed(2)} (1 month)`;
+      commCell.appendChild(amtDiv);
+      commCell.appendChild(iconBtn('✓', 'Mark commission paid', 'success-btn', async () => {
+        try {
+          await markPaid(s.id, s.assignedUserId, 0, selectedYear, currentUser.id, 'commission');
+          renderPayments();
+        } catch(e) { alert(e.message); }
+      }));
+    }
+    commRow.appendChild(commCell);
+    // Fill remaining month columns with empty cells
+    months.forEach(() => commRow.appendChild(document.createElement('td')));
+    table.appendChild(commRow);
+
+    // ── Rent row ──
+    const rentRow = document.createElement('tr');
+    rentRow.appendChild(mkTd(`Spot ${s.label}`));
+    rentRow.appendChild(mkTd(renterName));
+    rentRow.appendChild(mkTd('↑ Commission above'));
 
     months.forEach(m => {
       const cell = document.createElement('td');
-      const p = payments.find(x => x.spotId === s.id && x.month === m.month && x.year === m.year);
+      cell.className = 'pay-col';
 
-      // Determine if this is the first month for this renter
-      let fraction = 1;
-      let fractionLabel = '';
+      // Is this month before the renter started?
       if (regDate) {
-        const regMonth = regDate.getMonth() + 1;
         const regYear  = regDate.getFullYear();
-        if (m.month === regMonth && m.year === regYear) {
+        const regMonth = regDate.getMonth() + 1;
+        if (selectedYear < regYear || (selectedYear === regYear && m.month < regMonth)) {
+          cell.textContent = '—';
+          rentRow.appendChild(cell);
+          return;
+        }
+      }
+      // Is this month after termination?
+      if (termDate) {
+        const tYear  = termDate.getFullYear();
+        const tMonth = termDate.getMonth() + 1;
+        if (selectedYear > tYear || (selectedYear === tYear && m.month > tMonth)) {
+          cell.textContent = '—';
+          rentRow.appendChild(cell);
+          return;
+        }
+      }
+
+      const p = payments.find(x => x.spotId === s.id && x.month === m.month && x.year === m.year && x.type === 'rent');
+
+      // Pro-rate first month
+      let fraction = 1, fractionLabel = '';
+      if (regDate) {
+        const rYear = regDate.getFullYear(), rMonth = regDate.getMonth() + 1;
+        if (m.year === rYear && m.month === rMonth) {
           const day = regDate.getDate();
           if (day <= 10)      { fraction = 1;   fractionLabel = ''; }
-          else if (day <= 20) { fraction = 0.5; fractionLabel = ' (½)'; }
-          else                { fraction = 1/3; fractionLabel = ' (⅓)'; }
+          else if (day <= 20) { fraction = 0.5; fractionLabel = ' ½'; }
+          else                { fraction = 1/3; fractionLabel = ' ⅓'; }
         }
       }
       const amount = (rent * fraction).toFixed(2);
 
       if (p) {
         cell.className = 'payment-cell-paid';
-        cell.textContent = `✓ ${p.paidDate}`;
-      } else if (!s.assignedUserId) {
-        cell.textContent = '—';
+        const textNode = document.createTextNode(`✓ ${p.paidDate} `);
+        cell.appendChild(textNode);
+        cell.appendChild(iconBtn('↩', 'Revert payment', 'secondary', async () => {
+          if (!confirm(`Revert rent payment for ${m.label} ${m.year}?`)) return;
+          await unmarkPaid(p.id); renderPayments();
+        }));
       } else {
         cell.className = 'payment-cell-unpaid';
         const amtDiv = document.createElement('div');
         amtDiv.style.cssText = 'font-size:0.72rem;color:var(--gray-600);margin-bottom:0.2rem';
         amtDiv.textContent = `€${amount}${fractionLabel}`;
         cell.appendChild(amtDiv);
-        cell.appendChild(btn('Mark Paid', 'secondary', async () => {
+        cell.appendChild(iconBtn('✓', 'Mark rent paid', 'success-btn', async () => {
           try {
-            await markPaid(s.id, s.assignedUserId, m.month, m.year, currentUser.id);
+            await markPaid(s.id, s.assignedUserId, m.month, m.year, currentUser.id, 'rent');
             renderPayments();
           } catch(e) { alert(e.message); }
         }));
       }
-      row.appendChild(cell);
+      rentRow.appendChild(cell);
     });
-    table.appendChild(row);
+    table.appendChild(rentRow);
   });
 
   wrap.appendChild(table);

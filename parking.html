@@ -33,6 +33,7 @@
       <span class="legend-item"><span class="legend-swatch free"></span> Free</span>
       <span class="legend-item"><span class="legend-swatch occupied"></span> Occupied</span>
       <span class="legend-item"><span class="legend-swatch mine"></span> Your spot</span>
+      <span class="legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e87000;border:1.5px solid rgba(0,0,0,.4);flex-shrink:0"></span> Car color dot</span>
     </div>
 
     <!-- Info panel -->
@@ -106,6 +107,8 @@ function highlightMySpots() {
 }
 
 // ── My Payments ───────────────────────────────────────────────────────────────
+let _paymentYear = new Date().getFullYear();
+
 function renderMyPayments() {
   const section = document.getElementById('my-payments-section');
   section.innerHTML = '';
@@ -118,13 +121,40 @@ function renderMyPayments() {
 
   const header = document.createElement('div');
   header.className = 'card-header';
-  const h2 = document.createElement('h2');
-  h2.textContent = 'My Payments';
+  const h2 = document.createElement('h2'); h2.textContent = 'My Payments';
   header.appendChild(h2);
+
+  // Year selector
+  const yw = document.createElement('div');
+  yw.style.cssText = 'display:flex;align-items:center;gap:0.5rem;font-size:0.85rem';
+  const ylbl = document.createElement('label');
+  ylbl.style.cssText = 'font-weight:600;color:var(--gray-600);font-size:0.75rem;text-transform:uppercase;letter-spacing:.04em';
+  ylbl.textContent = 'Year';
+  const ysel = document.createElement('select');
+  ysel.style.width = 'auto';
+  const thisYear = new Date().getFullYear();
+  for (let y = thisYear; y >= thisYear - 4; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    if (y === _paymentYear) opt.selected = true;
+    ysel.appendChild(opt);
+  }
+  ysel.addEventListener('change', () => { _paymentYear = parseInt(ysel.value); renderMyPayments(); });
+  yw.appendChild(ylbl); yw.appendChild(ysel);
+  header.appendChild(yw);
   card.appendChild(header);
 
-  me.assignedSpots.forEach(spotId => {
-    const spot = _spots.find(s => s.id === spotId);
+  // Termination notice
+  if (me.terminationDate) {
+    const notice = document.createElement('div');
+    notice.className = 'alert warn';
+    notice.style.marginBottom = '0.75rem';
+    notice.textContent = `⏹ Your contract termination is set for ${me.terminationDate}. The 2-month notice period applies.`;
+    card.appendChild(notice);
+  }
+
+  me.assignedSpots.forEach(sid => {
+    const spot = _spots.find(s => s.id === sid);
     if (!spot) return;
 
     const rent = spot.monthlyRent || 80;
@@ -134,25 +164,37 @@ function renderMyPayments() {
     spotTitle.textContent = `Spot ${spot.label}`;
     card.appendChild(spotTitle);
 
-    // Generate month list from registration month to current month
-    const months = getPaymentMonths(regDate);
-
     const wrap = document.createElement('div');
     wrap.className = 'table-wrap';
     const table = document.createElement('table');
 
-    // Header
     const thead = document.createElement('tr');
-    ['Month', 'Amount Due', 'Status', ''].forEach(h => {
-      const th = document.createElement('th');
-      th.textContent = h;
-      thead.appendChild(th);
+    ['Month / Type', 'Amount Due', 'Status'].forEach(h => {
+      const th = document.createElement('th'); th.textContent = h; thead.appendChild(th);
     });
     table.appendChild(thead);
 
-    months.forEach(({ month, year, label: mLabel, isFirst }) => {
-      const paid = _payments.find(p => p.spotId === spotId && p.month === month && p.year === year);
-      const fraction = isFirst && regDate ? getPaymentFraction(regDate) : { fraction: 1, label: 'Full' };
+    // Commission row
+    const commPaid = _payments.find(p => p.spotId === sid && p.type === 'commission' && p.year === _paymentYear);
+    const commTr = document.createElement('tr');
+    commTr.style.background = 'var(--blue-bg)';
+    const commMonthTd = document.createElement('td');
+    commMonthTd.innerHTML = '<strong>Commission</strong> <span style="font-size:0.72rem;color:var(--blue)">(one-time, = 1 month rent)</span>';
+    const commAmtTd = document.createElement('td'); commAmtTd.textContent = `€${rent.toFixed(2)}`;
+    const commStatusTd = document.createElement('td');
+    const commChip = document.createElement('span');
+    commChip.className = commPaid ? 'chip paid' : 'chip unpaid';
+    commChip.textContent = commPaid ? `Paid ${commPaid.paidDate}` : 'Pending';
+    commStatusTd.appendChild(commChip);
+    commTr.appendChild(commMonthTd); commTr.appendChild(commAmtTd); commTr.appendChild(commStatusTd);
+    table.appendChild(commTr);
+
+    // Monthly rent rows for selected year
+    const months = getPaymentMonthsForYear(regDate, _paymentYear, me.terminationDate);
+
+    months.forEach(({ month, year, label: mLabel, isFirst, isFuture }) => {
+      const paid = _payments.find(p => p.spotId === sid && p.month === month && p.year === year && p.type === 'rent');
+      const fraction = isFirst && regDate ? getPaymentFraction(regDate) : { fraction: 1, label: 'Full', desc: '' };
       const amount = (rent * fraction.fraction).toFixed(2);
 
       const tr = document.createElement('tr');
@@ -166,35 +208,21 @@ function renderMyPayments() {
         tdMonth.appendChild(note);
       }
 
-      const tdAmt = document.createElement('td');
-      tdAmt.textContent = `€${amount}`;
-      if (isFirst && fraction.fraction < 1) {
-        const note = document.createElement('div');
-        note.style.cssText = 'font-size:0.7rem;color:var(--gray-600)';
-        note.textContent = fraction.desc;
-        tdAmt.appendChild(note);
-      }
+      const tdAmt = document.createElement('td'); tdAmt.textContent = `€${amount}`;
 
       const tdStatus = document.createElement('td');
-      if (paid) {
-        const chip = document.createElement('span');
-        chip.className = 'chip paid';
-        chip.textContent = `Paid ${paid.paidDate}`;
-        tdStatus.appendChild(chip);
+      if (isFuture) {
+        const c = document.createElement('span'); c.className = 'chip inactive'; c.textContent = 'Future';
+        tdStatus.appendChild(c);
+      } else if (paid) {
+        const c = document.createElement('span'); c.className = 'chip paid';
+        c.textContent = `Paid ${paid.paidDate}`; tdStatus.appendChild(c);
       } else {
-        const chip = document.createElement('span');
-        chip.className = 'chip unpaid';
-        chip.textContent = 'Pending';
-        tdStatus.appendChild(chip);
+        const c = document.createElement('span'); c.className = 'chip unpaid'; c.textContent = 'Pending';
+        tdStatus.appendChild(c);
       }
 
-      const tdAction = document.createElement('td');
-      // Users see status only; admin marks payment
-
-      tr.appendChild(tdMonth);
-      tr.appendChild(tdAmt);
-      tr.appendChild(tdStatus);
-      tr.appendChild(tdAction);
+      tr.appendChild(tdMonth); tr.appendChild(tdAmt); tr.appendChild(tdStatus);
       table.appendChild(tr);
     });
 
@@ -205,31 +233,32 @@ function renderMyPayments() {
   section.appendChild(card);
 }
 
-function getPaymentMonths(regDate) {
+function getPaymentMonthsForYear(regDate, year, terminationDate) {
   const now = new Date();
+  const termDate = terminationDate ? new Date(terminationDate) : null;
   const months = [];
-  if (!regDate) {
-    // Show last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      months.push({ month: d.getMonth() + 1, year: d.getFullYear(),
-        label: d.toLocaleString('default', { month: 'long', year: 'numeric' }), isFirst: i === 5 });
+
+  for (let m = 1; m <= 12; m++) {
+    // Skip months before registration
+    if (regDate) {
+      const rYear = regDate.getFullYear(), rMonth = regDate.getMonth() + 1;
+      if (year < rYear || (year === rYear && m < rMonth)) continue;
     }
-    return months;
-  }
-  const start = new Date(regDate.getFullYear(), regDate.getMonth(), 1);
-  const end   = new Date(now.getFullYear(), now.getMonth(), 1);
-  let cur = new Date(start);
-  let first = true;
-  while (cur <= end) {
+    // Skip months after termination
+    if (termDate) {
+      const tYear = termDate.getFullYear(), tMonth = termDate.getMonth() + 1;
+      if (year > tYear || (year === tYear && m > tMonth)) continue;
+    }
+    const d = new Date(year, m - 1, 1);
+    const isFuture = year > now.getFullYear() || (year === now.getFullYear() && m > now.getMonth() + 1);
+    const isFirst = regDate
+      ? (year === regDate.getFullYear() && m === regDate.getMonth() + 1)
+      : false;
     months.push({
-      month: cur.getMonth() + 1,
-      year:  cur.getFullYear(),
-      label: cur.toLocaleString('default', { month: 'long', year: 'numeric' }),
-      isFirst: first
+      month: m, year,
+      label: d.toLocaleString('default', { month: 'long' }),
+      isFirst, isFuture
     });
-    first = false;
-    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
   }
   return months;
 }
