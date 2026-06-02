@@ -33,6 +33,36 @@ async function resetPassword(userId, newPassword, callerRole) {
   await writeFile('data/users.json', users);
 }
 
+async function deleteUser(userId) {
+  const users = await loadUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) throw new Error('User not found');
+  if (user.role === 'master') throw new Error('Cannot delete master admin');
+  // Unassign any spots first
+  for (const spotId of (user.assignedSpots || [])) {
+    await unassignSpot(spotId);
+  }
+  const updated = users.filter(u => u.id !== userId);
+  await writeFile('data/users.json', updated);
+}
+
+async function updateUser(userId, changes) {
+  const users = await loadUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) throw new Error('User not found');
+  if (user.role === 'master') throw new Error('Cannot modify master admin');
+  // If license plate changed, update username too
+  if (changes.licensePlate) {
+    const plate = changes.licensePlate.toUpperCase().trim();
+    const conflict = users.find(u => u.id !== userId && u.username === plate);
+    if (conflict) throw new Error('License plate already in use');
+    changes.licensePlate = plate;
+    changes.username = plate;
+  }
+  Object.assign(user, changes);
+  await writeFile('data/users.json', users);
+}
+
 async function approvePendingEdit(userId) {
   const users = await loadUsers();
   const user = users.find(u => u.id === userId);

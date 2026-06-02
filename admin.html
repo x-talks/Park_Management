@@ -144,17 +144,13 @@ function th(text) { return el('th', { textContent: text }); }
 
 // ── Users tab ─────────────────────────────────────────────────────────────────
 async function renderUsers() {
-  const users = await loadUsers();
+  const [users, spots] = await Promise.all([loadUsers(), readFile('data/spots.json')]);
 
   // Pending edits badge
   const pending = users.filter(u => u.pendingEdits);
   const badge = document.getElementById('pending-badge');
-  if (pending.length > 0) {
-    badge.textContent = pending.length;
-    badge.style.display = 'inline';
-  } else {
-    badge.style.display = 'none';
-  }
+  badge.textContent = pending.length;
+  badge.style.display = pending.length > 0 ? 'inline' : 'none';
 
   const container = document.getElementById('user-list');
   while (container.firstChild) container.removeChild(container.firstChild);
@@ -164,13 +160,13 @@ async function renderUsers() {
   ['License Plate','Name','Phone','Spot','Car','Active','Actions'].forEach(h => headRow.appendChild(th(h)));
   table.appendChild(headRow);
 
-  const spots = await readFile('data/spots.json');
-
   users.forEach(u => {
     const assignedSpot = spots.find(s => s.assignedUserId === u.id);
+    const isMaster = u.role === 'master';
+
+    // ── Main data row ──
     const row = el('tr');
     if (u.pendingEdits) row.className = 'pending-row';
-
     row.appendChild(td(u.licensePlate || u.username));
     row.appendChild(td(`${u.name || ''} ${u.lastName || ''}`.trim()));
     row.appendChild(td(u.phone || '—'));
@@ -180,7 +176,7 @@ async function renderUsers() {
 
     const actionCell = el('td');
 
-    if (u.role !== 'master') {
+    if (!isMaster) {
       // Toggle active
       actionCell.appendChild(el('button', {
         className: 'secondary',
@@ -189,11 +185,21 @@ async function renderUsers() {
       }));
       actionCell.appendChild(document.createTextNode(' '));
 
+      // Edit button — toggles inline edit row
+      actionCell.appendChild(el('button', {
+        className: 'secondary',
+        textContent: 'Edit',
+        onclick: () => {
+          const editRow = document.getElementById(`edit-row-${u.id}`);
+          editRow.style.display = editRow.style.display === 'none' ? 'table-row' : 'none';
+        }
+      }));
+      actionCell.appendChild(document.createTextNode(' '));
+
       // Reset password
       const resetWrap = document.createElement('span');
       const resetBtn = el('button', { className: 'secondary', textContent: 'Reset PW' });
-      const resetForm = document.createElement('div');
-      resetForm.className = 'reset-form';
+      const resetForm = el('div', { className: 'reset-form' });
       const pwInput = el('input', { type: 'text', placeholder: 'new password' });
       pwInput.style.cssText = 'width:auto;display:inline;margin-right:4px';
       const confirmBtn = el('button', { textContent: 'Set' });
@@ -212,7 +218,7 @@ async function renderUsers() {
           await resetPassword(u.id, pw, currentUser.role);
           pwDisplay.innerHTML = '';
           pwDisplay.appendChild(el('div', { className: 'plaintext-pw', textContent: `New password: ${pw}` }));
-          pwDisplay.appendChild(el('small', { textContent: 'Copy and share this password. It will not be shown again.' }));
+          pwDisplay.appendChild(el('small', { textContent: 'Copy and share. Not shown again.' }));
           pwInput.value = '';
         } catch(err) { pwDisplay.textContent = err.message; }
       });
@@ -220,26 +226,35 @@ async function renderUsers() {
       resetWrap.appendChild(resetForm);
       actionCell.appendChild(resetWrap);
       actionCell.appendChild(document.createTextNode(' '));
+
+      // Delete button
+      actionCell.appendChild(el('button', {
+        textContent: 'Delete',
+        onclick: async () => {
+          if (!confirm(`Delete user "${u.licensePlate || u.username}"? This cannot be undone.`)) return;
+          try { await deleteUser(u.id); renderUsers(); }
+          catch(err) { alert(err.message); }
+        }
+      }));
+      actionCell.appendChild(document.createTextNode(' '));
     }
 
     // Role toggle (master only)
-    if (currentUser.role === 'master' && u.role !== 'master') {
+    if (currentUser.role === 'master' && !isMaster) {
       const newRole = u.role === 'admin' ? 'renter' : 'admin';
       actionCell.appendChild(el('button', {
         className: 'secondary',
         textContent: `Make ${newRole.charAt(0).toUpperCase() + newRole.slice(1)}`,
         onclick: async () => { await setUserRole(u.id, newRole, currentUser.role); renderUsers(); }
       }));
-      actionCell.appendChild(document.createTextNode(' '));
     }
 
-    // Pending edits
+    // Pending edits review
     if (u.pendingEdits) {
       const reviewWrap = document.createElement('div');
       reviewWrap.style.marginTop = '0.25rem';
       const { requestedAt, ...changes } = u.pendingEdits;
-      const diffDiv = document.createElement('div');
-      diffDiv.className = 'diff-block';
+      const diffDiv = el('div', { className: 'diff-block' });
       diffDiv.appendChild(el('strong', { textContent: 'Requested changes:' }));
       Object.entries(changes).forEach(([field, newVal]) => {
         const line = document.createElement('div');
@@ -248,25 +263,86 @@ async function renderUsers() {
         line.appendChild(el('span', { className: 'diff-new', textContent: String(newVal) }));
         diffDiv.appendChild(line);
       });
-      const approveBtn = el('button', {
+      reviewWrap.appendChild(diffDiv);
+      reviewWrap.appendChild(el('button', {
         textContent: 'Approve',
         onclick: async () => { await approvePendingEdit(u.id); renderUsers(); }
-      });
-      const rejectBtn = el('button', {
-        className: 'secondary',
-        textContent: 'Reject',
-        onclick: async () => { await rejectPendingEdit(u.id); renderUsers(); }
-      });
-      reviewWrap.appendChild(diffDiv);
-      reviewWrap.appendChild(approveBtn);
+      }));
       reviewWrap.appendChild(document.createTextNode(' '));
-      reviewWrap.appendChild(rejectBtn);
+      reviewWrap.appendChild(el('button', {
+        className: 'secondary', textContent: 'Reject',
+        onclick: async () => { await rejectPendingEdit(u.id); renderUsers(); }
+      }));
       actionCell.appendChild(reviewWrap);
     }
 
     row.appendChild(actionCell);
     table.appendChild(row);
+
+    // ── Inline edit row (hidden by default) ──
+    if (!isMaster) {
+      const editRow = el('tr', { id: `edit-row-${u.id}` });
+      editRow.style.display = 'none';
+      const editCell = el('td');
+      editCell.setAttribute('colspan', '7');
+      editCell.style.cssText = 'background:#f9f9f9;padding:0.75rem;border:1px solid #ccc';
+
+      const editForm = document.createElement('form');
+      editForm.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:0 1rem';
+
+      function editField(label, name, value) {
+        const group = el('div', { className: 'form-group' });
+        group.appendChild(el('label', { textContent: label }));
+        const input = el('input', { id: `ef-${u.id}-${name}` });
+        input.value = value || '';
+        group.appendChild(input);
+        editForm.appendChild(group);
+      }
+
+      editField('First Name',    'name',         u.name);
+      editField('Last Name',     'lastName',     u.lastName);
+      editField('Phone',         'phone',        u.phone);
+      editField('Address',       'address',      u.address);
+      editField('License Plate', 'licensePlate', u.licensePlate || u.username);
+      editField('Car Model',     'carModel',     u.carModel);
+      editField('Car Color',     'carColor',     u.carColor);
+
+      const saveBtn = el('button', { type: 'submit', textContent: 'Save Changes' });
+      const cancelBtn = el('button', {
+        type: 'button', className: 'secondary', textContent: 'Cancel',
+        onclick: () => { editRow.style.display = 'none'; }
+      });
+      const editMsg = document.createElement('div');
+      const btnRow = el('div');
+      btnRow.style.cssText = 'grid-column:1/-1;display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem';
+      btnRow.appendChild(saveBtn);
+      btnRow.appendChild(cancelBtn);
+      btnRow.appendChild(editMsg);
+      editForm.appendChild(btnRow);
+
+      editForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const get = name => document.getElementById(`ef-${u.id}-${name}`).value.trim();
+        try {
+          await updateUser(u.id, {
+            name:         get('name'),
+            lastName:     get('lastName'),
+            phone:        get('phone'),
+            address:      get('address'),
+            licensePlate: get('licensePlate'),
+            carModel:     get('carModel'),
+            carColor:     get('carColor'),
+          });
+          renderUsers();
+        } catch(err) { editMsg.className = 'error'; editMsg.textContent = err.message; }
+      });
+
+      editCell.appendChild(editForm);
+      editRow.appendChild(editCell);
+      table.appendChild(editRow);
+    }
   });
+
   container.appendChild(table);
 }
 
