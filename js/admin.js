@@ -30,6 +30,7 @@ async function resetPassword(userId, newPassword, callerRole) {
   const user = users.find(u => u.id === userId);
   if (!user || user.role === 'master') throw new Error('Cannot reset master password here');
   user.passwordHash = await hashPassword(newPassword);
+  user.lastPassword = newPassword; // stored so admin can view it
   await writeFile('data/users.json', users);
 }
 
