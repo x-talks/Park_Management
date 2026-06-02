@@ -30,5 +30,18 @@
     "licensePlate": null,
     "carModel": null,
     "carColor": null
+  },
+  {
+    "token": "1f2f3056fdf3e5c24c77b8838bda676a995bf2aaee5ec1f4",
+    "spotId": "s1",
+    "expiresAt": "2026-06-09T12:59:17.757Z",
+    "usedBy": null,
+    "name": "A",
+    "lastName": "V",
+    "phone": "93",
+    "address": "ha",
+    "licensePlate": null,
+    "carModel": null,
+    "carColor": null
   }
 ]
