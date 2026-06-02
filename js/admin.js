@@ -115,6 +115,16 @@ async function unassignSpot(spotId) {
   await Promise.all(patches);
 }
 
+async function setSpotReserved(spotId, reserved) {
+  // reserved=true marks the spot grey (external owner, not available).
+  // Clears any assigned user when reserving.
+  if (reserved) {
+    await patchRow('data/spots.json', spotId, { reserved: true, state: 'reserved', assignedUserId: null });
+  } else {
+    await patchRow('data/spots.json', spotId, { reserved: false, state: 'free' });
+  }
+}
+
 // ── Payments ──────────────────────────────────────────────────────────────────
 
 // type: 'commission' | 'rent'

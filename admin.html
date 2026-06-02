@@ -55,7 +55,7 @@
     <!-- Button legend -->
     <div class="card" style="padding:0.75rem 1.25rem;font-size:0.8rem;">
       <strong>Button legend:</strong>
-      <span style="margin-left:0.75rem">⏸ Deactivate &nbsp;▶ Activate &nbsp;✏ Edit &nbsp;🔑 Reset PW &nbsp;✂ Set termination &nbsp;✓ Approve &nbsp;✕ Reject &nbsp;🗑 Delete</span>
+      <span style="margin-left:0.75rem">⏸ Deactivate &nbsp;▶ Activate / Unreserve &nbsp;✏ Edit &nbsp;🔑 Reset PW &nbsp;✂ Set termination &nbsp;✓ Approve / Assign &nbsp;✕ Reject &nbsp;🗑 Delete &nbsp;⛔ Unassign / Reserve</span>
     </div>
 
     <div class="card">
@@ -434,7 +434,9 @@ async function renderSpots() {
     row.appendChild(mkTd(s.label));
 
     const stateCell = document.createElement('td');
-    stateCell.appendChild(chip(s.state === 'free' ? 'Free' : 'Occupied', s.state === 'free' ? 'free' : 'occupied'));
+    const stateClass = s.reserved ? 'inactive' : (s.state === 'free' ? 'free' : 'occupied');
+    const stateLabel = s.reserved ? 'Reserved' : (s.state === 'free' ? 'Free' : 'Occupied');
+    stateCell.appendChild(chip(stateLabel, stateClass));
     row.appendChild(stateCell);
 
     row.appendChild(mkTd(renter ? (`${renter.name||''} ${renter.lastName||''}`).trim() : '—'));
@@ -445,12 +447,13 @@ async function renderSpots() {
     const bRow = document.createElement('div');
     bRow.className = 'btn-row';
 
-    if (s.assignedUserId) {
-      bRow.appendChild(iconBtn('⛔', 'Unassign spot', 'secondary', async () => {
-        if (!confirm(`Unassign spot ${s.label}?`)) return;
-        await unassignSpot(s.id); renderSpots();
+    // Reserve / unreserve toggle (admin only)
+    if (s.reserved) {
+      bRow.appendChild(iconBtn('▶', 'Unreserve — make available', 'success-btn', async () => {
+        await setSpotReserved(s.id, false); renderSpots();
       }));
-    } else {
+    } else if (!s.assignedUserId) {
+      // Free spot: can assign a user OR mark as reserved
       const sel = document.createElement('select');
       sel.style.cssText = 'width:auto;font-size:0.8rem';
       sel.appendChild(Object.assign(document.createElement('option'), {value:'',textContent:'— user —'}));
@@ -466,20 +469,32 @@ async function renderSpots() {
         try { await assignSpot(s.id, sel.value); renderSpots(); }
         catch(e) { alert(e.message); }
       }));
+      bRow.appendChild(iconBtn('⛔', 'Mark reserved (external)', 'secondary', async () => {
+        if (!confirm(`Mark spot ${s.label} as reserved (external owner, not available)?`)) return;
+        await setSpotReserved(s.id, true); renderSpots();
+      }));
+    } else {
+      // Occupied: can unassign
+      bRow.appendChild(iconBtn('⛔', 'Unassign spot', 'secondary', async () => {
+        if (!confirm(`Unassign spot ${s.label}?`)) return;
+        await unassignSpot(s.id); renderSpots();
+      }));
     }
 
-    // Set rent inline
-    const rentInput = document.createElement('input');
-    rentInput.type = 'number'; rentInput.min = '0'; rentInput.step = '0.01';
-    rentInput.value = s.monthlyRent != null ? s.monthlyRent : 80;
-    rentInput.style.cssText = 'width:70px;display:inline-block;font-size:0.8rem';
-    bRow.appendChild(rentInput);
-    bRow.appendChild(iconBtn('€', 'Set monthly rent', 'secondary', async () => {
-      const val = parseFloat(rentInput.value);
-      if (isNaN(val) || val < 0) { alert('Invalid rent value'); return; }
-      try { await patchRow('data/spots.json', s.id, { monthlyRent: val }); renderSpots(); }
-      catch(e) { alert(e.message); }
-    }));
+    // Set rent inline (not shown for reserved spots)
+    if (!s.reserved) {
+      const rentInput = document.createElement('input');
+      rentInput.type = 'number'; rentInput.min = '0'; rentInput.step = '0.01';
+      rentInput.value = s.monthlyRent != null ? s.monthlyRent : 80;
+      rentInput.style.cssText = 'width:70px;display:inline-block;font-size:0.8rem';
+      bRow.appendChild(rentInput);
+      bRow.appendChild(iconBtn('€', 'Set monthly rent', 'secondary', async () => {
+        const val = parseFloat(rentInput.value);
+        if (isNaN(val) || val < 0) { alert('Invalid rent value'); return; }
+        try { await patchRow('data/spots.json', s.id, { monthlyRent: val }); renderSpots(); }
+        catch(e) { alert(e.message); }
+      }));
+    }
 
     ac.appendChild(bRow); row.appendChild(ac);
     table.appendChild(row);
