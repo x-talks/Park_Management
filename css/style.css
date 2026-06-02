@@ -55,11 +55,11 @@ nav a { text-decoration: none; font-weight: bold; border-bottom: 1px solid #000;
 .form-group label { display: block; font-weight: bold; margin-bottom: 0.25rem; font-size: 0.875rem; }
 
 /* SVG parking */
-.spot { transition: fill 0.15s; }
+.spot { transition: fill 0.15s; cursor: pointer; }
 .spot.free { fill: #e0e0e0; stroke: #000; stroke-width: 1.5; }
 .spot.occupied { fill: #333; stroke: #000; stroke-width: 1.5; }
 .spot.highlighted { fill: #000; stroke: #fff; stroke-width: 2; }
-.spot-label { font-family: monospace; font-size: 11px; fill: #fff; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.spot-label { font-family: monospace; font-size: 14px; font-weight: bold; fill: #fff; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
 .spot.free .spot-label { fill: #000; }
 
 #info-panel {
