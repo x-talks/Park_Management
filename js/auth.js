@@ -10,10 +10,18 @@ async function hashPassword(password) {
 }
 
 async function login(username, password) {
-  const users = await readFile('data/users.json');
   const hash = await hashPassword(password);
-  const user = users.find(u => u.username === username && u.passwordHash === hash && u.active);
-  if (!user) throw new Error('Invalid credentials or account inactive');
+  const url = `${CONFIG.supabaseUrl}/rest/v1/users?username=eq.${encodeURIComponent(username)}&passwordHash=eq.${encodeURIComponent(hash)}&active=eq.true&limit=1`;
+  const res = await fetch(url, {
+    headers: {
+      'apikey': CONFIG.supabaseKey,
+      'Authorization': 'Bearer ' + CONFIG.supabaseKey
+    }
+  });
+  if (!res.ok) throw new Error('Login failed: ' + res.status);
+  const rows = await res.json();
+  if (!rows.length) throw new Error('Invalid credentials or account inactive');
+  const user = rows[0];
   sessionStorage.setItem('pm_user', JSON.stringify(user));
   return user;
 }
@@ -24,7 +32,6 @@ function getSession() {
 }
 
 function requireAuth(minRole) {
-  // minRole: 'renter' | 'admin' | 'master'
   const order = { renter: 0, admin: 1, master: 2 };
   const user = getSession();
   if (!user || order[user.role] < order[minRole]) {

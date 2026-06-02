@@ -1,45 +1,135 @@
 // js/api.js
-// GitHub Contents API wrapper. Reads and writes JSON data files.
-// CONFIG must be loaded before this module.
+// Supabase REST API wrapper.
+// Exposes readFile(table) and writeFile/upsertRow/deleteRow helpers
+// so that admin.js, invite.js, auth.js keep working with minimal changes.
+//
+// "readFile('data/users.json')"  → SELECT * FROM users
+// "writeFile('data/users.json', arr)" → full replace via upsert + delete
+//
+// Table name mapping:
+//   data/users.json    → users
+//   data/spots.json    → spots
+//   data/invites.json  → invites
+//   data/payments.json → payments
 
-const _shas = {}; // cache: path -> sha
-
-async function readFile(path) {
-  const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${path}?ref=${CONFIG.branch}`;
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `token ${CONFIG.pat}`,
-      Accept: 'application/vnd.github.v3+json'
-    }
-  });
-  if (!res.ok) throw new Error(`readFile ${path}: ${res.status}`);
-  const json = await res.json();
-  _shas[path] = json.sha;
-  return JSON.parse(atob(json.content));
+function _table(path) {
+  const map = {
+    'data/users.json':    'users',
+    'data/spots.json':    'spots',
+    'data/invites.json':  'invites',
+    'data/payments.json': 'payments'
+  };
+  const t = map[path];
+  if (!t) throw new Error('Unknown table path: ' + path);
+  return t;
 }
 
-async function writeFile(path, data) {
-  if (!_shas[path]) await readFile(path); // ensure sha is cached
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
-  const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${path}`;
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      Authorization: `token ${CONFIG.pat}`,
-      Accept: 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      message: `data: update ${path}`,
-      content,
-      sha: _shas[path],
-      branch: CONFIG.branch
-    })
+function _headers() {
+  return {
+    'apikey': CONFIG.supabaseKey,
+    'Authorization': 'Bearer ' + CONFIG.supabaseKey,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+}
+
+async function _get(table, params) {
+  let url = `${CONFIG.supabaseUrl}/rest/v1/${table}`;
+  if (params) url += '?' + params;
+  const res = await fetch(url, { headers: _headers() });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`GET ${table}: ${res.status} ${err}`);
+  }
+  return res.json();
+}
+
+async function _upsert(table, rows) {
+  const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: { ..._headers(), 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify(rows)
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(`writeFile ${path}: ${res.status} ${err.message}`);
+    const err = await res.text();
+    throw new Error(`UPSERT ${table}: ${res.status} ${err}`);
   }
-  const json = await res.json();
-  _shas[path] = json.content.sha; // update cached sha
+  return res.json();
+}
+
+async function _delete(table, column, value) {
+  const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/${table}?${column}=eq.${encodeURIComponent(value)}`, {
+    method: 'DELETE',
+    headers: _headers()
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`DELETE ${table}: ${res.status} ${err}`);
+  }
+}
+
+async function _patch(table, filterCol, filterVal, changes) {
+  const res = await fetch(
+    `${CONFIG.supabaseUrl}/rest/v1/${table}?${filterCol}=eq.${encodeURIComponent(filterVal)}`,
+    {
+      method: 'PATCH',
+      headers: _headers(),
+      body: JSON.stringify(changes)
+    }
+  );
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`PATCH ${table}: ${res.status} ${err}`);
+  }
+  return res.json();
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+// Read all rows from a table (returns array, compatible with old readFile)
+async function readFile(path) {
+  const table = _table(path);
+  return _get(table, 'order=id');
+}
+
+// Full replace: upsert all rows in arr, delete any rows whose id is not in arr.
+// This keeps the same semantics as the old GitHub writeFile (overwrite entire file).
+async function writeFile(path, arr) {
+  const table = _table(path);
+  if (!arr || arr.length === 0) return;
+  // Upsert all rows
+  await _upsert(table, arr);
+  // Delete rows no longer in the array
+  const ids = arr.map(r => r.id).filter(Boolean);
+  if (ids.length > 0) {
+    // Delete rows where id NOT in the new set
+    const inList = ids.map(id => `"${id}"`).join(',');
+    const res = await fetch(
+      `${CONFIG.supabaseUrl}/rest/v1/${table}?id=not.in.(${encodeURIComponent(ids.join(','))})`,
+      { method: 'DELETE', headers: _headers() }
+    );
+    // Ignore 404 (nothing to delete)
+    if (!res.ok && res.status !== 404) {
+      const err = await res.text();
+      throw new Error(`DELETE old rows ${table}: ${res.status} ${err}`);
+    }
+  }
+}
+
+// Convenience: upsert a single row (used by invite.js / admin.js for targeted updates)
+async function upsertRow(path, row) {
+  const table = _table(path);
+  await _upsert(table, [row]);
+}
+
+// Convenience: delete a single row by id
+async function deleteRow(path, id) {
+  const table = _table(path);
+  await _delete(table, 'id', id);
+}
+
+// Convenience: patch a single row by id
+async function patchRow(path, id, changes) {
+  const table = _table(path);
+  await _patch(table, 'id', id, changes);
 }

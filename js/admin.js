@@ -11,8 +11,7 @@ async function toggleUserActive(userId) {
   const user = users.find(u => u.id === userId);
   if (!user) throw new Error('User not found');
   if (user.role === 'master') throw new Error('Cannot deactivate master admin');
-  user.active = !user.active;
-  await writeFile('data/users.json', users);
+  await patchRow('data/users.json', userId, { active: !user.active });
 }
 
 async function setUserRole(userId, newRole, callerRole) {
@@ -20,8 +19,7 @@ async function setUserRole(userId, newRole, callerRole) {
   const users = await loadUsers();
   const user = users.find(u => u.id === userId);
   if (!user || user.role === 'master') throw new Error('Cannot modify master admin');
-  user.role = newRole;
-  await writeFile('data/users.json', users);
+  await patchRow('data/users.json', userId, { role: newRole });
 }
 
 async function resetPassword(userId, newPassword, callerRole) {
@@ -29,9 +27,8 @@ async function resetPassword(userId, newPassword, callerRole) {
   const users = await loadUsers();
   const user = users.find(u => u.id === userId);
   if (!user || user.role === 'master') throw new Error('Cannot reset master password here');
-  user.passwordHash = await hashPassword(newPassword);
-  user.lastPassword = newPassword; // stored so admin can view it
-  await writeFile('data/users.json', users);
+  const passwordHash = await hashPassword(newPassword);
+  await patchRow('data/users.json', userId, { passwordHash, lastPassword: newPassword });
 }
 
 async function deleteUser(userId) {
@@ -43,8 +40,7 @@ async function deleteUser(userId) {
   for (const spotId of (user.assignedSpots || [])) {
     await unassignSpot(spotId);
   }
-  const updated = users.filter(u => u.id !== userId);
-  await writeFile('data/users.json', updated);
+  await deleteRow('data/users.json', userId);
 }
 
 async function updateUser(userId, changes) {
@@ -52,7 +48,6 @@ async function updateUser(userId, changes) {
   const user = users.find(u => u.id === userId);
   if (!user) throw new Error('User not found');
   if (user.role === 'master') throw new Error('Cannot modify master admin');
-  // If license plate changed, update username too
   if (changes.licensePlate) {
     const plate = changes.licensePlate.toUpperCase().trim();
     const conflict = users.find(u => u.id !== userId && u.username === plate);
@@ -60,8 +55,7 @@ async function updateUser(userId, changes) {
     changes.licensePlate = plate;
     changes.username = plate;
   }
-  Object.assign(user, changes);
-  await writeFile('data/users.json', users);
+  await patchRow('data/users.json', userId, changes);
 }
 
 async function approvePendingEdit(userId) {
@@ -69,17 +63,11 @@ async function approvePendingEdit(userId) {
   const user = users.find(u => u.id === userId);
   if (!user || !user.pendingEdits) throw new Error('No pending edits');
   const { requestedAt, ...changes } = user.pendingEdits;
-  Object.assign(user, changes);
-  user.pendingEdits = null;
-  await writeFile('data/users.json', users);
+  await patchRow('data/users.json', userId, { ...changes, pendingEdits: null });
 }
 
 async function rejectPendingEdit(userId) {
-  const users = await loadUsers();
-  const user = users.find(u => u.id === userId);
-  if (!user) throw new Error('User not found');
-  user.pendingEdits = null;
-  await writeFile('data/users.json', users);
+  await patchRow('data/users.json', userId, { pendingEdits: null });
 }
 
 // ── Spot assignment ───────────────────────────────────────────────────────────
@@ -95,12 +83,13 @@ async function assignSpot(spotId, userId) {
   if (!user) throw new Error('User not found');
   if (spot.assignedUserId) throw new Error('Spot already assigned');
 
-  spot.assignedUserId = userId;
-  spot.state = 'occupied';
-  if (!user.assignedSpots.includes(spotId)) user.assignedSpots.push(spotId);
+  const assignedSpots = [...(user.assignedSpots || [])];
+  if (!assignedSpots.includes(spotId)) assignedSpots.push(spotId);
 
-  await writeFile('data/spots.json', spots);
-  await writeFile('data/users.json', users);
+  await Promise.all([
+    patchRow('data/spots.json', spotId, { assignedUserId: userId, state: 'occupied' }),
+    patchRow('data/users.json', userId, { assignedSpots })
+  ]);
 }
 
 async function unassignSpot(spotId) {
@@ -111,12 +100,15 @@ async function unassignSpot(spotId) {
   const spot = spots.find(s => s.id === spotId);
   if (!spot || !spot.assignedUserId) return;
   const user = users.find(u => u.id === spot.assignedUserId);
-  if (user) user.assignedSpots = user.assignedSpots.filter(id => id !== spotId);
-  spot.assignedUserId = null;
-  spot.state = 'free';
 
-  await writeFile('data/spots.json', spots);
-  await writeFile('data/users.json', users);
+  const patches = [
+    patchRow('data/spots.json', spotId, { assignedUserId: null, state: 'free' })
+  ];
+  if (user) {
+    const assignedSpots = (user.assignedSpots || []).filter(id => id !== spotId);
+    patches.push(patchRow('data/users.json', user.id, { assignedSpots }));
+  }
+  await Promise.all(patches);
 }
 
 // ── Payments ──────────────────────────────────────────────────────────────────
@@ -126,8 +118,11 @@ async function markPaid(spotId, userId, month, year, adminId) {
   const existing = payments.find(p => p.spotId === spotId && p.month === month && p.year === year);
   if (existing) throw new Error('Already marked paid');
   const id = 'p' + Date.now();
-  payments.push({ id, spotId, userId, month, year, paidDate: new Date().toISOString().slice(0, 10), markedByAdminId: adminId });
-  await writeFile('data/payments.json', payments);
+  await upsertRow('data/payments.json', {
+    id, spotId, userId, month, year,
+    paidDate: new Date().toISOString().slice(0, 10),
+    markedByAdminId: adminId
+  });
 }
 
 async function getPaymentMatrix() {
@@ -149,10 +144,10 @@ async function createAndInviteUser({ name, lastName, phone, address, spotId, lic
   const token = Array.from(crypto.getRandomValues(new Uint8Array(24)))
     .map(b => b.toString(16).padStart(2, '0')).join('');
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const id = 'inv' + Date.now();
 
-  const invites = await readFile('data/invites.json');
-  invites.push({
-    token, spotId, expiresAt, usedBy: null,
+  await upsertRow('data/invites.json', {
+    id, token, spotId, expiresAt, usedBy: null,
     name: name || '',
     lastName: lastName || '',
     phone: phone || '',
@@ -161,7 +156,6 @@ async function createAndInviteUser({ name, lastName, phone, address, spotId, lic
     carModel: carModel || null,
     carColor: carColor || null
   });
-  await writeFile('data/invites.json', invites);
 
   const base = location.origin + location.pathname.replace('admin.html', '');
   return `${base}register.html?token=${token}`;
