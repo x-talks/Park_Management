@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Park Management — Registration</title>
+<link rel="stylesheet" href="css/style.css"/>
+<style>
+  .terms-box {
+    border: 1px solid #ccc;
+    padding: 1rem;
+    max-height: 260px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    background: #fafafa;
+  }
+  .info-card {
+    border: 1px solid #000;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+  }
+  .info-card table { border: none; display: table; }
+  .info-card td, .info-card th { border: none; padding: 0.2rem 0.6rem 0.2rem 0; background: transparent; color: #000; font-weight: normal; white-space: nowrap; }
+  .info-card th { font-weight: bold; width: 120px; }
+  #step-terms, #step-register, #step-done { display: none; }
+  .spot-badge {
+    display: inline-block;
+    border: 2px solid #000;
+    padding: 0.3rem 0.8rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0 1rem;
+  }
+</style>
+</head>
+<body>
+<h1>Parking Registration</h1>
+
+<div id="step-loading"><p>Loading your invite...</p></div>
+
+<div id="step-error" style="display:none">
+  <div class="error" id="error-msg"></div>
+</div>
+
+<!-- Step 1: Terms + pre-filled data -->
+<div id="step-terms">
+  <h2>Your Parking Spot</h2>
+  <div class="spot-badge" id="spot-label-display"></div>
+  <p>Your personal details registered for this spot:</p>
+  <div class="info-card">
+    <table id="prefill-table"></table>
+  </div>
+
+  <h2>Terms of Agreement</h2>
+  <div class="terms-box">
+    <p><strong>Parking Area Usage Agreement</strong></p>
+    <p>By registering and using this parking management system, you agree to the following:</p>
+    <ol>
+      <li>Your assigned parking spot is for exclusive personal use. Subletting or sharing is not permitted.</li>
+      <li>You are responsible for any damage caused by your vehicle to the parking area or other vehicles.</li>
+      <li>Parking is only permitted within the boundaries of your assigned spot.</li>
+      <li>Your contact details (name, phone, license plate, car model and color) will be visible to other registered residents to facilitate communication in case of emergencies.</li>
+      <li>Changes to your personal data require administrator approval.</li>
+      <li>Your account access is non-transferable and tied to your license plate as your username.</li>
+      <li>The administrator may revoke access at any time in case of violations.</li>
+      <li>You agree to keep your contact information up to date.</li>
+    </ol>
+    <p>This agreement is governed by the house rules of the property.</p>
+  </div>
+
+  <button id="agree-btn">I Agree — Continue to Registration</button>
+</div>
+
+<!-- Step 2: Registration form -->
+<div id="step-register">
+  <h2>Create Your Account</h2>
+  <p style="font-size:0.875rem">Your license plate will be your username.</p>
+
+  <form id="register-form">
+    <div class="form-group">
+      <label>License Plate (= your username)</label>
+      <input id="r-plate" placeholder="e.g. HD-XY-123" required/>
+      <small id="plate-hint" style="font-size:0.75rem;color:#666">Format: HD-XY-123</small>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input id="r-password" type="password" required/>
+    </div>
+    <div class="form-group">
+      <label>Car Model</label>
+      <input id="r-carmodel" placeholder="e.g. VW Golf" required/>
+    </div>
+    <div class="form-group">
+      <label>Car Color</label>
+      <input id="r-carcolor" placeholder="e.g. blue" required/>
+    </div>
+    <button type="submit">Complete Registration</button>
+    <div id="reg-msg"></div>
+  </form>
+</div>
+
+<!-- Step 3: Success -->
+<div id="step-done">
+  <div class="success" style="padding:1rem;margin-bottom:1rem">
+    <strong>Registration complete!</strong><br>
+    Your account is active. You can now log in with your license plate and password.
+  </div>
+  <p>Your assigned spot: <strong id="done-spot"></strong></p>
+  <p>Your username: <strong id="done-username"></strong></p>
+  <a href="index.html"><button>Go to Login</button></a>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/invite.js"></script>
+<script>
+(async () => {
+  const token = getTokenFromUrl();
+
+  function show(stepId) {
+    ['step-loading','step-error','step-terms','step-register','step-done']
+      .forEach(id => document.getElementById(id).style.display = id === stepId ? 'block' : 'none');
+  }
+
+  function showError(msg) {
+    document.getElementById('error-msg').textContent = msg;
+    show('step-error');
+  }
+
+  if (!token) { showError('No invite token found in this link.'); return; }
+
+  let invite;
+  try {
+    invite = await validateInvite(token);
+  } catch(e) { showError(e.message); return; }
+
+  // Load spot label
+  const spots = await readFile('data/spots.json');
+  const spot = spots.find(s => s.id === invite.spotId);
+  document.getElementById('spot-label-display').textContent = spot ? `Spot ${spot.label}` : invite.spotId;
+
+  // Build pre-fill info table
+  const table = document.getElementById('prefill-table');
+  const rows = [
+    ['First Name', invite.name],
+    ['Last Name',  invite.lastName],
+    ['Phone',      invite.phone],
+    ['Address',    invite.address],
+  ];
+  if (invite.licensePlate) rows.push(['License Plate', invite.licensePlate]);
+  if (invite.carModel)     rows.push(['Car Model',     invite.carModel]);
+  if (invite.carColor)     rows.push(['Car Color',     invite.carColor]);
+  rows.forEach(([label, value]) => {
+    if (!value) return;
+    const tr = document.createElement('tr');
+    const th = document.createElement('th'); th.textContent = label;
+    const td = document.createElement('td'); td.textContent = value;
+    tr.appendChild(th); tr.appendChild(td);
+    table.appendChild(tr);
+  });
+
+  show('step-terms');
+
+  // Pre-fill form fields if admin already provided them
+  if (invite.licensePlate) {
+    const plateInput = document.getElementById('r-plate');
+    plateInput.value = invite.licensePlate;
+    plateInput.readOnly = true;
+    plateInput.style.background = '#f0f0f0';
+    document.getElementById('plate-hint').textContent = 'Pre-filled by administrator';
+  }
+  if (invite.carModel) {
+    const el = document.getElementById('r-carmodel');
+    el.value = invite.carModel;
+    el.readOnly = true;
+    el.style.background = '#f0f0f0';
+  }
+  if (invite.carColor) {
+    const el = document.getElementById('r-carcolor');
+    el.value = invite.carColor;
+    el.readOnly = true;
+    el.style.background = '#f0f0f0';
+  }
+
+  document.getElementById('agree-btn').addEventListener('click', () => show('step-register'));
+
+  document.getElementById('register-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = document.getElementById('reg-msg');
+    msg.textContent = '';
+    try {
+      const spotId = await registerViaInvite({
+        token,
+        password:    document.getElementById('r-password').value,
+        licensePlate: document.getElementById('r-plate').value,
+        carModel:    document.getElementById('r-carmodel').value,
+        carColor:    document.getElementById('r-carcolor').value
+      });
+      const doneSpot = spots.find(s => s.id === spotId);
+      document.getElementById('done-spot').textContent = doneSpot ? doneSpot.label : spotId;
+      document.getElementById('done-username').textContent = document.getElementById('r-plate').value.toUpperCase().trim();
+      show('step-done');
+    } catch(err) {
+      msg.className = 'error';
+      msg.textContent = err.message;
+    }
+  });
+})();
+</script>
+</body>
+</html>

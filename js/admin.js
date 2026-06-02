@@ -6,16 +6,6 @@ async function loadUsers() {
   return readFile('data/users.json');
 }
 
-async function createUser({ username, password, name, phone, address, role }) {
-  const users = await loadUsers();
-  if (users.find(u => u.username === username)) throw new Error('Username already exists');
-  const passwordHash = await hashPassword(password);
-  const id = 'u' + Date.now();
-  users.push({ id, username, passwordHash, name, phone, address, role: role || 'renter', active: false, assignedSpots: [] });
-  await writeFile('data/users.json', users);
-  return id;
-}
-
 async function toggleUserActive(userId) {
   const users = await loadUsers();
   const user = users.find(u => u.id === userId);
@@ -40,6 +30,24 @@ async function resetPassword(userId, newPassword, callerRole) {
   const user = users.find(u => u.id === userId);
   if (!user || user.role === 'master') throw new Error('Cannot reset master password here');
   user.passwordHash = await hashPassword(newPassword);
+  await writeFile('data/users.json', users);
+}
+
+async function approvePendingEdit(userId) {
+  const users = await loadUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user || !user.pendingEdits) throw new Error('No pending edits');
+  const { requestedAt, ...changes } = user.pendingEdits;
+  Object.assign(user, changes);
+  user.pendingEdits = null;
+  await writeFile('data/users.json', users);
+}
+
+async function rejectPendingEdit(userId) {
+  const users = await loadUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) throw new Error('User not found');
+  user.pendingEdits = null;
   await writeFile('data/users.json', users);
 }
 
@@ -101,19 +109,29 @@ async function getPaymentMatrix() {
 
 // ── Invite links ──────────────────────────────────────────────────────────────
 
-async function generateInvite(spotId) {
+async function createAndInviteUser({ name, lastName, phone, address, spotId, licensePlate, carModel, carColor }) {
   const spots = await readFile('data/spots.json');
   const spot = spots.find(s => s.id === spotId);
   if (!spot) throw new Error('Spot not found');
+  if (spot.assignedUserId) throw new Error('Spot already assigned');
 
   const token = Array.from(crypto.getRandomValues(new Uint8Array(24)))
     .map(b => b.toString(16).padStart(2, '0')).join('');
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const invites = await readFile('data/invites.json');
-  invites.push({ token, spotId, expiresAt, usedBy: null });
+  invites.push({
+    token, spotId, expiresAt, usedBy: null,
+    name: name || '',
+    lastName: lastName || '',
+    phone: phone || '',
+    address: address || '',
+    licensePlate: licensePlate || null,
+    carModel: carModel || null,
+    carColor: carColor || null
+  });
   await writeFile('data/invites.json', invites);
 
   const base = location.origin + location.pathname.replace('admin.html', '');
-  return `${base}invite.html?token=${token}`;
+  return `${base}register.html?token=${token}`;
 }

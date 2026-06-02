@@ -5,6 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Park Management — Parking</title>
 <link rel="stylesheet" href="css/style.css"/>
+<style>
+  .residents-section { margin-top: 1.5rem; }
+  .residents-toggle {
+    background: none;
+    border: none;
+    border-bottom: 1px solid #000;
+    padding: 0;
+    font-family: monospace;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    color: #000;
+    width: 100%;
+    text-align: left;
+    margin-bottom: 0.5rem;
+  }
+  .profile-edit-section { margin-top: 1.5rem; border-top: 1px solid #ccc; padding-top: 1rem; }
+</style>
 </head>
 <body>
 <h1>Parking Area</h1>
@@ -21,9 +39,19 @@
 </div>
 <div id="info-panel">Click a spot for details.</div>
 
+<!-- Residents panel -->
+<div class="residents-section">
+  <button class="residents-toggle" onclick="toggleResidents(this)">▶ Residents</button>
+  <div id="residents-panel" style="display:none"></div>
+</div>
+
+<!-- Profile edit -->
+<div class="profile-edit-section" id="profile-edit-section"></div>
+
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
 <script src="js/parking.js"></script>
 <script>
 const user = requireAuth('renter');
@@ -31,6 +59,137 @@ if (user && (user.role === 'admin' || user.role === 'master')) {
   document.getElementById('admin-link').style.display = 'inline';
 }
 initParking();
+
+function toggleResidents(btn) {
+  const panel = document.getElementById('residents-panel');
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  btn.textContent = (open ? '▶' : '▼') + ' Residents';
+  if (!open && !panel.dataset.loaded) {
+    loadResidents();
+    panel.dataset.loaded = '1';
+  }
+}
+
+async function loadResidents() {
+  const [users, spots] = await Promise.all([
+    readFile('data/users.json'),
+    readFile('data/spots.json')
+  ]);
+  const panel = document.getElementById('residents-panel');
+  while (panel.firstChild) panel.removeChild(panel.firstChild);
+
+  const renters = users.filter(u => u.active && u.role === 'renter' && u.assignedSpots && u.assignedSpots.length > 0);
+
+  if (renters.length === 0) {
+    panel.textContent = 'No residents yet.';
+    return;
+  }
+
+  const table = document.createElement('table');
+  const head = document.createElement('tr');
+  ['Spot','Name','License Plate','Car Model','Color','Phone'].forEach(h => {
+    const th = document.createElement('th'); th.textContent = h; head.appendChild(th);
+  });
+  table.appendChild(head);
+
+  renters.forEach(u => {
+    const spot = spots.find(s => s.assignedUserId === u.id);
+    const row = document.createElement('tr');
+    const cells = [
+      spot ? spot.label : '—',
+      `${u.name || ''} ${u.lastName || ''}`.trim() || '—',
+      u.licensePlate || u.username || '—',
+      u.carModel || '—',
+      u.carColor || '—',
+      u.phone || '—'
+    ];
+    cells.forEach(text => {
+      const td = document.createElement('td'); td.textContent = text; row.appendChild(td);
+    });
+    table.appendChild(row);
+  });
+  panel.appendChild(table);
+}
+
+// ── Profile edit ──────────────────────────────────────────────────────────────
+(async () => {
+  const currentUser = getSession();
+  if (!currentUser || currentUser.role !== 'renter') return;
+
+  const users = await readFile('data/users.json');
+  const me = users.find(u => u.id === currentUser.id);
+  if (!me) return;
+
+  const section = document.getElementById('profile-edit-section');
+
+  const heading = document.createElement('h3');
+  heading.textContent = 'My Profile';
+  section.appendChild(heading);
+
+  if (me.pendingEdits) {
+    const notice = document.createElement('div');
+    notice.className = 'success';
+    notice.style.marginBottom = '0.75rem';
+    notice.textContent = 'Your edit request is pending admin approval.';
+    section.appendChild(notice);
+    return;
+  }
+
+  const form = document.createElement('form');
+  form.id = 'profile-form';
+
+  function addField(label, id, value, readOnly) {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    const lbl = document.createElement('label'); lbl.textContent = label;
+    const input = document.createElement('input');
+    input.id = id; input.value = value || '';
+    if (readOnly) { input.readOnly = true; input.style.background = '#f0f0f0'; }
+    group.appendChild(lbl); group.appendChild(input);
+    form.appendChild(group);
+  }
+
+  addField('License Plate (username — cannot change)', 'p-plate', me.licensePlate || me.username, true);
+  addField('Phone / WhatsApp', 'p-phone', me.phone, false);
+  addField('Car Model', 'p-carmodel', me.carModel, false);
+  addField('Car Color', 'p-carcolor', me.carColor, false);
+
+  const btn = document.createElement('button');
+  btn.type = 'submit';
+  btn.textContent = 'Submit Changes (requires admin approval)';
+  form.appendChild(btn);
+
+  const msg = document.createElement('div');
+  form.appendChild(msg);
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const changes = {};
+    const phone    = document.getElementById('p-phone').value.trim();
+    const carModel = document.getElementById('p-carmodel').value.trim();
+    const carColor = document.getElementById('p-carcolor').value.trim();
+    if (phone    !== (me.phone    || '')) changes.phone    = phone;
+    if (carModel !== (me.carModel || '')) changes.carModel = carModel;
+    if (carColor !== (me.carColor || '')) changes.carColor = carColor;
+
+    if (Object.keys(changes).length === 0) {
+      msg.className = 'error'; msg.textContent = 'No changes detected.'; return;
+    }
+
+    try {
+      const allUsers = await readFile('data/users.json');
+      const myRecord = allUsers.find(u => u.id === currentUser.id);
+      myRecord.pendingEdits = { ...changes, requestedAt: new Date().toISOString() };
+      await writeFile('data/users.json', allUsers);
+      msg.className = 'success';
+      msg.textContent = 'Changes submitted — waiting for admin approval.';
+      btn.disabled = true;
+    } catch(err) { msg.className = 'error'; msg.textContent = err.message; }
+  });
+
+  section.appendChild(form);
+})();
 </script>
 </body>
 </html>
