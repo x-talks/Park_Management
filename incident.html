@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Park Management — Report Incident</title>
+<link rel="stylesheet" href="css/style.css"/>
+<style>
+/* ── Camera / upload UI ─────────────────────────────────────────────────── */
+.photo-tip-box {
+  background: var(--amber-bg);
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+.photo-tip-box strong { display: block; font-size: 0.9rem; margin-bottom: 0.4rem; color: var(--amber); }
+.photo-tip-box ol { margin: 0.3rem 0 0; padding-left: 1.25rem; }
+.photo-tip-box li { margin-bottom: 0.25rem; }
+
+.camera-zone {
+  border: 2px dashed var(--gray-200);
+  border-radius: var(--radius);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  margin-bottom: 1rem;
+  position: relative;
+}
+.camera-zone:hover { border-color: var(--gray-400); background: var(--gray-50); }
+.camera-zone.has-image { border-color: var(--green); background: var(--green-bg); }
+.camera-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.camera-icon { font-size: 2.5rem; margin-bottom: 0.5rem; display: block; }
+.camera-label { font-size: 0.85rem; color: var(--gray-600); font-weight: 600; }
+.preview-img {
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: var(--radius);
+  margin-top: 0.75rem;
+  display: none;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Incident log ────────────────────────────────────────────────────────── */
+.incident-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.incident-thumb {
+  width: 90px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 1px solid var(--gray-200);
+}
+.incident-meta { flex: 1; min-width: 0; font-size: 0.82rem; line-height: 1.6; }
+.incident-meta strong { font-size: 0.9rem; display: block; }
+.incident-meta .incident-date { color: var(--gray-600); font-size: 0.75rem; }
+.incident-meta .incident-note { margin-top: 0.2rem; color: var(--gray-800); }
+
+/* ── Lightbox ────────────────────────────────────────────────────────────── */
+#lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 96vw;
+  max-height: 92vh;
+  border-radius: 6px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.6);
+}
+#lightbox-close {
+  position: absolute;
+  top: 1rem; right: 1.2rem;
+  color: #fff;
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+  font-weight: 700;
+  background: none;
+  border: none;
+  min-height: 0;
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>Park Management</h1>
+  <nav class="site-nav">
+    <a href="parking.html">Map</a>
+    <span id="admin-link" style="display:none"><a href="admin.html">Admin</a></span>
+    <a href="incident.html" class="active">Incidents</a>
+    <a href="#" id="logout-link">Logout</a>
+  </nav>
+</header>
+
+<div class="page-wrap">
+
+  <!-- Report form -->
+  <div class="card">
+    <div class="card-header"><h2>Report Parking Incident</h2></div>
+
+    <!-- Photography tips — shown before camera opens -->
+    <div class="photo-tip-box">
+      <strong>📷 How to take a good evidence photo</strong>
+      <ol>
+        <li><strong>License plate clearly visible</strong> — get close enough that the plate is readable</li>
+        <li><strong>Include the parking spot number</strong> — step back to show the spot marking on the ground or wall sign</li>
+        <li><strong>Good lighting</strong> — avoid strong backlighting; if dark, use flash</li>
+        <li><strong>Straight angle</strong> — shoot from the front or rear of the car, not a steep side angle</li>
+        <li><strong>One photo = one incident</strong> — capture everything in one clear frame if possible</li>
+      </ol>
+    </div>
+
+    <form id="incident-form">
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Affected Spot *</label>
+          <select id="inc-spot" required>
+            <option value="">— select spot —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Observed License Plate (if readable)</label>
+          <input id="inc-plate" placeholder="e.g. MA-AB-123" style="text-transform:uppercase"/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Note / Description</label>
+        <textarea id="inc-note" rows="2" placeholder="e.g. Car blocking my spot since 08:00, dark blue SUV" style="resize:vertical"></textarea>
+      </div>
+
+      <!-- Camera / file upload zone -->
+      <div class="form-group">
+        <label>Photo Evidence *</label>
+        <div class="camera-zone" id="camera-zone">
+          <input type="file" id="inc-photo" accept="image/*" capture="environment" required/>
+          <span class="camera-icon">📷</span>
+          <span class="camera-label">Tap to take a photo or choose from gallery</span>
+        </div>
+        <img id="preview-img" class="preview-img" alt="Preview"/>
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" id="submit-btn">Submit Report</button>
+        <button type="button" class="secondary" id="reset-btn">Clear</button>
+      </div>
+      <div id="inc-msg" style="margin-top:0.5rem"></div>
+    </form>
+  </div>
+
+  <!-- Incident log -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Incident Log</h2>
+      <span id="log-count" style="font-size:0.8rem;color:var(--gray-600)"></span>
+    </div>
+    <div id="incident-log">
+      <p style="color:var(--gray-600);font-size:0.85rem">Loading…</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox">
+  <button id="lightbox-close" title="Close">×</button>
+  <img id="lightbox-img" src="" alt="Full size incident photo"/>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+const currentUser = requireAuth('renter');
+if (!currentUser) throw new Error('not authed');
+
+if (currentUser.role === 'admin' || currentUser.role === 'master') {
+  document.getElementById('admin-link').style.display = 'inline';
+}
+document.getElementById('logout-link').addEventListener('click', e => { e.preventDefault(); logout(); });
+
+// ── Spot dropdown ──────────────────────────────────────────────────────────────
+async function loadSpots() {
+  const spots = await readFile('data/spots.json');
+  const sel = document.getElementById('inc-spot');
+  spots
+    .slice()
+    .sort((a, b) => {
+      const an = parseInt(a.label), bn = parseInt(b.label);
+      if (!isNaN(an) && !isNaN(bn)) return an - bn;
+      if (!isNaN(an)) return -1; if (!isNaN(bn)) return 1;
+      return a.label.localeCompare(b.label);
+    })
+    .forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = `Spot ${s.label}`;
+      sel.appendChild(opt);
+    });
+
+  // Pre-select the user's own spot if they have one
+  if (currentUser.role === 'renter') {
+    const users = await readFile('data/users.json');
+    const me = users.find(u => u.id === currentUser.id);
+    if (me && me.assignedSpots && me.assignedSpots.length > 0) {
+      sel.value = me.assignedSpots[0];
+    }
+  }
+}
+
+// ── Photo preview ──────────────────────────────────────────────────────────────
+const photoInput = document.getElementById('inc-photo');
+const previewImg = document.getElementById('preview-img');
+const cameraZone = document.getElementById('camera-zone');
+
+photoInput.addEventListener('change', () => {
+  const file = photoInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    previewImg.style.display = 'block';
+    cameraZone.classList.add('has-image');
+    cameraZone.querySelector('.camera-icon').textContent = '✓';
+    cameraZone.querySelector('.camera-label').textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  document.getElementById('incident-form').reset();
+  previewImg.style.display = 'none';
+  previewImg.src = '';
+  cameraZone.classList.remove('has-image');
+  cameraZone.querySelector('.camera-icon').textContent = '📷';
+  cameraZone.querySelector('.camera-label').textContent = 'Tap to take a photo or choose from gallery';
+});
+
+// ── Submit ─────────────────────────────────────────────────────────────────────
+document.getElementById('incident-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = document.getElementById('inc-msg');
+  msg.textContent = '';
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Uploading…';
+
+  try {
+    const spotId  = document.getElementById('inc-spot').value;
+    const plate   = document.getElementById('inc-plate').value.trim().toUpperCase();
+    const note    = document.getElementById('inc-note').value.trim();
+    const file    = photoInput.files[0];
+
+    if (!file) { throw new Error('Please select or take a photo.'); }
+
+    // Build a unique filename: spotId/timestamp_userId.ext
+    const ext = file.type.includes('png') ? 'png' : 'jpg';
+    const ts  = new Date().toISOString().replace(/[:.]/g, '-');
+    const filePath = `${spotId}/${ts}_${currentUser.id}.${ext}`;
+
+    const imageUrl = await uploadIncidentImage(filePath, file);
+
+    const id = 'inc' + Date.now();
+    await upsertRow('data/incidents.json', {
+      id,
+      spotId,
+      reportedByUserId: currentUser.id,
+      observedPlate: plate || null,
+      note: note || null,
+      imageUrl,
+      filePath,
+      reportedAt: new Date().toISOString()
+    });
+
+    msg.className = 'alert success';
+    msg.textContent = 'Incident reported successfully.';
+    document.getElementById('reset-btn').click();
+    loadLog();
+  } catch (err) {
+    msg.className = 'alert error';
+    msg.textContent = err.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Submit Report';
+  }
+});
+
+// ── Incident log ───────────────────────────────────────────────────────────────
+async function loadLog() {
+  const [incidents, spots, users] = await Promise.all([
+    readFile('data/incidents.json'),
+    readFile('data/spots.json'),
+    readFile('data/users.json')
+  ]);
+
+  // Sort newest first
+  incidents.sort((a, b) => (b.reportedAt || '').localeCompare(a.reportedAt || ''));
+
+  // Renters only see incidents for their own spots; admins see all
+  const me = users.find(u => u.id === currentUser.id);
+  const mySpots = me && me.assignedSpots ? me.assignedSpots : [];
+  const visible = (currentUser.role === 'admin' || currentUser.role === 'master')
+    ? incidents
+    : incidents.filter(i => mySpots.includes(i.spotId));
+
+  const container = document.getElementById('incident-log');
+  document.getElementById('log-count').textContent = `${visible.length} report${visible.length !== 1 ? 's' : ''}`;
+  container.innerHTML = '';
+
+  if (!visible.length) {
+    container.innerHTML = '<p style="color:var(--gray-600);font-size:0.85rem">No incidents reported yet.</p>';
+    return;
+  }
+
+  visible.forEach(inc => {
+    const spot = spots.find(s => s.id === inc.spotId);
+    const reporter = users.find(u => u.id === inc.reportedByUserId);
+    const spotLabel = spot ? `Spot ${spot.label}` : inc.spotId;
+    const reporterName = reporter
+      ? `${reporter.name || ''} ${reporter.lastName || ''}`.trim() || reporter.username
+      : 'Unknown';
+    const date = inc.reportedAt
+      ? new Date(inc.reportedAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })
+      : '—';
+
+    const card = document.createElement('div');
+    card.className = 'incident-card';
+
+    if (inc.imageUrl) {
+      const img = document.createElement('img');
+      img.className = 'incident-thumb';
+      img.src = inc.imageUrl;
+      img.alt = 'Incident photo';
+      img.loading = 'lazy';
+      img.addEventListener('click', () => openLightbox(inc.imageUrl));
+      card.appendChild(img);
+    }
+
+    const meta = document.createElement('div');
+    meta.className = 'incident-meta';
+    meta.innerHTML = `
+      <strong>${spotLabel}${inc.observedPlate ? ' — ' + inc.observedPlate : ''}</strong>
+      <span class="incident-date">${date} · reported by ${reporterName}</span>
+      ${inc.note ? `<div class="incident-note">${escHtml(inc.note)}</div>` : ''}
+    `;
+
+    // Admin: delete button
+    if (currentUser.role === 'admin' || currentUser.role === 'master') {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'secondary sm';
+      delBtn.textContent = '× Delete';
+      delBtn.style.marginTop = '0.4rem';
+      delBtn.addEventListener('click', async () => {
+        if (!confirm('Delete this incident report?')) return;
+        await deleteRow('data/incidents.json', inc.id);
+        loadLog();
+      });
+      meta.appendChild(delBtn);
+    }
+
+    card.appendChild(meta);
+    container.appendChild(card);
+  });
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Lightbox ───────────────────────────────────────────────────────────────────
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+document.getElementById('lightbox-close').addEventListener('click', () => {
+  document.getElementById('lightbox').classList.remove('open');
+});
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+loadSpots();
+loadLog();
+</script>
+</body>
+</html>

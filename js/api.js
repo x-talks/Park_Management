@@ -14,10 +14,11 @@
 
 function _table(path) {
   const map = {
-    'data/users.json':    'users',
-    'data/spots.json':    'spots',
-    'data/invites.json':  'invites',
-    'data/payments.json': 'payments'
+    'data/users.json':     'users',
+    'data/spots.json':     'spots',
+    'data/invites.json':   'invites',
+    'data/payments.json':  'payments',
+    'data/incidents.json': 'incidents'
   };
   const t = map[path];
   if (!t) throw new Error('Unknown table path: ' + path);
@@ -132,4 +133,28 @@ async function deleteRow(path, id) {
 async function patchRow(path, id, changes) {
   const table = _table(path);
   await _patch(table, 'id', id, changes);
+}
+
+// ── Supabase Storage ──────────────────────────────────────────────────────────
+// Bucket: 'incidents'
+
+async function uploadIncidentImage(filePath, file) {
+  // filePath e.g. "sA/2026-06-02T12-00-00_abc.jpg"
+  const url = `${CONFIG.supabaseUrl}/storage/v1/object/incidents/${filePath}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': CONFIG.supabaseKey,
+      'Authorization': 'Bearer ' + CONFIG.supabaseKey,
+      'Content-Type': file.type || 'image/jpeg',
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Storage upload: ${res.status} ${err}`);
+  }
+  // Return the public URL
+  return `${CONFIG.supabaseUrl}/storage/v1/object/public/incidents/${filePath}`;
 }
