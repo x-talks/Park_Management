@@ -17,9 +17,14 @@ const LANE_RIGHT = 480;
 const LANE_TOP   = 30;
 const LANE_BOTTOM = 600;
 
-const START_Y = LANE_TOP + 30;
+// Arrow tip is at LANE_TOP + 32; spots start just after that
+const ARROW_TIP_Y = LANE_TOP + 32;
+const START_Y = ARROW_TIP_Y + 22;   // first spot (20/10) begins after arrow tip
 const STEP_Y  = 50;
 const ANGLE   = 45;
+
+// Widen the gap between spots and the outer boundary wall
+const SIDE_MARGIN = 36;             // was ~20; more breathing room left/right
 
 // Bottom row geometry (21, 22 perpendicular; A, B triangular wedges)
 const BOTTOM_ROW_Y = LANE_BOTTOM + 50;
@@ -39,15 +44,33 @@ function buildSVG(spots, users, currentUser) {
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
   // ── Outer parking area boundary ──
+  const bxLeft   = LANE_LEFT  - SPOT_W - SIDE_MARGIN;
+  const bxRight  = LANE_RIGHT + SPOT_W + SIDE_MARGIN;
+  const byTop    = LANE_TOP - 10;
+  const byBottom = BOTTOM_ROW_Y + SPOT_H + 30;   // extra space below bottom row
+
   const boundary = document.createElementNS(svgNS, 'rect');
-  boundary.setAttribute('x', LANE_LEFT - SPOT_W - 20);
-  boundary.setAttribute('y', LANE_TOP - 10);
-  boundary.setAttribute('width', (LANE_RIGHT - LANE_LEFT) + 2 * (SPOT_W + 20));
-  boundary.setAttribute('height', (BOTTOM_ROW_Y + SPOT_H) - LANE_TOP + 30);
+  boundary.setAttribute('x', bxLeft);
+  boundary.setAttribute('y', byTop);
+  boundary.setAttribute('width',  bxRight - bxLeft);
+  boundary.setAttribute('height', byBottom - byTop);
   boundary.setAttribute('fill', '#fff');
   boundary.setAttribute('stroke', '#000');
   boundary.setAttribute('stroke-width', '2');
   svg.appendChild(boundary);
+
+  // ── "Entrance" label at the top centre of the boundary ──
+  const entranceText = document.createElementNS(svgNS, 'text');
+  entranceText.setAttribute('x', (LANE_LEFT + LANE_RIGHT) / 2);
+  entranceText.setAttribute('y', byTop + 16);
+  entranceText.setAttribute('text-anchor', 'middle');
+  entranceText.setAttribute('dominant-baseline', 'middle');
+  entranceText.setAttribute('font-family', 'monospace');
+  entranceText.setAttribute('font-size', '13');
+  entranceText.setAttribute('font-weight', 'bold');
+  entranceText.setAttribute('fill', '#000');
+  entranceText.textContent = 'Entrance';
+  svg.appendChild(entranceText);
 
   // ── Driving lane (light fill) ──
   const lane = document.createElementNS(svgNS, 'rect');
@@ -145,16 +168,7 @@ function buildSVG(spots, users, currentUser) {
     return g;
   }
 
-  // Perpendicular spot at the bottom row (axis-aligned, label-only)
-  function makePerpendicular(label, cx, cy) {
-    return makeSpot(label, cx, cy, 0);
-  }
-
-  // 22 sits to the left of 21 in the lane bottom (centred under the lane)
-  const laneCenterX = (LANE_LEFT + LANE_RIGHT) / 2;
-  const perpW = (LANE_RIGHT - LANE_LEFT) / 2 - 4;
-
-  // Use a custom-sized rect for 21/22 to fit the lane width
+  // Custom-sized perpendicular spot to fit the lane width
   function makeBottomLanePerpSpot(label, x, y, w, h) {
     const spotData = getSpotData(spots, label);
     const g = document.createElementNS(svgNS, 'g');
@@ -185,6 +199,8 @@ function buildSVG(spots, users, currentUser) {
 
   const bottomY = LANE_BOTTOM + 10;
   const bottomH = 60;
+  const perpW = (LANE_RIGHT - LANE_LEFT) / 2 - 4;
+  const laneCenterX = (LANE_LEFT + LANE_RIGHT) / 2;
 
   // 22 (left half of lane), 21 (right half of lane)
   svg.appendChild(makeBottomLanePerpSpot('22',
@@ -192,24 +208,20 @@ function buildSVG(spots, users, currentUser) {
   svg.appendChild(makeBottomLanePerpSpot('21',
     laneCenterX + 4, bottomY, perpW, bottomH));
 
-  // B — triangular wedge closing the bottom-left corner
-  // Triangle: left-bottom of last left diagonal spot → bottom-left boundary corner → lane bottom-left
-  const bxLeft  = LANE_LEFT - SPOT_W - 20;          // boundary left
-  const byBottom = bottomY + bottomH;                // boundary bottom
+  // B — wedge: front edge (top) flush with 22/21 top, outer wall extends to byBottom
   svg.appendChild(makeWedge('B', [
-    [bxLeft, byBottom - 10],
-    [LANE_LEFT, byBottom],
-    [LANE_LEFT, bottomY],
-    [bxLeft, bottomY - 30]
+    [bxLeft,      bottomY],           // outer top-left corner
+    [LANE_LEFT,   bottomY],           // front edge flush with 22 top
+    [LANE_LEFT,   bottomY + bottomH], // front edge flush with 22 bottom
+    [bxLeft,      byBottom]           // outer bottom-left corner
   ]));
 
-  // A — triangular wedge closing the bottom-right corner
-  const bxRight = LANE_RIGHT + SPOT_W + 20;         // boundary right
+  // A — wedge: front edge (top) flush with 22/21 top, outer wall extends to byBottom
   svg.appendChild(makeWedge('A', [
-    [LANE_RIGHT, bottomY],
-    [bxRight, bottomY - 30],
-    [bxRight, byBottom - 10],
-    [LANE_RIGHT, byBottom]
+    [LANE_RIGHT,  bottomY],           // front edge flush with 21 top
+    [bxRight,     bottomY],           // outer top-right corner
+    [bxRight,     byBottom],          // outer bottom-right corner
+    [LANE_RIGHT,  bottomY + bottomH]  // front edge flush with 21 bottom
   ]));
 }
 
