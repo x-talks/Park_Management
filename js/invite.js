@@ -22,8 +22,15 @@ async function validateInvite(token) {
 }
 
 // German license plate: 1-3 letters, dash, 1-2 letters, dash, 1-4 digits
-// e.g. HD-XY-123, M-AB-1234, KA-A-1
 const LICENSE_PLATE_RE = /^[A-ZÄÖÜ]{1,3}-[A-Z]{1,2}-\d{1,4}$/i;
+
+// Calculate pro-rated payment fraction based on registration day of month
+function getPaymentFraction(registeredAt) {
+  const day = new Date(registeredAt).getDate();
+  if (day <= 10) return { fraction: 1,   label: 'Full month', desc: 'Registered in first 10 days — full monthly rent applies.' };
+  if (day <= 20) return { fraction: 0.5, label: '½ month',    desc: 'Registered between day 11–20 — half monthly rent for first month.' };
+  return             { fraction: 1/3, label: '⅓ month',    desc: 'Registered after day 20 — one third monthly rent for first month.' };
+}
 
 async function registerViaInvite({ token, password, licensePlate, carModel, carColor }) {
   const invite = await validateInvite(token);
@@ -39,25 +46,25 @@ async function registerViaInvite({ token, password, licensePlate, carModel, carC
   if (!password)          throw new Error('Password is required');
 
   // Check license plate not already taken
-  const checkUrl = `${CONFIG.supabaseUrl}/rest/v1/users?username=eq.${encodeURIComponent(finalLicensePlate)}&limit=1`;
-  const checkRes = await fetch(checkUrl, {
-    headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey }
-  });
+  const checkRes = await fetch(
+    `${CONFIG.supabaseUrl}/rest/v1/users?username=eq.${encodeURIComponent(finalLicensePlate)}&limit=1`,
+    { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey } }
+  );
   const existing = await checkRes.json();
   if (existing.length) throw new Error('License plate already registered');
 
   // Check spot is still free
-  const spotUrl = `${CONFIG.supabaseUrl}/rest/v1/spots?id=eq.${encodeURIComponent(invite.spotId)}&limit=1`;
-  const spotRes = await fetch(spotUrl, {
-    headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey }
-  });
+  const spotRes = await fetch(
+    `${CONFIG.supabaseUrl}/rest/v1/spots?id=eq.${encodeURIComponent(invite.spotId)}&limit=1`,
+    { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey } }
+  );
   const spotRows = await spotRes.json();
   if (!spotRows.length) throw new Error('Spot not found');
-  const spot = spotRows[0];
-  if (spot.assignedUserId) throw new Error('Spot already assigned');
+  if (spotRows[0].assignedUserId) throw new Error('Spot already assigned');
 
   const passwordHash = await hashPassword(password);
   const id = 'u' + Date.now();
+  const registeredAt = new Date().toISOString();
 
   // Create user
   await upsertRow('data/users.json', {
@@ -75,7 +82,8 @@ async function registerViaInvite({ token, password, licensePlate, carModel, carC
     role:          'renter',
     active:        true,
     assignedSpots: [invite.spotId],
-    pendingEdits:  null
+    pendingEdits:  null,
+    registeredAt
   });
 
   // Assign spot

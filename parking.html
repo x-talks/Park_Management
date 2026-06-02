@@ -3,50 +3,57 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Park Management — Parking</title>
+<title>Park Management</title>
 <link rel="stylesheet" href="css/style.css"/>
-<style>
-  .residents-section { margin-top: 1.5rem; }
-  .residents-toggle {
-    background: none;
-    border: none;
-    border-bottom: 1px solid #000;
-    padding: 0;
-    font-family: monospace;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    color: #000;
-    width: 100%;
-    text-align: left;
-    margin-bottom: 0.5rem;
-  }
-  .profile-edit-section { margin-top: 1.5rem; border-top: 1px solid #ccc; padding-top: 1rem; }
-</style>
 </head>
 <body>
-<h1>Parking Area</h1>
-<nav>
-  <a href="parking.html">Map</a>
-  <span id="admin-link" style="display:none"><a href="admin.html">Admin</a></span>
-  <a href="#" onclick="logout()">Logout</a>
-</nav>
-<div style="overflow-x:auto">
-  <svg id="parking-svg"
-       viewBox="0 0 800 760"
-       style="width:100%;max-width:900px;height:auto;display:block;border:1px solid #ccc">
-  </svg>
-</div>
-<div id="info-panel">Click a spot for details.</div>
 
-<!-- Residents panel -->
-<div class="residents-section">
-  <button class="residents-toggle" onclick="toggleResidents(this)">▶ Residents</button>
-  <div id="residents-panel" style="display:none"></div>
-</div>
+<header class="site-header">
+  <h1>Park Management</h1>
+  <nav class="site-nav">
+    <a href="parking.html" class="active">Map</a>
+    <span id="admin-link" style="display:none"><a href="admin.html">Admin</a></span>
+    <a href="#" id="logout-link">Logout</a>
+  </nav>
+</header>
 
-<!-- Profile edit -->
-<div class="profile-edit-section" id="profile-edit-section"></div>
+<div class="page-wrap">
+
+  <!-- Map card -->
+  <div class="card" style="padding:1rem">
+    <div style="overflow-x:auto">
+      <svg id="parking-svg" viewBox="0 0 800 760"
+           style="width:100%;max-width:900px;height:auto;display:block">
+      </svg>
+    </div>
+
+    <!-- Legend -->
+    <div class="map-legend">
+      <span style="font-size:0.75rem;color:var(--gray-600);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Legend:</span>
+      <span class="legend-item"><span class="legend-swatch free"></span> Free</span>
+      <span class="legend-item"><span class="legend-swatch occupied"></span> Occupied</span>
+      <span class="legend-item"><span class="legend-swatch mine"></span> Your spot</span>
+    </div>
+
+    <!-- Info panel -->
+    <div id="info-panel">Click a spot to see details.</div>
+  </div>
+
+  <!-- My Spots & Payments -->
+  <div id="my-payments-section"></div>
+
+  <!-- Residents -->
+  <div class="card" style="padding:0.75rem 1.25rem">
+    <button class="collapse-toggle" id="residents-toggle">
+      <span class="collapse-icon">▶</span> Residents
+    </button>
+    <div id="residents-panel" style="display:none;margin-top:0.75rem"></div>
+  </div>
+
+  <!-- Profile edit -->
+  <div id="profile-edit-section"></div>
+
+</div>
 
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
@@ -54,38 +61,209 @@
 <script src="js/admin.js"></script>
 <script src="js/parking.js"></script>
 <script>
-const user = requireAuth('renter');
-if (user && (user.role === 'admin' || user.role === 'master')) {
+const currentUser = requireAuth('renter');
+if (!currentUser) throw new Error('not authed');
+
+if (currentUser.role === 'admin' || currentUser.role === 'master') {
   document.getElementById('admin-link').style.display = 'inline';
 }
-initParking();
+document.getElementById('logout-link').addEventListener('click', e => { e.preventDefault(); logout(); });
 
-function toggleResidents(btn) {
-  const panel = document.getElementById('residents-panel');
-  const open = panel.style.display !== 'none';
-  panel.style.display = open ? 'none' : 'block';
-  btn.textContent = (open ? '▶' : '▼') + ' Residents';
-  if (!open && !panel.dataset.loaded) {
-    loadResidents();
-    panel.dataset.loaded = '1';
+// ── Init & real-time refresh ──────────────────────────────────────────────────
+let _spots = [], _users = [], _payments = [];
+
+async function loadAll() {
+  [_spots, _users, _payments] = await Promise.all([
+    readFile('data/spots.json'),
+    readFile('data/users.json'),
+    readFile('data/payments.json')
+  ]);
+}
+
+async function refresh() {
+  await loadAll();
+  buildSVG(_spots, _users, currentUser);
+  highlightMySpots();
+  renderMyPayments();
+  renderProfile();
+  if (document.getElementById('residents-panel').style.display !== 'none') {
+    renderResidents();
   }
 }
 
-async function loadResidents() {
-  const [users, spots] = await Promise.all([
-    readFile('data/users.json'),
-    readFile('data/spots.json')
-  ]);
+// Poll every 30 s + refresh on tab focus
+refresh();
+setInterval(refresh, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+
+function highlightMySpots() {
+  const me = _users.find(u => u.id === currentUser.id);
+  if (!me || !me.assignedSpots) return;
+  me.assignedSpots.forEach(sid => {
+    const g = document.querySelector(`[data-id="${sid}"]`);
+    if (g) g.classList.add('highlighted');
+  });
+}
+
+// ── My Payments ───────────────────────────────────────────────────────────────
+function renderMyPayments() {
+  const section = document.getElementById('my-payments-section');
+  section.innerHTML = '';
+
+  const me = _users.find(u => u.id === currentUser.id);
+  if (!me || !me.assignedSpots || me.assignedSpots.length === 0) return;
+
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  const h2 = document.createElement('h2');
+  h2.textContent = 'My Payments';
+  header.appendChild(h2);
+  card.appendChild(header);
+
+  me.assignedSpots.forEach(spotId => {
+    const spot = _spots.find(s => s.id === spotId);
+    if (!spot) return;
+
+    const rent = spot.monthlyRent || 80;
+    const regDate = me.registeredAt ? new Date(me.registeredAt) : null;
+
+    const spotTitle = document.createElement('h3');
+    spotTitle.textContent = `Spot ${spot.label}`;
+    card.appendChild(spotTitle);
+
+    // Generate month list from registration month to current month
+    const months = getPaymentMonths(regDate);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    const table = document.createElement('table');
+
+    // Header
+    const thead = document.createElement('tr');
+    ['Month', 'Amount Due', 'Status', ''].forEach(h => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      thead.appendChild(th);
+    });
+    table.appendChild(thead);
+
+    months.forEach(({ month, year, label: mLabel, isFirst }) => {
+      const paid = _payments.find(p => p.spotId === spotId && p.month === month && p.year === year);
+      const fraction = isFirst && regDate ? getPaymentFraction(regDate) : { fraction: 1, label: 'Full' };
+      const amount = (rent * fraction.fraction).toFixed(2);
+
+      const tr = document.createElement('tr');
+
+      const tdMonth = document.createElement('td');
+      tdMonth.textContent = mLabel;
+      if (isFirst && fraction.fraction < 1) {
+        const note = document.createElement('span');
+        note.className = 'pay-fraction';
+        note.textContent = ` (${fraction.label})`;
+        tdMonth.appendChild(note);
+      }
+
+      const tdAmt = document.createElement('td');
+      tdAmt.textContent = `€${amount}`;
+      if (isFirst && fraction.fraction < 1) {
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:0.7rem;color:var(--gray-600)';
+        note.textContent = fraction.desc;
+        tdAmt.appendChild(note);
+      }
+
+      const tdStatus = document.createElement('td');
+      if (paid) {
+        const chip = document.createElement('span');
+        chip.className = 'chip paid';
+        chip.textContent = `Paid ${paid.paidDate}`;
+        tdStatus.appendChild(chip);
+      } else {
+        const chip = document.createElement('span');
+        chip.className = 'chip unpaid';
+        chip.textContent = 'Pending';
+        tdStatus.appendChild(chip);
+      }
+
+      const tdAction = document.createElement('td');
+      // Users see status only; admin marks payment
+
+      tr.appendChild(tdMonth);
+      tr.appendChild(tdAmt);
+      tr.appendChild(tdStatus);
+      tr.appendChild(tdAction);
+      table.appendChild(tr);
+    });
+
+    wrap.appendChild(table);
+    card.appendChild(wrap);
+  });
+
+  section.appendChild(card);
+}
+
+function getPaymentMonths(regDate) {
+  const now = new Date();
+  const months = [];
+  if (!regDate) {
+    // Show last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ month: d.getMonth() + 1, year: d.getFullYear(),
+        label: d.toLocaleString('default', { month: 'long', year: 'numeric' }), isFirst: i === 5 });
+    }
+    return months;
+  }
+  const start = new Date(regDate.getFullYear(), regDate.getMonth(), 1);
+  const end   = new Date(now.getFullYear(), now.getMonth(), 1);
+  let cur = new Date(start);
+  let first = true;
+  while (cur <= end) {
+    months.push({
+      month: cur.getMonth() + 1,
+      year:  cur.getFullYear(),
+      label: cur.toLocaleString('default', { month: 'long', year: 'numeric' }),
+      isFirst: first
+    });
+    first = false;
+    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+  }
+  return months;
+}
+
+function getPaymentFraction(regDate) {
+  const day = new Date(regDate).getDate();
+  if (day <= 10) return { fraction: 1,   label: 'Full',   desc: 'Registered days 1–10: full month.' };
+  if (day <= 20) return { fraction: 0.5, label: '½ month', desc: 'Registered days 11–20: half month.' };
+  return             { fraction: 1/3, label: '⅓ month', desc: 'Registered days 21–30: one-third month.' };
+}
+
+// ── Residents ─────────────────────────────────────────────────────────────────
+const residentsToggle = document.getElementById('residents-toggle');
+residentsToggle.addEventListener('click', () => {
   const panel = document.getElementById('residents-panel');
-  while (panel.firstChild) panel.removeChild(panel.firstChild);
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  residentsToggle.classList.toggle('open', !open);
+  if (!open) renderResidents();
+});
 
-  const renters = users.filter(u => u.active && u.role === 'renter' && u.assignedSpots && u.assignedSpots.length > 0);
+function renderResidents() {
+  const panel = document.getElementById('residents-panel');
+  panel.innerHTML = '';
 
-  if (renters.length === 0) {
+  const renters = _users.filter(u => u.active && u.role === 'renter' && u.assignedSpots && u.assignedSpots.length > 0);
+
+  if (!renters.length) {
     panel.textContent = 'No residents yet.';
     return;
   }
 
+  const wrap = document.createElement('div');
+  wrap.className = 'table-wrap';
   const table = document.createElement('table');
   const head = document.createElement('tr');
   ['Spot','Name','License Plate','Car Model','Color','Phone'].forEach(h => {
@@ -94,50 +272,53 @@ async function loadResidents() {
   table.appendChild(head);
 
   renters.forEach(u => {
-    const spot = spots.find(s => s.assignedUserId === u.id);
-    const row = document.createElement('tr');
-    const cells = [
-      spot ? spot.label : '—',
-      `${u.name || ''} ${u.lastName || ''}`.trim() || '—',
-      u.licensePlate || u.username || '—',
-      u.carModel || '—',
-      u.carColor || '—',
-      u.phone || '—'
-    ];
-    cells.forEach(text => {
-      const td = document.createElement('td'); td.textContent = text; row.appendChild(td);
+    u.assignedSpots.forEach(sid => {
+      const spot = _spots.find(s => s.id === sid);
+      const tr = document.createElement('tr');
+      [
+        spot ? `Spot ${spot.label}` : '—',
+        `${u.name || ''} ${u.lastName || ''}`.trim() || '—',
+        u.licensePlate || u.username || '—',
+        u.carModel || '—',
+        u.carColor || '—',
+        u.phone || '—'
+      ].forEach(text => {
+        const td = document.createElement('td'); td.textContent = text; tr.appendChild(td);
+      });
+      table.appendChild(tr);
     });
-    table.appendChild(row);
   });
-  panel.appendChild(table);
+  wrap.appendChild(table);
+  panel.appendChild(wrap);
 }
 
 // ── Profile edit ──────────────────────────────────────────────────────────────
-(async () => {
-  const currentUser = getSession();
-  if (!currentUser || currentUser.role !== 'renter') return;
-
-  const users = await readFile('data/users.json');
-  const me = users.find(u => u.id === currentUser.id);
-  if (!me) return;
-
+function renderProfile() {
   const section = document.getElementById('profile-edit-section');
+  section.innerHTML = '';
+  const me = _users.find(u => u.id === currentUser.id);
+  if (!me || me.role !== 'renter') return;
 
-  const heading = document.createElement('h3');
-  heading.textContent = 'My Profile';
-  section.appendChild(heading);
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  const h2 = document.createElement('h2');
+  h2.textContent = 'My Profile';
+  header.appendChild(h2);
+  card.appendChild(header);
 
   if (me.pendingEdits) {
-    const notice = document.createElement('div');
-    notice.className = 'success';
-    notice.style.marginBottom = '0.75rem';
-    notice.textContent = 'Your edit request is pending admin approval.';
-    section.appendChild(notice);
+    const alert = document.createElement('div');
+    alert.className = 'alert info';
+    alert.textContent = 'Your edit request is pending admin approval.';
+    card.appendChild(alert);
+    section.appendChild(card);
     return;
   }
 
   const form = document.createElement('form');
-  form.id = 'profile-form';
 
   function addField(label, id, value, readOnly) {
     const group = document.createElement('div');
@@ -145,23 +326,34 @@ async function loadResidents() {
     const lbl = document.createElement('label'); lbl.textContent = label;
     const input = document.createElement('input');
     input.id = id; input.value = value || '';
-    if (readOnly) { input.readOnly = true; input.style.background = '#f0f0f0'; }
+    if (readOnly) input.readOnly = true;
     group.appendChild(lbl); group.appendChild(input);
-    form.appendChild(group);
+    return group;
   }
 
-  addField('License Plate (username — cannot change)', 'p-plate', me.licensePlate || me.username, true);
-  addField('Phone / WhatsApp', 'p-phone', me.phone, false);
-  addField('Car Model', 'p-carmodel', me.carModel, false);
-  addField('Car Color', 'p-carcolor', me.carColor, false);
+  const grid = document.createElement('div');
+  grid.className = 'grid-2';
+  grid.appendChild(addField('License Plate (username)', 'p-plate', me.licensePlate || me.username, true));
+  grid.appendChild(addField('Phone / WhatsApp', 'p-phone', me.phone, false));
+  grid.appendChild(addField('Car Model', 'p-carmodel', me.carModel, false));
+  grid.appendChild(addField('Car Color', 'p-carcolor', me.carColor, false));
+  form.appendChild(grid);
 
-  const btn = document.createElement('button');
-  btn.type = 'submit';
-  btn.textContent = 'Submit Changes (requires admin approval)';
-  form.appendChild(btn);
-
+  const btnRow = document.createElement('div');
+  btnRow.className = 'btn-row';
+  btnRow.style.marginTop = '0.5rem';
+  const submitBtn = document.createElement('button');
+  submitBtn.type = 'submit';
+  submitBtn.textContent = 'Submit Changes';
   const msg = document.createElement('div');
-  form.appendChild(msg);
+  btnRow.appendChild(submitBtn);
+  btnRow.appendChild(msg);
+  form.appendChild(btnRow);
+
+  const note = document.createElement('p');
+  note.style.cssText = 'font-size:0.78rem;color:var(--gray-600);margin-top:0.5rem';
+  note.textContent = 'Changes require admin approval before taking effect.';
+  form.appendChild(note);
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
@@ -172,24 +364,22 @@ async function loadResidents() {
     if (phone    !== (me.phone    || '')) changes.phone    = phone;
     if (carModel !== (me.carModel || '')) changes.carModel = carModel;
     if (carColor !== (me.carColor || '')) changes.carColor = carColor;
-
-    if (Object.keys(changes).length === 0) {
-      msg.className = 'error'; msg.textContent = 'No changes detected.'; return;
+    if (!Object.keys(changes).length) {
+      msg.className = 'alert warn'; msg.textContent = 'No changes detected.'; return;
     }
-
     try {
-      const allUsers = await readFile('data/users.json');
-      const myRecord = allUsers.find(u => u.id === currentUser.id);
-      myRecord.pendingEdits = { ...changes, requestedAt: new Date().toISOString() };
-      await writeFile('data/users.json', allUsers);
-      msg.className = 'success';
-      msg.textContent = 'Changes submitted — waiting for admin approval.';
-      btn.disabled = true;
-    } catch(err) { msg.className = 'error'; msg.textContent = err.message; }
+      await patchRow('data/users.json', me.id, {
+        pendingEdits: { ...changes, requestedAt: new Date().toISOString() }
+      });
+      msg.className = 'alert success'; msg.textContent = 'Changes submitted — waiting for admin approval.';
+      submitBtn.disabled = true;
+      refresh();
+    } catch(err) { msg.className = 'alert error'; msg.textContent = err.message; }
   });
 
-  section.appendChild(form);
-})();
+  card.appendChild(form);
+  section.appendChild(card);
+}
 </script>
 </body>
 </html>
