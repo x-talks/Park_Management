@@ -42,7 +42,6 @@
       <span class="legend-item"><span class="legend-swatch free"></span> Free</span>
       <span class="legend-item"><span class="legend-swatch occupied"></span> Occupied</span>
       <span class="legend-item"><span class="legend-swatch reserved"></span> Reserved (external)</span>
-      <span class="legend-item"><span class="legend-swatch mine"></span> Your spot</span>
     </div>
 
     <!-- Info panel -->
@@ -93,7 +92,6 @@ async function loadAll() {
 async function refresh() {
   await loadAll();
   buildSVG(_spots, _users, currentUser);
-  highlightMySpots();
   renderMyPayments();
   renderProfile();
   if (document.getElementById('residents-panel').style.display !== 'none') {
@@ -105,15 +103,6 @@ async function refresh() {
 refresh();
 setInterval(refresh, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
-
-function highlightMySpots() {
-  const me = _users.find(u => u.id === currentUser.id);
-  if (!me || !me.assignedSpots) return;
-  me.assignedSpots.forEach(sid => {
-    const g = document.querySelector(`[data-id="${sid}"]`);
-    if (g) g.classList.add('highlighted');
-  });
-}
 
 // ── My Payments ───────────────────────────────────────────────────────────────
 let _paymentYear = new Date().getFullYear();
@@ -166,7 +155,6 @@ function renderMyPayments() {
     const spot = _spots.find(s => s.id === sid);
     if (!spot) return;
 
-    const rent = spot.monthlyRent || 80;
     const regDate = me.registeredAt ? new Date(me.registeredAt) : null;
 
     const spotTitle = document.createElement('h3');
@@ -183,13 +171,14 @@ function renderMyPayments() {
     });
     table.appendChild(thead);
 
-    // Commission row
+    // Commission row — use rent effective at contract start
+    const commRent = getRentForMonth(spot, regDate ? regDate.getFullYear() : _paymentYear, regDate ? regDate.getMonth()+1 : 1);
     const commPaid = _payments.find(p => p.spotId === sid && p.type === 'commission' && p.year === _paymentYear);
     const commTr = document.createElement('tr');
     commTr.style.background = 'var(--blue-bg)';
     const commMonthTd = document.createElement('td');
     commMonthTd.innerHTML = '<strong>Commission</strong> <span style="font-size:0.72rem;color:var(--blue)">(one-time, = 1 month rent)</span>';
-    const commAmtTd = document.createElement('td'); commAmtTd.textContent = `€${rent.toFixed(2)}`;
+    const commAmtTd = document.createElement('td'); commAmtTd.textContent = `€${commRent.toFixed(2)}`;
     const commStatusTd = document.createElement('td');
     const commChip = document.createElement('span');
     commChip.className = commPaid ? 'chip paid' : 'chip unpaid';
@@ -204,7 +193,8 @@ function renderMyPayments() {
     months.forEach(({ month, year, label: mLabel, isFirst, isFuture }) => {
       const paid = _payments.find(p => p.spotId === sid && p.month === month && p.year === year && p.type === 'rent');
       const fraction = isFirst && regDate ? getPaymentFraction(regDate) : { fraction: 1, label: 'Full', desc: '' };
-      const amount = (rent * fraction.fraction).toFixed(2);
+      const monthRent = getRentForMonth(spot, year, month);
+      const amount = (monthRent * fraction.fraction).toFixed(2);
 
       const tr = document.createElement('tr');
 
@@ -277,6 +267,18 @@ function getPaymentFraction(regDate) {
   if (day <= 10) return { fraction: 1,   label: 'Full',   desc: 'Registered days 1–10: full month.' };
   if (day <= 20) return { fraction: 0.5, label: '½ month', desc: 'Registered days 11–20: half month.' };
   return             { fraction: 1/3, label: '⅓ month', desc: 'Registered days 21–30: one-third month.' };
+}
+
+function getRentForMonth(spot, year, month) {
+  const history = spot.rentHistory;
+  if (history && history.length > 0) {
+    const key = `${year}-${String(month).padStart(2,'0')}`;
+    const applicable = history
+      .filter(h => h.from <= key)
+      .sort((a, b) => b.from.localeCompare(a.from));
+    if (applicable.length > 0) return applicable[0].rent;
+  }
+  return spot.monthlyRent || 80;
 }
 
 // ── Residents ─────────────────────────────────────────────────────────────────

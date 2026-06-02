@@ -55,7 +55,7 @@
     <!-- Button legend -->
     <div class="card" style="padding:0.75rem 1.25rem;font-size:0.8rem;">
       <strong>Button legend:</strong>
-      <span style="margin-left:0.75rem">⏸ Deactivate &nbsp;▶ Activate / Unreserve &nbsp;✏ Edit &nbsp;🔑 Reset PW &nbsp;✂ Set termination &nbsp;✓ Approve / Assign &nbsp;✕ Reject &nbsp;🗑 Delete &nbsp;⛔ Unassign / Reserve</span>
+      <span style="margin-left:0.75rem">■ Deactivate &nbsp;▶ Activate / Unreserve &nbsp;~ Edit &nbsp;* Reset PW &nbsp;/ Set termination &nbsp;✓ Approve / Assign &nbsp;✕ Reject &nbsp;× Delete &nbsp;○ Unassign / Reserve</span>
     </div>
 
     <div class="card">
@@ -259,13 +259,13 @@ async function renderUsers() {
 
     if (!isMaster) {
       btnRow.appendChild(iconBtn(
-        u.active ? '⏸' : '▶',
+        u.active ? '■' : '▶',
         u.active ? 'Deactivate' : 'Activate',
         'secondary',
         async () => { await toggleUserActive(u.id); renderUsers(); }
       ));
 
-      btnRow.appendChild(iconBtn('✏', 'Edit user', 'secondary', () => {
+      btnRow.appendChild(iconBtn('~', 'Edit user', 'secondary', () => {
         const er = document.getElementById('edit-' + u.id);
         if (er) er.style.display = er.style.display === 'none' ? 'table-row' : 'none';
       }));
@@ -488,11 +488,20 @@ async function renderSpots() {
       rentInput.value = s.monthlyRent != null ? s.monthlyRent : 80;
       rentInput.style.cssText = 'width:70px;display:inline-block;font-size:0.8rem';
       bRow.appendChild(rentInput);
-      bRow.appendChild(iconBtn('€', 'Set monthly rent', 'secondary', async () => {
+      bRow.appendChild(iconBtn('€', 'Set monthly rent (effective this month)', 'secondary', async () => {
         const val = parseFloat(rentInput.value);
         if (isNaN(val) || val < 0) { alert('Invalid rent value'); return; }
-        try { await patchRow('data/spots.json', s.id, { monthlyRent: val }); renderSpots(); }
-        catch(e) { alert(e.message); }
+        const now = new Date();
+        const fromKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        const history = [...(s.rentHistory || [])];
+        // Remove any existing entry for the same month, then add new one
+        const updated = history.filter(h => h.from !== fromKey);
+        updated.push({ from: fromKey, rent: val });
+        updated.sort((a, b) => a.from.localeCompare(b.from));
+        try {
+          await patchRow('data/spots.json', s.id, { monthlyRent: val, rentHistory: updated });
+          renderSpots();
+        } catch(e) { alert(e.message); }
       }));
     }
 
@@ -552,7 +561,7 @@ async function renderPayments() {
   sortSpots(spots).filter(s => s.assignedUserId).forEach(s => {
     const renter = users.find(u => u.id === s.assignedUserId);
     const regDate = renter && renter.registeredAt ? new Date(renter.registeredAt) : null;
-    const rent = s.monthlyRent || 80;
+    const commissionRent = getRentForMonth(s, selectedYear, 1); // commission = rent at time of signing
     const termDate = renter && renter.terminationDate ? new Date(renter.terminationDate) : null;
 
     // ── Commission row ──
@@ -588,7 +597,7 @@ async function renderPayments() {
       commCell.className = 'payment-cell-unpaid';
       const amtDiv = document.createElement('div');
       amtDiv.style.cssText = 'font-size:0.72rem;color:var(--gray-600);margin-bottom:0.2rem';
-      amtDiv.textContent = `€${rent.toFixed(2)} (1 month)`;
+      amtDiv.textContent = `€${commissionRent.toFixed(2)} (1 month)`;
       commCell.appendChild(amtDiv);
       commCell.appendChild(iconBtn('✓', 'Mark commission paid', 'success-btn', async () => {
         try {
@@ -635,7 +644,8 @@ async function renderPayments() {
 
       const p = payments.find(x => x.spotId === s.id && x.month === m.month && x.year === m.year && x.type === 'rent');
 
-      // Pro-rate first month
+      // Pro-rate first month; use effective rent for this month
+      const monthRent = getRentForMonth(s, m.year, m.month);
       let fraction = 1, fractionLabel = '';
       if (regDate) {
         const rYear = regDate.getFullYear(), rMonth = regDate.getMonth() + 1;
@@ -646,7 +656,7 @@ async function renderPayments() {
           else                { fraction = 1/3; fractionLabel = ' ⅓'; }
         }
       }
-      const amount = (rent * fraction).toFixed(2);
+      const amount = (monthRent * fraction).toFixed(2);
 
       if (p) {
         cell.className = 'payment-cell-paid';

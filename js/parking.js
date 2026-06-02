@@ -150,7 +150,7 @@ function buildSVG(spots, users, currentUser) {
         pill.setAttribute('width', approxW);
         pill.setAttribute('height', PILL_H);
         pill.setAttribute('rx', '3');
-        pill.setAttribute('fill', 'rgba(0,0,0,0.72)');
+        pill.setAttribute('fill', 'rgba(0,0,0,0.85)');
         plateG.appendChild(pill);
 
         const pt = document.createElementNS(svgNS, 'text');
@@ -229,7 +229,7 @@ function buildSVG(spots, users, currentUser) {
         pill.setAttribute('width', approxW);
         pill.setAttribute('height', PILL_H);
         pill.setAttribute('rx', '3');
-        pill.setAttribute('fill', 'rgba(0,0,0,0.72)');
+        pill.setAttribute('fill', 'rgba(0,0,0,0.85)');
         pill.setAttribute('pointer-events', 'none');
         g.appendChild(pill);
 
@@ -289,7 +289,7 @@ function buildSVG(spots, users, currentUser) {
         pill.setAttribute('width', approxW);
         pill.setAttribute('height', PILL_H);
         pill.setAttribute('rx', '3');
-        pill.setAttribute('fill', 'rgba(0,0,0,0.72)');
+        pill.setAttribute('fill', 'rgba(0,0,0,0.85)');
         pill.setAttribute('pointer-events', 'none');
         g.appendChild(pill);
 

@@ -127,6 +127,22 @@ async function setSpotReserved(spotId, reserved) {
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 
+// Returns the effective monthly rent for a given spot and month/year.
+// Uses rentHistory (array of {from: 'YYYY-MM', rent: number}) if present,
+// falling back to monthlyRent for backwards compatibility.
+function getRentForMonth(spot, year, month) {
+  const history = spot.rentHistory;
+  if (history && history.length > 0) {
+    const key = `${year}-${String(month).padStart(2,'0')}`;
+    // Find the last entry whose 'from' <= key
+    const applicable = history
+      .filter(h => h.from <= key)
+      .sort((a, b) => b.from.localeCompare(a.from));
+    if (applicable.length > 0) return applicable[0].rent;
+  }
+  return spot.monthlyRent || 80;
+}
+
 // type: 'commission' | 'rent'
 async function markPaid(spotId, userId, month, year, adminId, type) {
   type = type || 'rent';

@@ -284,17 +284,15 @@ tr:hover td { background: var(--gray-50); }
 .spot.free     { fill: #4ade80; stroke: #16a34a; stroke-width: 1.5; }
 .spot.occupied { fill: #f87171; stroke: #dc2626; stroke-width: 1.5; }
 .spot.reserved { fill: #9ca3af; stroke: #6b7280; stroke-width: 1.5; }
-.spot.highlighted { fill: #2563eb; stroke: #1d4ed8; stroke-width: 2; }
 .spot-label {
   font-family: inherit;
   font-size: 13px;
-  font-weight: 700;
-  fill: #fff;
+  font-weight: 800;
+  fill: #111;
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
 }
-.spot.free .spot-label { fill: #14532d; }
 
 /* ── Map legend ───────────────────────────────────────────────────────────── */
 .map-legend {
