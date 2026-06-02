@@ -9,31 +9,39 @@
 <body>
 <div class="login-wrap">
   <div class="login-card">
-    <div id="login-logo-wrap" style="text-align:center;margin-bottom:1.25rem">
-      <img src="logo.png" alt="Logo" id="login-logo"
-           style="height:72px;width:auto;object-fit:contain"
-           onerror="this.style.display='none'"/>
+    <div style="text-align:center;margin-bottom:1.25rem">
+      <img src="logo.png" alt="Logo" style="height:72px;width:auto;object-fit:contain" onerror="this.style.display='none'"/>
     </div>
-    <h1>Park Management</h1>
-    <p class="subtitle">Sign in to your account</p>
+    <h1 data-i18n="app.name">Park Management</h1>
+    <p class="subtitle" data-i18n="login.subtitle">Sign in to your account</p>
     <form id="login-form">
       <div class="form-group">
-        <label for="username">License Plate / Username</label>
-        <input id="username" type="text" autocomplete="username" placeholder="e.g. HD-XY-123" required/>
+        <label for="username" data-i18n="login.label.plate">License Plate / Username</label>
+        <input id="username" type="text" autocomplete="username" data-i18n-ph="login.placeholder.plate" placeholder="e.g. HD-XY-123" required/>
       </div>
       <div class="form-group">
-        <label for="password">Password</label>
+        <label for="password" data-i18n="login.label.password">Password</label>
         <input id="password" type="password" autocomplete="current-password" required/>
       </div>
-      <button type="submit" style="width:100%">Sign In</button>
+      <button type="submit" style="width:100%" data-i18n="login.btn">Sign In</button>
       <div id="error" class="alert error" style="display:none"></div>
     </form>
+    <div style="margin-top:1.25rem;text-align:center">
+      <div id="lang-switcher"></div>
+    </div>
   </div>
 </div>
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/i18n/en.js"></script>
+<script src="js/i18n/de.js"></script>
+<script src="js/i18n/tr.js"></script>
+<script src="js/i18n.js"></script>
 <script>
+buildSwitcher('lang-switcher');
+applyPage();
+
 if (getSession()) location.href = 'parking.html';
 
 document.getElementById('login-form').addEventListener('submit', async e => {
@@ -41,17 +49,18 @@ document.getElementById('login-form').addEventListener('submit', async e => {
   const errEl = document.getElementById('error');
   errEl.style.display = 'none';
   const btn = e.target.querySelector('button');
-  btn.disabled = true; btn.textContent = 'Signing in…';
+  btn.disabled = true; btn.textContent = t('login.btn.loading');
   try {
     const user = await login(
       document.getElementById('username').value.trim(),
       document.getElementById('password').value
     );
+    applySavedLangFromProfile(user);
     location.href = (user.role === 'admin' || user.role === 'master') ? 'admin.html' : 'parking.html';
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = 'flex';
-    btn.disabled = false; btn.textContent = 'Sign In';
+    btn.disabled = false; btn.textContent = t('login.btn');
   }
 });
 </script>

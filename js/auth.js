@@ -18,9 +18,9 @@ async function login(username, password) {
       'Authorization': 'Bearer ' + CONFIG.supabaseKey
     }
   });
-  if (!res.ok) throw new Error('Login failed: ' + res.status);
+  if (!res.ok) throw new Error(typeof t === 'function' ? t('login.error.failed') : 'Login failed');
   const rows = await res.json();
-  if (!rows.length) throw new Error('Invalid credentials or account inactive');
+  if (!rows.length) throw new Error(typeof t === 'function' ? t('err.auth.invalid') : 'Invalid credentials or account inactive');
   const user = rows[0];
   sessionStorage.setItem('pm_user', JSON.stringify(user));
   return user;

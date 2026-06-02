@@ -9,24 +9,24 @@ async function loadUsers() {
 async function toggleUserActive(userId) {
   const users = await loadUsers();
   const user = users.find(u => u.id === userId);
-  if (!user) throw new Error('User not found');
-  if (user.role === 'master') throw new Error('Cannot deactivate master admin');
+  if (!user) throw new Error(typeof t === 'function' ? t('err.user.notfound') : 'User not found');
+  if (user.role === 'master') throw new Error(typeof t === 'function' ? t('err.deactivate.master') : 'Cannot deactivate master admin');
   await patchRow('data/users.json', userId, { active: !user.active });
 }
 
 async function setUserRole(userId, newRole, callerRole) {
-  if (callerRole !== 'master') throw new Error('Only master can change roles');
+  if (callerRole !== 'master') throw new Error(typeof t === 'function' ? t('err.role.master') : 'Only master can change roles');
   const users = await loadUsers();
   const user = users.find(u => u.id === userId);
-  if (!user || user.role === 'master') throw new Error('Cannot modify master admin');
+  if (!user || user.role === 'master') throw new Error(typeof t === 'function' ? t('err.user.master') : 'Cannot modify master admin');
   await patchRow('data/users.json', userId, { role: newRole });
 }
 
 async function resetPassword(userId, newPassword, callerRole) {
-  if (callerRole !== 'admin' && callerRole !== 'master') throw new Error('Not authorized');
+  if (callerRole !== 'admin' && callerRole !== 'master') throw new Error(typeof t === 'function' ? t('err.pw.notauthorized') : 'Not authorized');
   const users = await loadUsers();
   const user = users.find(u => u.id === userId);
-  if (!user || user.role === 'master') throw new Error('Cannot reset master password here');
+  if (!user || user.role === 'master') throw new Error(typeof t === 'function' ? t('err.pw.master') : 'Cannot reset master password here');
   const passwordHash = await hashPassword(newPassword);
   await patchRow('data/users.json', userId, { passwordHash, lastPassword: newPassword });
 }
@@ -34,8 +34,8 @@ async function resetPassword(userId, newPassword, callerRole) {
 async function deleteUser(userId) {
   const users = await loadUsers();
   const user = users.find(u => u.id === userId);
-  if (!user) throw new Error('User not found');
-  if (user.role === 'master') throw new Error('Cannot delete master admin');
+  if (!user) throw new Error(typeof t === 'function' ? t('err.user.notfound') : 'User not found');
+  if (user.role === 'master') throw new Error(typeof t === 'function' ? t('err.user.master') : 'Cannot modify master admin');
   for (const spotId of (user.assignedSpots || [])) {
     await unassignSpot(spotId);
   }
@@ -45,12 +45,12 @@ async function deleteUser(userId) {
 async function updateUser(userId, changes) {
   const users = await loadUsers();
   const user = users.find(u => u.id === userId);
-  if (!user) throw new Error('User not found');
-  if (user.role === 'master') throw new Error('Cannot modify master admin');
+  if (!user) throw new Error(typeof t === 'function' ? t('err.user.notfound') : 'User not found');
+  if (user.role === 'master') throw new Error(typeof t === 'function' ? t('err.user.master') : 'Cannot modify master admin');
   if (changes.licensePlate) {
     const plate = changes.licensePlate.toUpperCase().trim();
     const conflict = users.find(u => u.id !== userId && u.username === plate);
-    if (conflict) throw new Error('License plate already in use');
+    if (conflict) throw new Error(typeof t === 'function' ? t('err.plate.taken') : 'License plate already in use');
     changes.licensePlate = plate;
     changes.username = plate;
   }
@@ -60,7 +60,7 @@ async function updateUser(userId, changes) {
 async function approvePendingEdit(userId) {
   const users = await loadUsers();
   const user = users.find(u => u.id === userId);
-  if (!user || !user.pendingEdits) throw new Error('No pending edits');
+  if (!user || !user.pendingEdits) throw new Error(typeof t === 'function' ? t('err.nopending') : 'No pending edits');
   const { requestedAt, ...changes } = user.pendingEdits;
   await patchRow('data/users.json', userId, { ...changes, pendingEdits: null });
 }
@@ -83,9 +83,9 @@ async function assignSpot(spotId, userId) {
   ]);
   const spot = spots.find(s => s.id === spotId);
   const user = users.find(u => u.id === userId);
-  if (!spot) throw new Error('Spot not found');
-  if (!user) throw new Error('User not found');
-  if (spot.assignedUserId) throw new Error('Spot already assigned');
+  if (!spot) throw new Error(typeof t === 'function' ? t('err.spot.notfound') : 'Spot not found');
+  if (!user) throw new Error(typeof t === 'function' ? t('err.user.notfound') : 'User not found');
+  if (spot.assignedUserId) throw new Error(typeof t === 'function' ? t('err.spot.assigned') : 'Spot already assigned');
 
   const assignedSpots = [...(user.assignedSpots || [])];
   if (!assignedSpots.includes(spotId)) assignedSpots.push(spotId);
@@ -150,7 +150,7 @@ async function markPaid(spotId, userId, month, year, adminId, type) {
   const existing = payments.find(p =>
     p.spotId === spotId && p.month === month && p.year === year && p.type === type
   );
-  if (existing) throw new Error('Already marked paid');
+  if (existing) throw new Error(typeof t === 'function' ? t('err.pay.alreadypaid') : 'Already marked paid');
   const id = 'p' + Date.now() + '_' + type;
   await upsertRow('data/payments.json', {
     id, spotId, userId, month, year, type,

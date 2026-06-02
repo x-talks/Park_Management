@@ -12,12 +12,12 @@ async function validateInvite(token) {
       'Authorization': 'Bearer ' + CONFIG.supabaseKey
     }
   });
-  if (!res.ok) throw new Error('Failed to load invite');
+  if (!res.ok) throw new Error(typeof t === 'function' ? t('err.invite.notfound') : 'Invite not found');
   const rows = await res.json();
   const invite = rows[0];
-  if (!invite) throw new Error('Invalid invite link');
-  if (invite.usedBy) throw new Error('This invite has already been used');
-  if (new Date(invite.expiresAt) < new Date()) throw new Error('Invite link has expired');
+  if (!invite) throw new Error(typeof t === 'function' ? t('err.invite.invalid') : 'Invalid invite link');
+  if (invite.usedBy) throw new Error(typeof t === 'function' ? t('err.invite.used') : 'This invite has already been used');
+  if (new Date(invite.expiresAt) < new Date()) throw new Error(typeof t === 'function' ? t('err.invite.expired') : 'Invite link has expired');
   return invite;
 }
 
@@ -27,9 +27,9 @@ const LICENSE_PLATE_RE = /^[A-ZÄÖÜ]{1,3}-[A-Z]{1,2}-\d{1,4}$/i;
 // Calculate pro-rated payment fraction based on registration day of month
 function getPaymentFraction(registeredAt) {
   const day = new Date(registeredAt).getDate();
-  if (day <= 10) return { fraction: 1,   label: 'Full month', desc: 'Registered in first 10 days — full monthly rent applies.' };
-  if (day <= 20) return { fraction: 0.5, label: '½ month',    desc: 'Registered between day 11–20 — half monthly rent for first month.' };
-  return             { fraction: 1/3, label: '⅓ month',    desc: 'Registered after day 20 — one third monthly rent for first month.' };
+  if (day <= 10) return { fraction: 1,   key: 'full',  label: 'Full month',  desc: typeof t === 'function' ? t('pay.fraction.full.desc')  : 'Registered in first 10 days — full monthly rent applies.' };
+  if (day <= 20) return { fraction: 0.5, key: 'half',  label: '½ month',     desc: typeof t === 'function' ? t('pay.fraction.half.desc')  : 'Registered between day 11–20 — half monthly rent for first month.' };
+  return             { fraction: 1/3, key: 'third', label: '⅓ month',     desc: typeof t === 'function' ? t('pay.fraction.third.desc') : 'Registered after day 20 — one third monthly rent for first month.' };
 }
 
 async function registerViaInvite({ token, password, licensePlate, carModel, carColor }) {
@@ -39,11 +39,11 @@ async function registerViaInvite({ token, password, licensePlate, carModel, carC
   const finalCarModel     = (invite.carModel     || carModel     || '').trim();
   const finalCarColor     = (invite.carColor     || carColor     || '').trim();
 
-  if (!finalLicensePlate) throw new Error('License plate is required');
-  if (!LICENSE_PLATE_RE.test(finalLicensePlate)) throw new Error('Invalid German license plate format (e.g. HD-XY-123)');
-  if (!finalCarModel)     throw new Error('Car model is required');
-  if (!finalCarColor)     throw new Error('Car color is required');
-  if (!password)          throw new Error('Password is required');
+  if (!finalLicensePlate) throw new Error(typeof t === 'function' ? t('err.plate.required') : 'License plate is required');
+  if (!LICENSE_PLATE_RE.test(finalLicensePlate)) throw new Error(typeof t === 'function' ? t('err.plate.format') : 'Invalid German license plate format (e.g. HD-XY-123)');
+  if (!finalCarModel)     throw new Error(typeof t === 'function' ? t('err.model.required') : 'Car model is required');
+  if (!finalCarColor)     throw new Error(typeof t === 'function' ? t('err.color.required') : 'Car color is required');
+  if (!password)          throw new Error(typeof t === 'function' ? t('err.password.required') : 'Password is required');
 
   // Check license plate not already taken
   const checkRes = await fetch(
@@ -51,7 +51,7 @@ async function registerViaInvite({ token, password, licensePlate, carModel, carC
     { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey } }
   );
   const existing = await checkRes.json();
-  if (existing.length) throw new Error('License plate already registered');
+  if (existing.length) throw new Error(typeof t === 'function' ? t('err.plate.registered') : 'License plate already registered');
 
   // Check spot is still free
   const spotRes = await fetch(
@@ -59,8 +59,8 @@ async function registerViaInvite({ token, password, licensePlate, carModel, carC
     { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey } }
   );
   const spotRows = await spotRes.json();
-  if (!spotRows.length) throw new Error('Spot not found');
-  if (spotRows[0].assignedUserId) throw new Error('Spot already assigned');
+  if (!spotRows.length) throw new Error(typeof t === 'function' ? t('err.spot.notfound') : 'Spot not found');
+  if (spotRows[0].assignedUserId) throw new Error(typeof t === 'function' ? t('err.spot.assigned') : 'Spot already assigned');
 
   const passwordHash = await hashPassword(password);
   const id = 'u' + Date.now();

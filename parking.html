@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Park Management</title>
+<title data-i18n="app.name">Park Management</title>
 <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
@@ -11,13 +11,14 @@
 <header class="site-header">
   <div style="display:flex;align-items:center;gap:0.6rem">
     <img src="logo.png" alt="" style="height:28px;width:auto;filter:invert(1);opacity:0.9" onerror="this.style.display='none'"/>
-    <h1>Park Management</h1>
+    <h1 data-i18n="app.name">Park Management</h1>
   </div>
   <nav class="site-nav">
-    <a href="parking.html" class="active">Map</a>
-    <span id="admin-link" style="display:none"><a href="admin.html">Admin</a></span>
-    <a href="incident.html">Incidents</a>
-    <a href="#" id="logout-link">Logout</a>
+    <a href="parking.html" class="active" data-i18n="nav.map">Map</a>
+    <span id="admin-link" style="display:none"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
+    <a href="incident.html" data-i18n="nav.incidents">Incidents</a>
+    <a href="#" id="logout-link" data-i18n="nav.logout">Logout</a>
+    <div id="lang-switcher-nav" style="display:inline-flex"></div>
   </nav>
 </header>
 
@@ -29,7 +30,7 @@
       <span style="font-size:0.8rem;color:var(--gray-600)">📍 Kaiser-Wilhelm-Straße 63, 67059 Ludwigshafen</span>
       <a href="https://maps.google.com/?q=Kaiser-Wilhelm-Stra%C3%9Fe+63,+67059+Ludwigshafen"
          target="_blank" rel="noopener"
-         class="maps-btn">
+         class="maps-btn" data-i18n="map.openMaps">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         Open in Maps
       </a>
@@ -42,14 +43,14 @@
 
     <!-- Legend -->
     <div class="map-legend">
-      <span style="font-size:0.75rem;color:var(--gray-600);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Legend:</span>
-      <span class="legend-item"><span class="legend-swatch free"></span> Free</span>
-      <span class="legend-item"><span class="legend-swatch occupied"></span> Occupied</span>
-      <span class="legend-item"><span class="legend-swatch reserved"></span> Reserved (external)</span>
+      <span style="font-size:0.75rem;color:var(--gray-600);font-weight:700;text-transform:uppercase;letter-spacing:.04em" data-i18n="map.legend">Legend:</span>
+      <span class="legend-item"><span class="legend-swatch free"></span> <span data-i18n="map.legend.free">Free</span></span>
+      <span class="legend-item"><span class="legend-swatch occupied"></span> <span data-i18n="map.legend.occupied">Occupied</span></span>
+      <span class="legend-item"><span class="legend-swatch reserved"></span> <span data-i18n="map.legend.reserved">Reserved (external)</span></span>
     </div>
 
     <!-- Info panel -->
-    <div id="info-panel">Click a spot to see details.</div>
+    <div id="info-panel" data-i18n="map.info.default">Click a spot to see details.</div>
   </div>
 
   <!-- My Spots & Payments -->
@@ -58,7 +59,7 @@
   <!-- Residents -->
   <div class="card" style="padding:0.75rem 1.25rem">
     <button class="collapse-toggle" id="residents-toggle">
-      <span class="collapse-icon">▶</span> Residents
+      <span class="collapse-icon">▶</span> <span data-i18n="residents.title">Residents</span>
     </button>
     <div id="residents-panel" style="display:none;margin-top:0.75rem"></div>
   </div>
@@ -73,9 +74,14 @@
 <script src="js/auth.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/parking.js"></script>
+<script src="js/i18n/en.js"></script>
+<script src="js/i18n/de.js"></script>
+<script src="js/i18n/tr.js"></script>
+<script src="js/i18n.js"></script>
 <script>
+buildSwitcher('lang-switcher-nav');
+applyPage();
 const currentUser = requireAuth('renter');
-if (!currentUser) throw new Error('not authed');
 
 if (currentUser.role === 'admin' || currentUser.role === 'master') {
   document.getElementById('admin-link').style.display = 'inline';
@@ -123,7 +129,7 @@ function renderMyPayments() {
 
   const header = document.createElement('div');
   header.className = 'card-header';
-  const h2 = document.createElement('h2'); h2.textContent = 'My Payments';
+  const h2 = document.createElement('h2'); h2.textContent = t('pay.title');
   header.appendChild(h2);
 
   // Year selector
@@ -131,7 +137,7 @@ function renderMyPayments() {
   yw.style.cssText = 'display:flex;align-items:center;gap:0.5rem;font-size:0.85rem';
   const ylbl = document.createElement('label');
   ylbl.style.cssText = 'font-weight:600;color:var(--gray-600);font-size:0.75rem;text-transform:uppercase;letter-spacing:.04em';
-  ylbl.textContent = 'Year';
+  ylbl.textContent = t('pay.year');
   const ysel = document.createElement('select');
   ysel.style.width = 'auto';
   const thisYear = new Date().getFullYear();
@@ -151,7 +157,7 @@ function renderMyPayments() {
     const notice = document.createElement('div');
     notice.className = 'alert warn';
     notice.style.marginBottom = '0.75rem';
-    notice.textContent = `⏹ Your contract termination is set for ${me.terminationDate}. The 2-month notice period applies.`;
+    notice.textContent = `⏹ ${t('pay.termination.notice', me.terminationDate)}`;
     card.appendChild(notice);
   }
 
@@ -171,7 +177,7 @@ function renderMyPayments() {
 
     const thead = document.createElement('tr');
     ['Month / Type', 'Amount Due', 'Status'].forEach(h => {
-      const th = document.createElement('th'); th.textContent = h; thead.appendChild(th);
+      const th = document.createElement('th'); th.textContent = t({'Month / Type':'pay.col.month','Amount Due':'pay.col.amount','Status':'pay.col.status'}[h]); thead.appendChild(th);
     });
     table.appendChild(thead);
 
@@ -181,12 +187,12 @@ function renderMyPayments() {
     const commTr = document.createElement('tr');
     commTr.style.background = 'var(--blue-bg)';
     const commMonthTd = document.createElement('td');
-    commMonthTd.innerHTML = '<strong>Commission</strong> <span style="font-size:0.72rem;color:var(--blue)">(one-time, = 1 month rent)</span>';
+    commMonthTd.innerHTML = `<strong>${t('pay.commission')}</strong> <span style="font-size:0.72rem;color:var(--blue)">${t('pay.commission.desc')}</span>`;
     const commAmtTd = document.createElement('td'); commAmtTd.textContent = `€${commRent.toFixed(2)}`;
     const commStatusTd = document.createElement('td');
     const commChip = document.createElement('span');
     commChip.className = commPaid ? 'chip paid' : 'chip unpaid';
-    commChip.textContent = commPaid ? `Paid ${commPaid.paidDate}` : 'Pending';
+    commChip.textContent = commPaid ? t('pay.status.paid', commPaid.paidDate) : t('pay.status.pending');
     commStatusTd.appendChild(commChip);
     commTr.appendChild(commMonthTd); commTr.appendChild(commAmtTd); commTr.appendChild(commStatusTd);
     table.appendChild(commTr);
@@ -207,7 +213,7 @@ function renderMyPayments() {
       if (isFirst && fraction.fraction < 1) {
         const note = document.createElement('span');
         note.className = 'pay-fraction';
-        note.textContent = ` (${fraction.label})`;
+        note.textContent = ` (${t('pay.fraction.' + fraction.key)})`;
         tdMonth.appendChild(note);
       }
 
@@ -215,13 +221,13 @@ function renderMyPayments() {
 
       const tdStatus = document.createElement('td');
       if (isFuture) {
-        const c = document.createElement('span'); c.className = 'chip inactive'; c.textContent = 'Future';
+        const c = document.createElement('span'); c.className = 'chip inactive'; c.textContent = t('pay.status.future');
         tdStatus.appendChild(c);
       } else if (paid) {
         const c = document.createElement('span'); c.className = 'chip paid';
-        c.textContent = `Paid ${paid.paidDate}`; tdStatus.appendChild(c);
+        c.textContent = t('pay.status.paid', paid.paidDate); tdStatus.appendChild(c);
       } else {
-        const c = document.createElement('span'); c.className = 'chip unpaid'; c.textContent = 'Pending';
+        const c = document.createElement('span'); c.className = 'chip unpaid'; c.textContent = t('pay.status.pending');
         tdStatus.appendChild(c);
       }
 
@@ -268,9 +274,9 @@ function getPaymentMonthsForYear(regDate, year, terminationDate) {
 
 function getPaymentFraction(regDate) {
   const day = new Date(regDate).getDate();
-  if (day <= 10) return { fraction: 1,   label: 'Full',   desc: 'Registered days 1–10: full month.' };
-  if (day <= 20) return { fraction: 0.5, label: '½ month', desc: 'Registered days 11–20: half month.' };
-  return             { fraction: 1/3, label: '⅓ month', desc: 'Registered days 21–30: one-third month.' };
+  if (day <= 10) return { fraction: 1,   key: 'full',  label: 'Full',    desc: t('pay.fraction.full.desc') };
+  if (day <= 20) return { fraction: 0.5, key: 'half',  label: '½ month', desc: t('pay.fraction.half.desc') };
+  return             { fraction: 1/3, key: 'third', label: '⅓ month', desc: t('pay.fraction.third.desc') };
 }
 
 function getRentForMonth(spot, year, month) {
@@ -302,7 +308,7 @@ function renderResidents() {
   const renters = _users.filter(u => u.active && u.role === 'renter' && u.assignedSpots && u.assignedSpots.length > 0);
 
   if (!renters.length) {
-    panel.textContent = 'No residents yet.';
+    panel.textContent = t('residents.empty');
     return;
   }
 
@@ -310,8 +316,8 @@ function renderResidents() {
   wrap.className = 'table-wrap';
   const table = document.createElement('table');
   const head = document.createElement('tr');
-  ['Spot','Name','License Plate','Car Model','Color','Phone'].forEach(h => {
-    const th = document.createElement('th'); th.textContent = h; head.appendChild(th);
+  ['residents.col.spot','residents.col.name','residents.col.plate','residents.col.model','residents.col.color','residents.col.phone'].forEach(k => {
+    const th = document.createElement('th'); th.textContent = t(k); head.appendChild(th);
   });
   table.appendChild(head);
 
@@ -349,14 +355,14 @@ function renderProfile() {
   const header = document.createElement('div');
   header.className = 'card-header';
   const h2 = document.createElement('h2');
-  h2.textContent = 'My Profile';
+  h2.textContent = t('profile.title');
   header.appendChild(h2);
   card.appendChild(header);
 
   if (me.pendingEdits) {
     const alert = document.createElement('div');
     alert.className = 'alert info';
-    alert.textContent = 'Your edit request is pending admin approval.';
+    alert.textContent = t('profile.pending');
     card.appendChild(alert);
     section.appendChild(card);
     return;
@@ -377,10 +383,10 @@ function renderProfile() {
 
   const grid = document.createElement('div');
   grid.className = 'grid-2';
-  grid.appendChild(addField('License Plate (username)', 'p-plate', me.licensePlate || me.username, true));
-  grid.appendChild(addField('Phone / WhatsApp', 'p-phone', me.phone, false));
-  grid.appendChild(addField('Car Model', 'p-carmodel', me.carModel, false));
-  grid.appendChild(addField('Car Color', 'p-carcolor', me.carColor, false));
+  grid.appendChild(addField(t('profile.label.plate'), 'p-plate', me.licensePlate || me.username, true));
+  grid.appendChild(addField(t('profile.label.phone'), 'p-phone', me.phone, false));
+  grid.appendChild(addField(t('profile.label.carmodel'), 'p-carmodel', me.carModel, false));
+  grid.appendChild(addField(t('profile.label.carcolor'), 'p-carcolor', me.carColor, false));
   form.appendChild(grid);
 
   const btnRow = document.createElement('div');
@@ -388,7 +394,7 @@ function renderProfile() {
   btnRow.style.marginTop = '0.5rem';
   const submitBtn = document.createElement('button');
   submitBtn.type = 'submit';
-  submitBtn.textContent = 'Submit Changes';
+  submitBtn.textContent = t('profile.btn.submit');
   const msg = document.createElement('div');
   btnRow.appendChild(submitBtn);
   btnRow.appendChild(msg);
@@ -396,7 +402,7 @@ function renderProfile() {
 
   const note = document.createElement('p');
   note.style.cssText = 'font-size:0.78rem;color:var(--gray-600);margin-top:0.5rem';
-  note.textContent = 'Changes require admin approval before taking effect.';
+  note.textContent = t('profile.note');
   form.appendChild(note);
 
   form.addEventListener('submit', async e => {
@@ -409,13 +415,13 @@ function renderProfile() {
     if (carModel !== (me.carModel || '')) changes.carModel = carModel;
     if (carColor !== (me.carColor || '')) changes.carColor = carColor;
     if (!Object.keys(changes).length) {
-      msg.className = 'alert warn'; msg.textContent = 'No changes detected.'; return;
+      msg.className = 'alert warn'; msg.textContent = t('profile.warn.nochange'); return;
     }
     try {
       await patchRow('data/users.json', me.id, {
         pendingEdits: { ...changes, requestedAt: new Date().toISOString() }
       });
-      msg.className = 'alert success'; msg.textContent = 'Changes submitted — waiting for admin approval.';
+      msg.className = 'alert success'; msg.textContent = t('profile.success');
       submitBtn.disabled = true;
       refresh();
     } catch(err) { msg.className = 'alert error'; msg.textContent = err.message; }

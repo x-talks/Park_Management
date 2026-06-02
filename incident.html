@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Park Management — Report Incident</title>
+<title data-i18n="inc.title">Park Management — Report Incident</title>
 <link rel="stylesheet" href="css/style.css"/>
 <style>
 /* ── Camera / upload UI ─────────────────────────────────────────────────── */
@@ -108,13 +108,14 @@
 <header class="site-header">
   <div style="display:flex;align-items:center;gap:0.6rem">
     <img src="logo.png" alt="" style="height:28px;width:auto;filter:invert(1);opacity:0.9" onerror="this.style.display='none'"/>
-    <h1>Park Management</h1>
+    <h1 data-i18n="app.name">Park Management</h1>
   </div>
   <nav class="site-nav">
-    <a href="parking.html">Map</a>
-    <span id="admin-link" style="display:none"><a href="admin.html">Admin</a></span>
-    <a href="incident.html" class="active">Incidents</a>
-    <a href="#" id="logout-link">Logout</a>
+    <a href="parking.html" data-i18n="nav.map">Map</a>
+    <span id="admin-link" style="display:none"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
+    <a href="incident.html" class="active" data-i18n="nav.incidents">Incidents</a>
+    <a href="#" id="logout-link" data-i18n="nav.logout">Logout</a>
+    <div id="lang-switcher-nav" style="display:inline-flex"></div>
   </nav>
 </header>
 
@@ -122,53 +123,53 @@
 
   <!-- Report form -->
   <div class="card">
-    <div class="card-header"><h2>Report Parking Incident</h2></div>
+    <div class="card-header"><h2 data-i18n="inc.title">Report Parking Incident</h2></div>
 
     <!-- Photography tips — shown before camera opens -->
     <div class="photo-tip-box">
-      <strong>📷 How to take a good evidence photo</strong>
+      <strong>📷 <span data-i18n="inc.tips.title">How to take a good evidence photo</span></strong>
       <ol>
-        <li><strong>License plate clearly visible</strong> — get close enough that the plate is readable</li>
-        <li><strong>Include the parking spot number</strong> — step back to show the spot marking on the ground or wall sign</li>
-        <li><strong>Good lighting</strong> — avoid strong backlighting; if dark, use flash</li>
-        <li><strong>Straight angle</strong> — shoot from the front or rear of the car, not a steep side angle</li>
-        <li><strong>One photo = one incident</strong> — capture everything in one clear frame if possible</li>
+        <li><strong data-i18n="inc.tip1.title">License plate clearly visible</strong> — <span data-i18n="inc.tip1.desc">get close enough that the plate is readable</span></li>
+        <li><strong data-i18n="inc.tip2.title">Include the parking spot number</strong> — <span data-i18n="inc.tip2.desc">step back to show the spot marking on the ground or wall sign</span></li>
+        <li><strong data-i18n="inc.tip3.title">Good lighting</strong> — <span data-i18n="inc.tip3.desc">avoid strong backlighting; if dark, use flash</span></li>
+        <li><strong data-i18n="inc.tip4.title">Straight angle</strong> — <span data-i18n="inc.tip4.desc">shoot from the front or rear of the car, not a steep side angle</span></li>
+        <li><strong data-i18n="inc.tip5.title">One photo = one incident</strong> — <span data-i18n="inc.tip5.desc">capture everything in one clear frame if possible</span></li>
       </ol>
     </div>
 
     <form id="incident-form">
       <div class="grid-2">
         <div class="form-group">
-          <label>Affected Spot *</label>
+          <label data-i18n="inc.label.spot">Affected Spot *</label>
           <select id="inc-spot" required>
-            <option value="">— select spot —</option>
+            <option value="" data-i18n="inc.spot.default">— select spot —</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Observed License Plate (if readable)</label>
-          <input id="inc-plate" placeholder="e.g. MA-AB-123" style="text-transform:uppercase"/>
+          <label data-i18n="inc.label.plate">Observed License Plate (if readable)</label>
+          <input id="inc-plate" data-i18n-ph="inc.placeholder.plate" placeholder="e.g. MA-AB-123" style="text-transform:uppercase"/>
         </div>
       </div>
 
       <div class="form-group">
-        <label>Note / Description</label>
-        <textarea id="inc-note" rows="2" placeholder="e.g. Car blocking my spot since 08:00, dark blue SUV" style="resize:vertical"></textarea>
+        <label data-i18n="inc.label.note">Note / Description</label>
+        <textarea id="inc-note" rows="2" data-i18n-ph="inc.placeholder.note" placeholder="e.g. Car blocking my spot since 08:00, dark blue SUV" style="resize:vertical"></textarea>
       </div>
 
       <!-- Camera / file upload zone -->
       <div class="form-group">
-        <label>Photo Evidence *</label>
+        <label data-i18n="inc.label.photo">Photo Evidence *</label>
         <div class="camera-zone" id="camera-zone">
           <input type="file" id="inc-photo" accept="image/*" capture="environment" required/>
           <span class="camera-icon">📷</span>
-          <span class="camera-label">Tap to take a photo or choose from gallery</span>
+          <span class="camera-label" data-i18n="inc.camera.label">Tap to take a photo or choose from gallery</span>
         </div>
         <img id="preview-img" class="preview-img" alt="Preview"/>
       </div>
 
       <div class="btn-row">
-        <button type="submit" id="submit-btn">Submit Report</button>
-        <button type="button" class="secondary" id="reset-btn">Clear</button>
+        <button type="submit" id="submit-btn" data-i18n="inc.btn.submit">Submit Report</button>
+        <button type="button" class="secondary" id="reset-btn" data-i18n="inc.btn.clear">Clear</button>
       </div>
       <div id="inc-msg" style="margin-top:0.5rem"></div>
     </form>
@@ -177,11 +178,11 @@
   <!-- Incident log -->
   <div class="card">
     <div class="card-header">
-      <h2>Incident Log</h2>
+      <h2 data-i18n="inc.log.title">Incident Log</h2>
       <span id="log-count" style="font-size:0.8rem;color:var(--gray-600)"></span>
     </div>
     <div id="incident-log">
-      <p style="color:var(--gray-600);font-size:0.85rem">Loading…</p>
+      <p style="color:var(--gray-600);font-size:0.85rem" data-i18n="inc.log.loading">Loading…</p>
     </div>
   </div>
 
@@ -196,7 +197,13 @@
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/i18n/en.js"></script>
+<script src="js/i18n/de.js"></script>
+<script src="js/i18n/tr.js"></script>
+<script src="js/i18n.js"></script>
 <script>
+buildSwitcher('lang-switcher-nav');
+applyPage();
 const currentUser = requireAuth('renter');
 if (!currentUser) throw new Error('not authed');
 
@@ -259,7 +266,7 @@ document.getElementById('reset-btn').addEventListener('click', () => {
   previewImg.src = '';
   cameraZone.classList.remove('has-image');
   cameraZone.querySelector('.camera-icon').textContent = '📷';
-  cameraZone.querySelector('.camera-label').textContent = 'Tap to take a photo or choose from gallery';
+  cameraZone.querySelector('.camera-label').textContent = t('inc.camera.label');
 });
 
 // ── Submit ─────────────────────────────────────────────────────────────────────
@@ -268,7 +275,7 @@ document.getElementById('incident-form').addEventListener('submit', async e => {
   const msg = document.getElementById('inc-msg');
   msg.textContent = '';
   const btn = document.getElementById('submit-btn');
-  btn.disabled = true; btn.textContent = 'Uploading…';
+  btn.disabled = true; btn.textContent = t('inc.btn.uploading');
 
   try {
     const spotId  = document.getElementById('inc-spot').value;
@@ -276,7 +283,7 @@ document.getElementById('incident-form').addEventListener('submit', async e => {
     const note    = document.getElementById('inc-note').value.trim();
     const file    = photoInput.files[0];
 
-    if (!file) { throw new Error('Please select or take a photo.'); }
+    if (!file) { throw new Error(t('inc.err.nophoto')); }
 
     // Build a unique filename: spotId/timestamp_userId.ext
     const ext = file.type.includes('png') ? 'png' : 'jpg';
@@ -298,14 +305,14 @@ document.getElementById('incident-form').addEventListener('submit', async e => {
     });
 
     msg.className = 'alert success';
-    msg.textContent = 'Incident reported successfully.';
+    msg.textContent = t('inc.success');
     document.getElementById('reset-btn').click();
     loadLog();
   } catch (err) {
     msg.className = 'alert error';
     msg.textContent = err.message;
   } finally {
-    btn.disabled = false; btn.textContent = 'Submit Report';
+    btn.disabled = false; btn.textContent = t('inc.btn.submit');
   }
 });
 
@@ -328,11 +335,12 @@ async function loadLog() {
     : incidents.filter(i => mySpots.includes(i.spotId));
 
   const container = document.getElementById('incident-log');
-  document.getElementById('log-count').textContent = `${visible.length} report${visible.length !== 1 ? 's' : ''}`;
+  const count = visible.length;
+  document.getElementById('log-count').textContent = count === 1 ? t('inc.log.count', count) : t('inc.log.count.plural', count);
   container.innerHTML = '';
 
   if (!visible.length) {
-    container.innerHTML = '<p style="color:var(--gray-600);font-size:0.85rem">No incidents reported yet.</p>';
+    container.innerHTML = `<p style="color:var(--gray-600);font-size:0.85rem">${t('inc.log.empty')}</p>`;
     return;
   }
 
@@ -372,10 +380,10 @@ async function loadLog() {
     if (currentUser.role === 'admin' || currentUser.role === 'master') {
       const delBtn = document.createElement('button');
       delBtn.className = 'secondary sm';
-      delBtn.textContent = '× Delete';
+      delBtn.textContent = t('inc.btn.delete');
       delBtn.style.marginTop = '0.4rem';
       delBtn.addEventListener('click', async () => {
-        if (!confirm('Delete this incident report?')) return;
+        if (!confirm(t('inc.confirm.delete'))) return;
         await deleteRow('data/incidents.json', inc.id);
         loadLog();
       });

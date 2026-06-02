@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Park Management — Admin</title>
+<title data-i18n="app.admin">Park Management — Admin</title>
 <link rel="stylesheet" href="css/style.css"/>
 <style>
 /* Icon button strip */
@@ -25,13 +25,14 @@
 <header class="site-header">
   <div style="display:flex;align-items:center;gap:0.6rem">
     <img src="logo.png" alt="" style="height:28px;width:auto;filter:invert(1);opacity:0.9" onerror="this.style.display='none'"/>
-    <h1>Admin Dashboard</h1>
+    <h1 data-i18n="app.admin">Admin Dashboard</h1>
   </div>
   <nav class="site-nav">
-    <a href="parking.html">Map</a>
-    <a href="admin.html" class="active">Admin</a>
-    <a href="incident.html">Incidents</a>
-    <a href="#" id="logout-link">Logout</a>
+    <a href="parking.html" data-i18n="nav.map">Map</a>
+    <a href="admin.html" class="active" data-i18n="nav.admin">Admin</a>
+    <a href="incident.html" data-i18n="nav.incidents">Incidents</a>
+    <a href="#" id="logout-link" data-i18n="nav.logout">Logout</a>
+    <div id="lang-switcher-nav" style="display:inline-flex"></div>
   </nav>
 </header>
 
@@ -39,10 +40,10 @@
 
   <div class="tab-bar">
     <button class="tab-btn" id="tab-btn-users">
-      Users <span id="pending-badge" class="badge" style="display:none">0</span>
+      <span data-i18n="admin.tab.users">Users</span> <span id="pending-badge" class="badge" style="display:none">0</span>
     </button>
-    <button class="tab-btn" id="tab-btn-spots">Spots</button>
-    <button class="tab-btn" id="tab-btn-payments">Payments</button>
+    <button class="tab-btn" id="tab-btn-spots" data-i18n="admin.tab.spots">Spots</button>
+    <button class="tab-btn" id="tab-btn-payments" data-i18n="admin.tab.payments">Payments</button>
   </div>
 
   <!-- ── Users tab ── -->
@@ -50,7 +51,7 @@
 
     <div class="card">
       <div class="card-header">
-        <h2>Users</h2>
+        <h2 data-i18n="admin.users.title">Users</h2>
         <span id="last-refresh" style="font-size:0.75rem;color:var(--gray-600)"></span>
       </div>
       <div id="user-list"></div>
@@ -58,38 +59,38 @@
 
     <!-- Button legend -->
     <div class="card" style="padding:0.75rem 1.25rem;font-size:0.8rem;">
-      <strong>Button legend:</strong>
-      <span style="margin-left:0.75rem">■ Deactivate &nbsp;▶ Activate / Unreserve &nbsp;~ Edit &nbsp;* Reset PW &nbsp;/ Set termination &nbsp;✓ Approve / Assign &nbsp;✕ Reject &nbsp;× Delete &nbsp;○ Unassign / Reserve</span>
+      <strong data-i18n="admin.users.legend">Button legend:</strong>
+      <span style="margin-left:0.75rem" data-i18n="admin.users.legend.text">■ Deactivate &nbsp;▶ Activate / Unreserve &nbsp;~ Edit &nbsp;* Reset PW &nbsp;/ Set termination &nbsp;✓ Approve / Assign &nbsp;✕ Reject &nbsp;× Delete &nbsp;○ Unassign / Reserve</span>
     </div>
 
     <div class="card">
-      <div class="card-header"><h2>Create User &amp; Generate Invite</h2></div>
+      <div class="card-header"><h2 data-i18n="admin.create.title">Create User &amp; Generate Invite</h2></div>
       <form id="create-user-form">
         <div class="grid-2">
-          <div class="form-group"><label>First Name *</label><input id="cu-name" required/></div>
-          <div class="form-group"><label>Last Name *</label><input id="cu-lastname" required/></div>
-          <div class="form-group"><label>Phone / WhatsApp *</label><input id="cu-phone" required/></div>
-          <div class="form-group"><label>Address *</label><input id="cu-address" required/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.fname">First Name *</label><input id="cu-name" required/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.lname">Last Name *</label><input id="cu-lastname" required/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.phone">Phone / WhatsApp *</label><input id="cu-phone" required/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.address">Address *</label><input id="cu-address" required/></div>
         </div>
         <div class="form-group">
-          <label>Parking Spot * <small style="font-weight:400;text-transform:none">(free spots only)</small></label>
-          <select id="cu-spot" required><option value="">— select —</option></select>
+          <label><span data-i18n="admin.create.label.spot">Parking Spot *</span> <small style="font-weight:400;text-transform:none" data-i18n="admin.create.spot.hint">(free spots only)</small></label>
+          <select id="cu-spot" required><option value="" data-i18n="admin.create.spot.default">— select —</option></select>
         </div>
-        <p style="font-size:0.8rem;color:var(--gray-600);margin:0 0 0.75rem">
+        <p style="font-size:0.8rem;color:var(--gray-600);margin:0 0 0.75rem" data-i18n="admin.create.car.note">
           Car details are optional — user must complete missing fields during registration.
         </p>
         <div class="grid-3">
-          <div class="form-group"><label>License Plate</label><input id="cu-plate" placeholder="HD-XY-123"/></div>
-          <div class="form-group"><label>Car Model</label><input id="cu-carmodel" placeholder="VW Golf"/></div>
-          <div class="form-group"><label>Car Color</label><input id="cu-carcolor" placeholder="blue"/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.plate">License Plate</label><input id="cu-plate" placeholder="HD-XY-123"/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.model">Car Model</label><input id="cu-carmodel" placeholder="VW Golf"/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.color">Car Color</label><input id="cu-carcolor" placeholder="blue"/></div>
         </div>
-        <button type="submit">Generate Invite Link</button>
+        <button type="submit" data-i18n="admin.create.btn">Generate Invite Link</button>
         <div id="cu-msg" style="margin-top:0.5rem"></div>
       </form>
       <div id="invite-result-box" style="display:none" class="invite-link-box">
-        <strong>Invite link (valid 7 days):</strong><br>
+        <strong data-i18n="admin.invite.label">Invite link (valid 7 days):</strong><br>
         <code id="invite-url-text" style="word-break:break-all;font-size:0.8rem"></code><br>
-        <a id="invite-wa-link" class="wa-btn" target="_blank">💬 Send via WhatsApp</a>
+        <a id="invite-wa-link" class="wa-btn" target="_blank" data-i18n="admin.invite.wa">💬 Send via WhatsApp</a>
       </div>
     </div>
   </div>
@@ -97,7 +98,7 @@
   <!-- ── Spots tab ── -->
   <div id="tab-spots" class="tab-panel" style="display:none">
     <div class="card">
-      <div class="card-header"><h2>Spot Assignments</h2></div>
+      <div class="card-header"><h2 data-i18n="admin.spots.title">Spot Assignments</h2></div>
       <div id="spot-list"></div>
     </div>
   </div>
@@ -106,16 +107,16 @@
   <div id="tab-payments" class="tab-panel" style="display:none">
     <div class="card">
       <div class="card-header">
-        <h2>Payment Overview</h2>
+        <h2 data-i18n="admin.pay.title">Payment Overview</h2>
         <div class="year-select-wrap">
-          <label>Year</label>
+          <label data-i18n="pay.year">Year</label>
           <select id="payment-year"></select>
         </div>
       </div>
       <div style="font-size:0.78rem;color:var(--gray-600);margin-bottom:0.75rem">
-        <span style="display:inline-block;width:10px;height:10px;background:var(--blue-bg);border:1px solid #bfdbfe;border-radius:2px;vertical-align:middle;margin-right:4px"></span>Commission row &nbsp;
-        <span style="display:inline-block;width:10px;height:10px;background:var(--green-bg);border:1px solid #b2dfca;border-radius:2px;vertical-align:middle;margin-right:4px"></span>Paid &nbsp;
-        <span style="display:inline-block;width:10px;height:10px;background:var(--red-bg);border:1px solid #f5c6c2;border-radius:2px;vertical-align:middle;margin-right:4px"></span>Pending
+        <span style="display:inline-block;width:10px;height:10px;background:var(--blue-bg);border:1px solid #bfdbfe;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.commission">Commission row</span> &nbsp;
+        <span style="display:inline-block;width:10px;height:10px;background:var(--green-bg);border:1px solid #b2dfca;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.paid">Paid</span> &nbsp;
+        <span style="display:inline-block;width:10px;height:10px;background:var(--red-bg);border:1px solid #f5c6c2;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.pending">Pending</span>
       </div>
       <div id="payment-matrix"></div>
     </div>
@@ -127,7 +128,13 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/admin.js"></script>
+<script src="js/i18n/en.js"></script>
+<script src="js/i18n/de.js"></script>
+<script src="js/i18n/tr.js"></script>
+<script src="js/i18n.js"></script>
 <script>
+buildSwitcher('lang-switcher-nav');
+applyPage();
 const currentUser = requireAuth('admin');
 document.getElementById('logout-link').addEventListener('click', e => { e.preventDefault(); logout(); });
 
@@ -206,7 +213,7 @@ async function renderUsers() {
   const badge = document.getElementById('pending-badge');
   badge.textContent = pending.length;
   badge.style.display = pending.length > 0 ? 'inline-flex' : 'none';
-  document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  document.getElementById('last-refresh').textContent = t('admin.users.updated', new Date().toLocaleTimeString());
 
   const container = document.getElementById('user-list');
   container.innerHTML = '';
@@ -216,7 +223,7 @@ async function renderUsers() {
   const table = document.createElement('table');
 
   const headRow = document.createElement('tr');
-  ['Plate','Name','Phone','Spots','Car','Password','Status','Actions'].forEach(h => headRow.appendChild(mkTh(h)));
+  ['admin.users.col.plate','admin.users.col.name','admin.users.col.phone','admin.users.col.spots','admin.users.col.car','admin.users.col.pw','admin.users.col.status','admin.users.col.actions'].forEach(k => headRow.appendChild(mkTh(t(k))));
   table.appendChild(headRow);
 
   users.forEach(u => {
@@ -240,18 +247,18 @@ async function renderUsers() {
 
     // Status
     const statusCell = document.createElement('td');
-    statusCell.appendChild(chip(u.active ? 'Active' : 'Inactive', u.active ? 'active' : 'inactive'));
+    statusCell.appendChild(chip(u.active ? t('admin.users.chip.active') : t('admin.users.chip.inactive'), u.active ? 'active' : 'inactive'));
     if (u.terminationDate) {
       statusCell.appendChild(document.createTextNode(' '));
       const tc = document.createElement('span');
       tc.className = 'termination-chip';
       tc.title = 'Contract ends: ' + u.terminationDate;
-      tc.textContent = '⏹ ' + u.terminationDate;
+      tc.textContent = t('admin.users.termination.chip', u.terminationDate);
       statusCell.appendChild(tc);
     }
     if (u.pendingEdits) {
       statusCell.appendChild(document.createTextNode(' '));
-      statusCell.appendChild(chip('Edit pending', 'pending'));
+      statusCell.appendChild(chip(t('admin.users.chip.pending'), 'pending'));
     }
     row.appendChild(statusCell);
 
@@ -264,29 +271,27 @@ async function renderUsers() {
     if (!isMaster) {
       btnRow.appendChild(iconBtn(
         u.active ? '■' : '▶',
-        u.active ? 'Deactivate' : 'Activate',
+        u.active ? t('admin.btn.deactivate') : t('admin.btn.activate'),
         'secondary',
         async () => { await toggleUserActive(u.id); renderUsers(); }
       ));
 
-      btnRow.appendChild(iconBtn('~', 'Edit user', 'secondary', () => {
+      btnRow.appendChild(iconBtn('~', t('admin.btn.edit'), 'secondary', () => {
         const er = document.getElementById('edit-' + u.id);
         if (er) er.style.display = er.style.display === 'none' ? 'table-row' : 'none';
       }));
 
-      btnRow.appendChild(iconBtn('🔑', 'Reset password', 'secondary', async () => {
-        const pw = prompt(`New password for ${u.licensePlate || u.username}:`);
+      btnRow.appendChild(iconBtn('🔑', t('admin.btn.resetpw'), 'secondary', async () => {
+        const pw = prompt(t('admin.prompt.resetpw', u.licensePlate || u.username));
         if (!pw) return;
         try { await resetPassword(u.id, pw, currentUser.role); renderUsers(); }
         catch(e) { alert(e.message); }
       }));
 
-      btnRow.appendChild(iconBtn('✂', 'Set termination date', 'secondary', async () => {
+      btnRow.appendChild(iconBtn('✂', t('admin.btn.termination'), 'secondary', async () => {
         const current = u.terminationDate || '';
         const d = prompt(
-          `Termination date for ${u.licensePlate || u.username}\n` +
-          `(User must give 2-months notice. Leave blank to clear.)\n` +
-          `Format: YYYY-MM-DD`,
+          t('admin.prompt.termination', u.licensePlate || u.username),
           current
         );
         if (d === null) return; // cancelled
@@ -301,16 +306,16 @@ async function renderUsers() {
         diffDiv.style.cssText = 'font-size:0.7rem;color:var(--amber);margin-top:0.2rem;width:100%';
         diffDiv.textContent = summary;
         btnRow.appendChild(diffDiv);
-        btnRow.appendChild(iconBtn('✓', 'Approve edit', 'success-btn', async () => {
+        btnRow.appendChild(iconBtn('✓', t('admin.btn.approve'), 'success-btn', async () => {
           await approvePendingEdit(u.id); renderUsers();
         }));
-        btnRow.appendChild(iconBtn('✕', 'Reject edit', 'secondary', async () => {
+        btnRow.appendChild(iconBtn('✕', t('admin.btn.reject'), 'secondary', async () => {
           await rejectPendingEdit(u.id); renderUsers();
         }));
       }
 
-      btnRow.appendChild(iconBtn('🗑', 'Delete user', 'danger', async () => {
-        if (!confirm(`Delete "${u.licensePlate || u.username}"? This cannot be undone.`)) return;
+      btnRow.appendChild(iconBtn('🗑', t('admin.btn.delete'), 'danger', async () => {
+        if (!confirm(t('admin.confirm.delete', u.licensePlate || u.username))) return;
         try { await deleteUser(u.id); renderUsers(); }
         catch(e) { alert(e.message); }
       }));
@@ -376,7 +381,7 @@ async function renderUsers() {
 async function loadFreeSpots() {
   const spots = await readFile('data/spots.json');
   const sel = document.getElementById('cu-spot');
-  sel.innerHTML = '<option value="">— select —</option>';
+  sel.innerHTML = `<option value="">${t('admin.create.spot.default')}</option>`;
   sortSpots(spots).filter(s => !s.assignedUserId).forEach(s => {
     const opt = document.createElement('option');
     opt.value = s.id; opt.textContent = `Spot ${s.label}`;
@@ -390,7 +395,7 @@ document.getElementById('create-user-form').addEventListener('submit', async e =
   const msg = document.getElementById('cu-msg'); msg.textContent = '';
   const resultBox = document.getElementById('invite-result-box'); resultBox.style.display = 'none';
   const submitBtn = e.target.querySelector('button[type=submit]');
-  submitBtn.disabled = true; submitBtn.textContent = 'Creating…';
+  submitBtn.disabled = true; submitBtn.textContent = t('admin.create.btn.loading');
   try {
     const url = await createAndInviteUser({
       name:         document.getElementById('cu-name').value.trim(),
@@ -409,12 +414,12 @@ document.getElementById('create-user-form').addEventListener('submit', async e =
     );
     document.getElementById('invite-wa-link').href = `https://wa.me/?text=${waText}`;
     resultBox.style.display = 'block';
-    msg.className = 'alert success'; msg.textContent = 'Invite created successfully.';
+    msg.className = 'alert success'; msg.textContent = t('admin.create.success');
     e.target.reset(); loadFreeSpots(); renderUsers();
   } catch(err) {
     msg.className = 'alert error'; msg.textContent = err.message;
   } finally {
-    submitBtn.disabled = false; submitBtn.textContent = 'Generate Invite Link';
+    submitBtn.disabled = false; submitBtn.textContent = t('admin.create.btn');
   }
 });
 
@@ -429,7 +434,7 @@ async function renderSpots() {
   const table = document.createElement('table');
 
   const headRow = document.createElement('tr');
-  ['Spot','State','Assigned To','Plate','Monthly Rent','Actions'].forEach(h => headRow.appendChild(mkTh(h)));
+  ['admin.spots.col.spot','admin.spots.col.state','admin.spots.col.user','admin.spots.col.plate','admin.spots.col.rent','admin.spots.col.actions'].forEach(k => headRow.appendChild(mkTh(t(k))));
   table.appendChild(headRow);
 
   sortSpots(spots).forEach(s => {
@@ -439,7 +444,7 @@ async function renderSpots() {
 
     const stateCell = document.createElement('td');
     const stateClass = s.reserved ? 'inactive' : (s.state === 'free' ? 'free' : 'occupied');
-    const stateLabel = s.reserved ? 'Reserved' : (s.state === 'free' ? 'Free' : 'Occupied');
+    const stateLabel = s.reserved ? t('admin.spots.chip.reserved') : (s.state === 'free' ? t('admin.spots.chip.free') : t('admin.spots.chip.occupied'));
     stateCell.appendChild(chip(stateLabel, stateClass));
     row.appendChild(stateCell);
 
@@ -453,14 +458,14 @@ async function renderSpots() {
 
     // Reserve / unreserve toggle (admin only)
     if (s.reserved) {
-      bRow.appendChild(iconBtn('▶', 'Unreserve — make available', 'success-btn', async () => {
+      bRow.appendChild(iconBtn('▶', t('admin.btn.unreserve'), 'success-btn', async () => {
         await setSpotReserved(s.id, false); renderSpots();
       }));
     } else if (!s.assignedUserId) {
       // Free spot: can assign a user OR mark as reserved
       const sel = document.createElement('select');
       sel.style.cssText = 'width:auto;font-size:0.8rem';
-      sel.appendChild(Object.assign(document.createElement('option'), {value:'',textContent:'— user —'}));
+      sel.appendChild(Object.assign(document.createElement('option'), {value:'',textContent:t('admin.spots.user.default')}));
       users.filter(u => u.active && u.role === 'renter').forEach(u => {
         sel.appendChild(Object.assign(document.createElement('option'), {
           value: u.id,
@@ -468,19 +473,19 @@ async function renderSpots() {
         }));
       });
       bRow.appendChild(sel);
-      bRow.appendChild(iconBtn('✓', 'Assign to user', 'success-btn', async () => {
-        if (!sel.value) { alert('Select a user first.'); return; }
+      bRow.appendChild(iconBtn('✓', t('admin.btn.assign'), 'success-btn', async () => {
+        if (!sel.value) { alert(t('admin.alert.selectuser')); return; }
         try { await assignSpot(s.id, sel.value); renderSpots(); }
         catch(e) { alert(e.message); }
       }));
-      bRow.appendChild(iconBtn('⛔', 'Mark reserved (external)', 'secondary', async () => {
-        if (!confirm(`Mark spot ${s.label} as reserved (external owner, not available)?`)) return;
+      bRow.appendChild(iconBtn('⛔', t('admin.btn.reserve'), 'secondary', async () => {
+        if (!confirm(t('admin.confirm.reserve', s.label))) return;
         await setSpotReserved(s.id, true); renderSpots();
       }));
     } else {
       // Occupied: can unassign
-      bRow.appendChild(iconBtn('⛔', 'Unassign spot', 'secondary', async () => {
-        if (!confirm(`Unassign spot ${s.label}?`)) return;
+      bRow.appendChild(iconBtn('⛔', t('admin.btn.unassign'), 'secondary', async () => {
+        if (!confirm(t('admin.confirm.unassign', s.label))) return;
         await unassignSpot(s.id); renderSpots();
       }));
     }
@@ -492,9 +497,9 @@ async function renderSpots() {
       rentInput.value = s.monthlyRent != null ? s.monthlyRent : 80;
       rentInput.style.cssText = 'width:70px;display:inline-block;font-size:0.8rem';
       bRow.appendChild(rentInput);
-      bRow.appendChild(iconBtn('€', 'Set monthly rent (effective this month)', 'secondary', async () => {
+      bRow.appendChild(iconBtn('€', t('admin.btn.setrent'), 'secondary', async () => {
         const val = parseFloat(rentInput.value);
-        if (isNaN(val) || val < 0) { alert('Invalid rent value'); return; }
+        if (isNaN(val) || val < 0) { alert(t('admin.alert.invalidrent')); return; }
         const now = new Date();
         const fromKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
         const history = [...(s.rentHistory || [])];
@@ -556,10 +561,10 @@ async function renderPayments() {
   const table = document.createElement('table');
 
   const headRow = document.createElement('tr');
-  headRow.appendChild(mkTh('Spot'));
-  headRow.appendChild(mkTh('Renter'));
-  headRow.appendChild(mkTh('Commission'));
-  months.forEach(m => { const t = mkTh(m.label); t.className='pay-col'; headRow.appendChild(t); });
+  headRow.appendChild(mkTh(t('admin.pay.col.spot')));
+  headRow.appendChild(mkTh(t('admin.pay.col.renter')));
+  headRow.appendChild(mkTh(t('admin.pay.col.commission')));
+  months.forEach(m => { const th = mkTh(m.label); th.className='pay-col'; headRow.appendChild(th); });
   table.appendChild(headRow);
 
   sortSpots(spots).filter(s => s.assignedUserId).forEach(s => {
@@ -579,7 +584,7 @@ async function renderPayments() {
       renterTd.appendChild(document.createTextNode(' '));
       const tc = document.createElement('span');
       tc.className = 'termination-chip';
-      tc.textContent = '⏹ ends ' + renter.terminationDate;
+      tc.textContent = t('admin.users.termination.chip', renter.terminationDate);
       renterTd.appendChild(tc);
     }
     commRow.appendChild(renterTd);
@@ -593,8 +598,8 @@ async function renderPayments() {
       commCell.className = 'payment-cell-paid';
       const textNode = document.createTextNode(`✓ ${commPaid.paidDate} `);
       commCell.appendChild(textNode);
-      commCell.appendChild(iconBtn('↩', 'Revert payment', 'secondary', async () => {
-        if (!confirm('Revert this commission payment?')) return;
+      commCell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
+        if (!confirm(t('admin.confirm.revert.commission'))) return;
         await unmarkPaid(commPaid.id); renderPayments();
       }));
     } else {
@@ -603,7 +608,7 @@ async function renderPayments() {
       amtDiv.style.cssText = 'font-size:0.72rem;color:var(--gray-600);margin-bottom:0.2rem';
       amtDiv.textContent = `€${commissionRent.toFixed(2)} (1 month)`;
       commCell.appendChild(amtDiv);
-      commCell.appendChild(iconBtn('✓', 'Mark commission paid', 'success-btn', async () => {
+      commCell.appendChild(iconBtn('✓', t('admin.btn.markpaid'), 'success-btn', async () => {
         try {
           await markPaid(s.id, s.assignedUserId, 0, selectedYear, currentUser.id, 'commission');
           renderPayments();
@@ -619,7 +624,7 @@ async function renderPayments() {
     const rentRow = document.createElement('tr');
     rentRow.appendChild(mkTd(`Spot ${s.label}`));
     rentRow.appendChild(mkTd(renterName));
-    rentRow.appendChild(mkTd('↑ Commission above'));
+    rentRow.appendChild(mkTd(t('admin.pay.commission.above')));
 
     months.forEach(m => {
       const cell = document.createElement('td');
@@ -666,8 +671,8 @@ async function renderPayments() {
         cell.className = 'payment-cell-paid';
         const textNode = document.createTextNode(`✓ ${p.paidDate} `);
         cell.appendChild(textNode);
-        cell.appendChild(iconBtn('↩', 'Revert payment', 'secondary', async () => {
-          if (!confirm(`Revert rent payment for ${m.label} ${m.year}?`)) return;
+        cell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
+          if (!confirm(t('admin.confirm.revert.rent', m.label, m.year))) return;
           await unmarkPaid(p.id); renderPayments();
         }));
       } else {
@@ -676,7 +681,7 @@ async function renderPayments() {
         amtDiv.style.cssText = 'font-size:0.72rem;color:var(--gray-600);margin-bottom:0.2rem';
         amtDiv.textContent = `€${amount}${fractionLabel}`;
         cell.appendChild(amtDiv);
-        cell.appendChild(iconBtn('✓', 'Mark rent paid', 'success-btn', async () => {
+        cell.appendChild(iconBtn('✓', t('admin.btn.markpaid'), 'success-btn', async () => {
           try {
             await markPaid(s.id, s.assignedUserId, m.month, m.year, currentUser.id, 'rent');
             renderPayments();

@@ -3,31 +3,38 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Park Management — Registration</title>
+<title data-i18n="reg.title">Park Management — Registration</title>
 <link rel="stylesheet" href="css/style.css"/>
+<script src="js/i18n/en.js"></script>
+<script src="js/i18n/de.js"></script>
+<script src="js/i18n/tr.js"></script>
+<script src="js/i18n.js"></script>
 </head>
 <body style="background:var(--gray-100);min-height:100vh;padding:2rem clamp(0.75rem,4vw,1.5rem)">
 
 <div style="max-width:560px;margin:0 auto">
 
-  <h1 style="margin-bottom:1.5rem">Parking Registration</h1>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.5rem">
+    <h1 data-i18n="reg.title">Parking Registration</h1>
+    <div id="lang-switcher-reg"></div>
+  </div>
 
   <!-- Step indicator -->
   <div class="step-indicator" id="step-indicator">
     <div class="step-item active" id="si-1">
-      <div class="step-dot">1</div><span>Review</span>
+      <div class="step-dot">1</div><span data-i18n="reg.step.review">Review</span>
     </div>
     <div class="step-connector" id="sc-1"></div>
     <div class="step-item" id="si-2">
-      <div class="step-dot">2</div><span>Register</span>
+      <div class="step-dot">2</div><span data-i18n="reg.step.register">Register</span>
     </div>
     <div class="step-connector" id="sc-2"></div>
     <div class="step-item" id="si-3">
-      <div class="step-dot">3</div><span>Done</span>
+      <div class="step-dot">3</div><span data-i18n="reg.step.done">Done</span>
     </div>
   </div>
 
-  <div id="step-loading" class="card"><p>Loading your invite…</p></div>
+  <div id="step-loading" class="card"><p data-i18n="reg.loading">Loading your invite…</p></div>
 
   <div id="step-error" style="display:none">
     <div class="alert error" id="error-msg"></div>
@@ -36,69 +43,66 @@
   <!-- Step 1: Terms + pre-filled data -->
   <div id="step-terms" style="display:none">
     <div class="card">
-      <h2>Your Parking Spot</h2>
+      <h2 data-i18n="reg.spot.title">Your Parking Spot</h2>
       <div class="spot-badge" id="spot-label-display"></div>
-      <p style="font-size:0.875rem;color:var(--gray-600);margin:0 0 0.75rem">
+      <p style="font-size:0.875rem;color:var(--gray-600);margin:0 0 0.75rem" data-i18n="reg.spot.detail">
         Your details registered for this spot:
       </p>
       <div class="info-card">
         <table id="prefill-table"></table>
       </div>
 
-      <h2>Terms of Agreement</h2>
+      <h2 data-i18n="reg.terms.title">Terms of Agreement</h2>
       <div class="terms-box">
-        <p><strong>Parking Area Usage Agreement</strong></p>
-        <p>By registering and using this parking management system, you agree to the following:</p>
+        <p><strong data-i18n="reg.terms.heading">Parking Area Usage Agreement</strong></p>
+        <p data-i18n="reg.terms.intro">By registering and using this parking management system, you agree to the following:</p>
         <ol>
-          <li>Your assigned parking spot is for exclusive personal use. Subletting or sharing is not permitted.</li>
-          <li>You are responsible for any damage caused by your vehicle to the parking area or other vehicles.</li>
-          <li>Parking is only permitted within the boundaries of your assigned spot.</li>
-          <li>Your contact details (name, phone, license plate, car model and color) will be visible to other registered residents to facilitate communication in emergencies.</li>
-          <li>Changes to your personal data require administrator approval.</li>
-          <li>Your account access is non-transferable and tied to your license plate as your username.</li>
-          <li>The administrator may revoke access at any time in case of violations.</li>
-          <li>You agree to keep your contact information up to date.</li>
-          <li><strong>Monthly rent:</strong> The monthly parking fee is due on the 1st of each month.
-              If you register in the first 10 days of the month, the full monthly fee applies for that month.
-              If you register between days 11–20, half the monthly fee applies.
-              If you register after day 20, one third of the monthly fee applies for that month.</li>
+          <li data-i18n="reg.terms.1">Your assigned parking spot is for exclusive personal use. Subletting or sharing is not permitted.</li>
+          <li data-i18n="reg.terms.2">You are responsible for any damage caused by your vehicle to the parking area or other vehicles.</li>
+          <li data-i18n="reg.terms.3">Parking is only permitted within the boundaries of your assigned spot.</li>
+          <li data-i18n="reg.terms.4">Your contact details (name, phone, license plate, car model and color) will be visible to other registered residents to facilitate communication in emergencies.</li>
+          <li data-i18n="reg.terms.5">Changes to your personal data require administrator approval.</li>
+          <li data-i18n="reg.terms.6">Your account access is non-transferable and tied to your license plate as your username.</li>
+          <li data-i18n="reg.terms.7">The administrator may revoke access at any time in case of violations.</li>
+          <li data-i18n="reg.terms.8">You agree to keep your contact information up to date.</li>
+          <li><strong data-i18n="reg.terms.9.title">Monthly rent:</strong> <span data-i18n="reg.terms.9.text">The monthly parking fee is due on the 1st of each month. If you register in the first 10 days of the month, the full monthly fee applies for that month. If you register between days 11–20, half the monthly fee applies. If you register after day 20, one third of the monthly fee applies for that month.</span></li>
         </ol>
-        <p>This agreement is governed by the house rules of the property.</p>
+        <p data-i18n="reg.terms.closing">This agreement is governed by the house rules of the property.</p>
       </div>
       <div id="payment-notice" class="alert info" style="margin-bottom:1rem"></div>
-      <button id="agree-btn" style="width:100%">I Agree — Continue to Registration →</button>
+      <button id="agree-btn" style="width:100%" data-i18n="reg.btn.agree">I Agree — Continue to Registration →</button>
     </div>
   </div>
 
   <!-- Step 2: Registration form -->
   <div id="step-register" style="display:none">
     <div class="card">
-      <h2>Create Your Account</h2>
-      <p style="font-size:0.85rem;color:var(--gray-600);margin-bottom:1.25rem">
+      <h2 data-i18n="reg.account.title">Create Your Account</h2>
+      <p style="font-size:0.85rem;color:var(--gray-600);margin-bottom:1.25rem" data-i18n="reg.account.note">
         Your license plate will be your username.
       </p>
 
       <form id="register-form">
         <div class="form-group">
-          <label>License Plate (= your username)</label>
-          <input id="r-plate" placeholder="e.g. HD-XY-123" required/>
-          <small id="plate-hint" style="font-size:0.75rem;color:var(--gray-600)">Format: HD-XY-123</small>
+          <label data-i18n="reg.label.plate">License Plate (= your username)</label>
+          <input id="r-plate" data-i18n-ph="reg.hint.plate" placeholder="e.g. HD-XY-123" required/>
+          <small id="plate-hint" style="font-size:0.75rem;color:var(--gray-600)" data-i18n="reg.hint.plate">Format: HD-XY-123</small>
         </div>
         <div class="form-group">
-          <label>Password</label>
+          <label data-i18n="reg.label.password">Password</label>
           <input id="r-password" type="password" required/>
         </div>
         <div class="grid-2">
           <div class="form-group">
-            <label>Car Model</label>
+            <label data-i18n="reg.label.model">Car Model</label>
             <input id="r-carmodel" placeholder="e.g. VW Golf" required/>
           </div>
           <div class="form-group">
-            <label>Car Color</label>
+            <label data-i18n="reg.label.color">Car Color</label>
             <input id="r-carcolor" placeholder="e.g. blue" required/>
           </div>
         </div>
-        <button type="submit" style="width:100%">Complete Registration</button>
+        <button type="submit" style="width:100%" data-i18n="reg.btn.submit">Complete Registration</button>
         <div id="reg-msg" style="margin-top:0.5rem"></div>
       </form>
     </div>
@@ -108,13 +112,13 @@
   <div id="step-done" style="display:none">
     <div class="card" style="text-align:center">
       <div style="font-size:3rem;margin-bottom:0.75rem">✓</div>
-      <h2>Registration Complete!</h2>
-      <p>Your account is active. You can now log in.</p>
+      <h2 data-i18n="reg.success.title">Registration Complete!</h2>
+      <p data-i18n="reg.success.text">Your account is active. You can now log in.</p>
       <p style="font-size:0.875rem;color:var(--gray-600)">
-        Spot: <strong id="done-spot"></strong> &nbsp;·&nbsp;
-        Username: <strong id="done-username"></strong>
+        <span data-i18n="reg.success.spot">Spot:</span> <strong id="done-spot"></strong> &nbsp;·&nbsp;
+        <span data-i18n="reg.success.user">Username:</span> <strong id="done-username"></strong>
       </p>
-      <a href="index.html"><button style="margin-top:1rem">Go to Login →</button></a>
+      <a href="index.html"><button style="margin-top:1rem" data-i18n="reg.btn.login">Go to Login →</button></a>
     </div>
   </div>
 
@@ -126,6 +130,8 @@
 <script src="js/admin.js"></script>
 <script src="js/invite.js"></script>
 <script>
+buildSwitcher('lang-switcher-reg');
+applyPage();
 (async () => {
   const token = getTokenFromUrl();
 
@@ -183,7 +189,7 @@
   const rent = spot && spot.monthlyRent ? spot.monthlyRent : 80;
   const dueAmt = (rent * pf.fraction).toFixed(2);
   const noticeEl = document.getElementById('payment-notice');
-  noticeEl.textContent = `First month payment: €${dueAmt} (${pf.label}) — ${pf.desc}`;
+  noticeEl.textContent = `${t('pay.fraction.' + pf.key)}: €${dueAmt} — ${t('pay.fraction.' + pf.key + '.desc')}`;
 
   // Build pre-fill table
   const table = document.getElementById('prefill-table');
@@ -210,7 +216,7 @@
   if (invite.licensePlate) {
     const el = document.getElementById('r-plate');
     el.value = invite.licensePlate; el.readOnly = true;
-    document.getElementById('plate-hint').textContent = 'Pre-filled by administrator';
+    document.getElementById('plate-hint').textContent = t('reg.hint.prefilled');
   }
   if (invite.carModel) {
     const el = document.getElementById('r-carmodel');
@@ -228,7 +234,7 @@
     const msg = document.getElementById('reg-msg');
     msg.textContent = '';
     const submitBtn = e.target.querySelector('button[type=submit]');
-    submitBtn.disabled = true; submitBtn.textContent = 'Registering…';
+    submitBtn.disabled = true; submitBtn.textContent = t('reg.btn.loading');
     try {
       const spotId = await registerViaInvite({
         token,
@@ -243,7 +249,7 @@
       show('step-done');
     } catch(err) {
       msg.className = 'alert error'; msg.textContent = err.message;
-      submitBtn.disabled = false; submitBtn.textContent = 'Complete Registration';
+      submitBtn.disabled = false; submitBtn.textContent = t('reg.btn.submit');
     }
   });
 })();
