@@ -14,11 +14,12 @@
 
 function _table(path) {
   const map = {
-    'data/users.json':     'users',
-    'data/spots.json':     'spots',
-    'data/invites.json':   'invites',
-    'data/payments.json':  'payments',
-    'data/incidents.json': 'incidents'
+    'data/users.json':            'users',
+    'data/spots.json':            'spots',
+    'data/invites.json':          'invites',
+    'data/payments.json':         'payments',
+    'data/incidents.json':        'incidents',
+    'data/pending_registrations': 'pending_registrations'
   };
   const t = map[path];
   if (!t) throw new Error('Unknown table path: ' + path);

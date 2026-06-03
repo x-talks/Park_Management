@@ -51,6 +51,14 @@
 
     <div class="card">
       <div class="card-header">
+        <h2 data-i18n="admin.pr.title">Pending Registrations</h2>
+        <span id="pr-badge" class="badge" style="display:none">0</span>
+      </div>
+      <div id="pending-reg-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
         <h2 data-i18n="admin.users.title">Users</h2>
         <span id="last-refresh" style="font-size:0.75rem;color:var(--gray-600)"></span>
       </div>
@@ -205,9 +213,85 @@ function sortSpots(spots) {
   });
 }
 
+// ── Pending registrations ─────────────────────────────────────────────────────
+function renderPendingRegistrations(pendingRegs, spots) {
+  const container = document.getElementById('pending-reg-list');
+  container.innerHTML = '';
+
+  if (!pendingRegs.length) {
+    const empty = document.createElement('p');
+    empty.style.cssText = 'color:var(--gray-600);font-size:0.85rem;margin:0.5rem 0';
+    empty.textContent = t('admin.pr.empty');
+    container.appendChild(empty);
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'table-wrap';
+  const table = document.createElement('table');
+
+  const headRow = document.createElement('tr');
+  ['admin.pr.col.submitted','admin.pr.col.name','admin.pr.col.plate','admin.pr.col.spot','admin.pr.col.car','admin.pr.col.actions'].forEach(k => {
+    headRow.appendChild(mkTh(t(k)));
+  });
+  table.appendChild(headRow);
+
+  pendingRegs.forEach(pr => {
+    const spot = spots.find(s => s.id === pr.spotId);
+    const row = document.createElement('tr');
+    row.className = 'pending-row';
+
+    const submitted = pr.submittedAt ? new Date(pr.submittedAt).toLocaleString() : '—';
+    row.appendChild(mkTd(submitted));
+    row.appendChild(mkTd(`${pr.name || ''} ${pr.lastName || ''}`.trim() || '—'));
+    row.appendChild(mkTd(pr.licensePlate || '—'));
+    row.appendChild(mkTd(spot ? `Spot ${spot.label}` : pr.spotId));
+    row.appendChild(mkTd(pr.carModel ? `${pr.carModel} / ${pr.carColor || '?'}` : '—'));
+
+    const ac = document.createElement('td');
+    ac.className = 'action-cell';
+    const bRow = document.createElement('div');
+    bRow.className = 'btn-row';
+
+    bRow.appendChild(iconBtn('✓', t('admin.pr.approve'), 'success-btn', async () => {
+      try {
+        await approvePendingRegistration(pr.id);
+        renderUsers();
+      } catch(e) { alert(e.message); }
+    }));
+
+    bRow.appendChild(iconBtn('✕', t('admin.pr.reject'), 'secondary', async () => {
+      if (!confirm(t('admin.pr.confirm.reject'))) return;
+      try {
+        await rejectPendingRegistration(pr.id);
+        renderUsers();
+      } catch(e) { alert(e.message); }
+    }));
+
+    ac.appendChild(bRow);
+    row.appendChild(ac);
+    table.appendChild(row);
+  });
+
+  wrap.appendChild(table);
+  container.appendChild(wrap);
+}
+
 // ── Users tab ─────────────────────────────────────────────────────────────────
 async function renderUsers() {
-  const [users, spots] = await Promise.all([loadUsers(), readFile('data/spots.json')]);
+  const [users, spots, pendingRegs] = await Promise.all([
+    loadUsers(),
+    readFile('data/spots.json'),
+    loadPendingRegistrations()
+  ]);
+
+  // Update pending registrations badge on tab button
+  const prBadge = document.getElementById('pr-badge');
+  prBadge.textContent = pendingRegs.length;
+  prBadge.style.display = pendingRegs.length > 0 ? 'inline-flex' : 'none';
+
+  // Render pending registrations section
+  renderPendingRegistrations(pendingRegs, spots);
 
   const pending = users.filter(u => u.pendingEdits);
   const badge = document.getElementById('pending-badge');

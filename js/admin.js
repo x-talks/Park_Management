@@ -171,6 +171,61 @@ async function getPaymentMatrix() {
   return { payments, spots };
 }
 
+// ── Pending registrations ──────────────────────────────────────────────────────
+
+async function loadPendingRegistrations() {
+  return readFile('data/pending_registrations');
+}
+
+async function approvePendingRegistration(prId) {
+  const prs = await loadPendingRegistrations();
+  const pr = prs.find(r => r.id === prId);
+  if (!pr) throw new Error(typeof t === 'function' ? t('err.pr.notfound') : 'Pending registration not found');
+
+  const [invites, spots, users] = await Promise.all([
+    readFile('data/invites.json'),
+    readFile('data/spots.json'),
+    readFile('data/users.json')
+  ]);
+
+  const invite = invites.find(i => i.token === pr.token);
+  if (!invite || invite.usedBy) throw new Error(typeof t === 'function' ? t('err.invite.invalid') : 'Invalid invite link');
+
+  const spot = spots.find(s => s.id === pr.spotId);
+  if (!spot || spot.assignedUserId) throw new Error(typeof t === 'function' ? t('err.spot.assigned') : 'Spot already assigned');
+
+  if (users.find(u => u.username === pr.licensePlate)) throw new Error(typeof t === 'function' ? t('err.plate.registered') : 'License plate already registered');
+
+  const userId = 'u' + Date.now();
+  await Promise.all([
+    upsertRow('data/users.json', {
+      id:           userId,
+      username:     pr.licensePlate,
+      passwordHash: pr.passwordHash,
+      lastPassword: null,
+      name:         pr.name,
+      lastName:     pr.lastName,
+      phone:        pr.phone,
+      address:      pr.address,
+      licensePlate: pr.licensePlate,
+      carModel:     pr.carModel,
+      carColor:     pr.carColor,
+      role:         'renter',
+      active:       true,
+      assignedSpots:[pr.spotId],
+      pendingEdits: null,
+      registeredAt: pr.submittedAt
+    }),
+    patchRow('data/spots.json', pr.spotId, { assignedUserId: userId, state: 'occupied' }),
+    patchRow('data/invites.json', invite.id, { usedBy: userId }),
+    deleteRow('data/pending_registrations', prId)
+  ]);
+}
+
+async function rejectPendingRegistration(prId) {
+  await deleteRow('data/pending_registrations', prId);
+}
+
 // ── Invite links ──────────────────────────────────────────────────────────────
 
 async function createAndInviteUser({ name, lastName, phone, address, spotId, licensePlate, carModel, carColor }) {

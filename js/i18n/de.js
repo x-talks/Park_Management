@@ -243,9 +243,30 @@ const LANG_DE = {
   'reg.hint.prefilled':'Vom Administrator vorausgefüllt',
   'reg.btn.submit':    'Registrierung abschließen',
   'reg.btn.loading':   'Wird registriert\u2026',
-  'reg.success.title': 'Registrierung abgeschlossen!',
-  'reg.success.text':  'Ihr Konto ist aktiv. Sie können sich jetzt anmelden.',
+  'reg.success.title': 'Registrierung eingereicht!',
+  'reg.success.text':  'Ihre Registrierung wartet auf Genehmigung durch den Administrator. Sie werden benachrichtigt, wenn Ihr Konto aktiviert ist.',
   'reg.success.spot':  'Stellplatz:',
   'reg.success.user':  'Benutzername:',
   'reg.btn.login':     'Zur Anmeldung \u2192',
+
+  // ── Pending registrations ─────────────────────────────────────────────────
+  'admin.pr.title':          'Ausstehende Registrierungen',
+  'admin.pr.empty':          'Keine ausstehenden Registrierungen.',
+  'admin.pr.approve':        'Genehmigen',
+  'admin.pr.reject':         'Ablehnen',
+  'admin.pr.confirm.reject': 'Diese Registrierung ablehnen?',
+  'admin.pr.col.submitted':  'Eingereicht',
+  'admin.pr.col.name':       'Name',
+  'admin.pr.col.plate':      'Kennzeichen',
+  'admin.pr.col.spot':       'Stellplatz',
+  'admin.pr.col.car':        'Fahrzeug',
+  'admin.pr.col.actions':    'Aktionen',
+
+  // ── Spot states ───────────────────────────────────────────────────────────
+  'spot.state.pending':  'Registrierung ausstehend',
+  'map.legend.pending':  'Ausstehend',
+
+  // ── Errors ────────────────────────────────────────────────────────────────
+  'err.pr.notfound':    'Ausstehende Registrierung nicht gefunden',
+  'err.invite.pending': 'Für diese Einladung ist bereits eine Registrierung ausstehend',
 };

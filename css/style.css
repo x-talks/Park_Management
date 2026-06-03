@@ -284,6 +284,7 @@ tr:hover td { background: var(--gray-50); }
 .spot.free     { fill: #4ade80; stroke: #16a34a; stroke-width: 1.5; }
 .spot.occupied { fill: #f87171; stroke: #dc2626; stroke-width: 1.5; }
 .spot.reserved { fill: #9ca3af; stroke: #6b7280; stroke-width: 1.5; }
+.spot.pending  { fill: #fbbf24; stroke: #d97706; stroke-width: 1.5; }
 .spot-label {
   font-family: inherit;
   font-size: 13px;
@@ -319,6 +320,7 @@ tr:hover td { background: var(--gray-50); }
 .legend-swatch.free     { background: #4ade80; border-color: #16a34a; }
 .legend-swatch.occupied { background: #f87171; border-color: #dc2626; }
 .legend-swatch.reserved { background: #9ca3af; border-color: #6b7280; }
+.legend-swatch.pending  { background: #fbbf24; border-color: #d97706; }
 .legend-swatch.mine     { background: #2563eb; border-color: #1d4ed8; }
 
 /* ── Info panel ───────────────────────────────────────────────────────────── */

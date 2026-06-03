@@ -47,6 +47,7 @@
       <span class="legend-item"><span class="legend-swatch free"></span> <span data-i18n="map.legend.free">Free</span></span>
       <span class="legend-item"><span class="legend-swatch occupied"></span> <span data-i18n="map.legend.occupied">Occupied</span></span>
       <span class="legend-item"><span class="legend-swatch reserved"></span> <span data-i18n="map.legend.reserved">Reserved (external)</span></span>
+      <span class="legend-item"><span class="legend-swatch pending"></span> <span data-i18n="map.legend.pending">Pending</span></span>
     </div>
 
     <!-- Info panel -->
@@ -89,19 +90,21 @@ if (currentUser.role === 'admin' || currentUser.role === 'master') {
 document.getElementById('logout-link').addEventListener('click', e => { e.preventDefault(); logout(); });
 
 // ── Init & real-time refresh ──────────────────────────────────────────────────
-let _spots = [], _users = [], _payments = [];
+let _spots = [], _users = [], _payments = [], _pendingRegs = [];
 
 async function loadAll() {
-  [_spots, _users, _payments] = await Promise.all([
+  [_spots, _users, _payments, _pendingRegs] = await Promise.all([
     readFile('data/spots.json'),
     readFile('data/users.json'),
-    readFile('data/payments.json')
+    readFile('data/payments.json'),
+    readFile('data/pending_registrations').catch(() => [])
   ]);
 }
 
 async function refresh() {
   await loadAll();
-  buildSVG(_spots, _users, currentUser);
+  const pendingSpotIds = new Set(_pendingRegs.map(pr => pr.spotId));
+  buildSVG(_spots, _users, currentUser, pendingSpotIds);
   renderMyPayments();
   renderProfile();
   if (document.getElementById('residents-panel').style.display !== 'none') {

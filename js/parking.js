@@ -33,12 +33,14 @@ function getSpotData(spots, label) {
   return spots.find(s => s.id === sid) || { id: sid, state: 'free', assignedUserId: null, reserved: false };
 }
 
-function spotStateClass(spotData) {
+function spotStateClass(spotData, pendingSpotIds) {
   if (spotData.reserved) return 'reserved';
+  if (pendingSpotIds && pendingSpotIds.has(spotData.id)) return 'pending';
   return spotData.state === 'occupied' ? 'occupied' : 'free';
 }
 
-function buildSVG(spots, users, currentUser) {
+function buildSVG(spots, users, currentUser, pendingSpotIds) {
+  pendingSpotIds = pendingSpotIds || new Set();
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.getElementById('parking-svg');
   while (svg.firstChild) svg.removeChild(svg.firstChild);
@@ -97,7 +99,7 @@ function buildSVG(spots, users, currentUser) {
       ? users.find(u => u.id === spotData.assignedUserId)
       : null;
 
-    const stateClass = spotStateClass(spotData);
+    const stateClass = spotStateClass(spotData, pendingSpotIds);
 
     const g = document.createElementNS(svgNS, 'g');
     g.setAttribute('class', `spot ${stateClass}`);
@@ -171,7 +173,7 @@ function buildSVG(spots, users, currentUser) {
     }
 
     if (currentUser) {
-      g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser));
+      g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser, pendingSpotIds));
     }
     return g;
   }
@@ -197,7 +199,7 @@ function buildSVG(spots, users, currentUser) {
       ? users.find(u => u.id === spotData.assignedUserId)
       : null;
 
-    const stateClass = spotStateClass(spotData);
+    const stateClass = spotStateClass(spotData, pendingSpotIds);
 
     const g = document.createElementNS(svgNS, 'g');
     g.setAttribute('class', `spot ${stateClass}`);
@@ -246,7 +248,7 @@ function buildSVG(spots, users, currentUser) {
     }
 
     if (currentUser) {
-      g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser));
+      g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser, pendingSpotIds));
     }
     return g;
   }
@@ -258,7 +260,7 @@ function buildSVG(spots, users, currentUser) {
       ? users.find(u => u.id === spotData.assignedUserId)
       : null;
 
-    const stateClass = spotStateClass(spotData);
+    const stateClass = spotStateClass(spotData, pendingSpotIds);
 
     const g = document.createElementNS(svgNS, 'g');
     g.setAttribute('class', `spot ${stateClass}`);
@@ -306,7 +308,7 @@ function buildSVG(spots, users, currentUser) {
     }
 
     if (currentUser) {
-      g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser));
+      g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser, pendingSpotIds));
     }
     return g;
   }
@@ -333,12 +335,17 @@ function buildSVG(spots, users, currentUser) {
   ]));
 }
 
-function showSpotInfo(spotData, label, users, currentUser) {
+function showSpotInfo(spotData, label, users, currentUser, pendingSpotIds) {
   const panel = document.getElementById('info-panel');
   panel.innerHTML = '';
 
   if (spotData.reserved) {
     panel.textContent = `Spot ${label}: Reserved (external — not available)`;
+    return;
+  }
+
+  if (pendingSpotIds && pendingSpotIds.has(spotData.id)) {
+    panel.textContent = typeof t === 'function' ? `Spot ${label}: ${t('spot.state.pending')}` : `Spot ${label}: Pending registration`;
     return;
   }
 
@@ -371,12 +378,14 @@ function showSpotInfo(spotData, label, users, currentUser) {
 }
 
 async function initParking(highlightSpotId) {
-  const [spots, users] = await Promise.all([
+  const [spots, users, pendingRegs] = await Promise.all([
     readFile('data/spots.json'),
-    readFile('data/users.json')
+    readFile('data/users.json'),
+    readFile('data/pending_registrations').catch(() => [])
   ]);
+  const pendingSpotIds = new Set(pendingRegs.map(pr => pr.spotId));
   const currentUser = getSession();
-  buildSVG(spots, users, currentUser);
+  buildSVG(spots, users, currentUser, pendingSpotIds);
   if (highlightSpotId) {
     const g = document.querySelector(`[data-id="${highlightSpotId}"]`);
     if (g) g.classList.add('highlighted');

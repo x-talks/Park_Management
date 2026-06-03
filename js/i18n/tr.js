@@ -243,9 +243,30 @@ const LANG_TR = {
   'reg.hint.prefilled':'Yönetici tarafından dolduruldu',
   'reg.btn.submit':    'Kaydı Tamamla',
   'reg.btn.loading':   'Kayıt yapılıyor\u2026',
-  'reg.success.title': 'Kayıt Tamamlandı!',
-  'reg.success.text':  'Hesabınız aktif. Şimdi giriş yapabilirsiniz.',
+  'reg.success.title': 'Kayıt Gönderildi!',
+  'reg.success.text':  'Kaydınız yönetici onayı bekliyor. Hesabınız etkinleştirildiğinde bilgilendirileceksiniz.',
   'reg.success.spot':  'Yer:',
   'reg.success.user':  'Kullanıcı adı:',
   'reg.btn.login':     'Girişe Git \u2192',
+
+  // ── Pending registrations ─────────────────────────────────────────────────
+  'admin.pr.title':          'Bekleyen Kayıtlar',
+  'admin.pr.empty':          'Bekleyen kayıt yok.',
+  'admin.pr.approve':        'Onayla',
+  'admin.pr.reject':         'Reddet',
+  'admin.pr.confirm.reject': 'Bu kaydı reddet?',
+  'admin.pr.col.submitted':  'Gönderildi',
+  'admin.pr.col.name':       'Ad',
+  'admin.pr.col.plate':      'Plaka',
+  'admin.pr.col.spot':       'Yer',
+  'admin.pr.col.car':        'Araç',
+  'admin.pr.col.actions':    'İşlemler',
+
+  // ── Spot states ───────────────────────────────────────────────────────────
+  'spot.state.pending':  'Kayıt beklemede',
+  'map.legend.pending':  'Beklemede',
+
+  // ── Errors ────────────────────────────────────────────────────────────────
+  'err.pr.notfound':    'Bekleyen kayıt bulunamadı',
+  'err.invite.pending': 'Bu davet için zaten bekleyen bir kayıt var',
 };

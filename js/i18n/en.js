@@ -258,9 +258,30 @@ const LANG_EN = {
   'reg.hint.prefilled':'Pre-filled by administrator',
   'reg.btn.submit':    'Complete Registration',
   'reg.btn.loading':   'Registering\u2026',
-  'reg.success.title': 'Registration Complete!',
-  'reg.success.text':  'Your account is active. You can now log in.',
+  'reg.success.title': 'Registration Submitted!',
+  'reg.success.text':  'Your registration is pending admin approval. You will be notified when your account is activated.',
   'reg.success.spot':  'Spot:',
   'reg.success.user':  'Username:',
   'reg.btn.login':     'Go to Login \u2192',
+
+  // ── Pending registrations ─────────────────────────────────────────────────
+  'admin.pr.title':          'Pending Registrations',
+  'admin.pr.empty':          'No pending registrations.',
+  'admin.pr.approve':        'Approve',
+  'admin.pr.reject':         'Reject',
+  'admin.pr.confirm.reject': 'Reject this registration?',
+  'admin.pr.col.submitted':  'Submitted',
+  'admin.pr.col.name':       'Name',
+  'admin.pr.col.plate':      'License Plate',
+  'admin.pr.col.spot':       'Spot',
+  'admin.pr.col.car':        'Car',
+  'admin.pr.col.actions':    'Actions',
+
+  // ── Spot states ───────────────────────────────────────────────────────────
+  'spot.state.pending':  'Pending registration',
+  'map.legend.pending':  'Pending',
+
+  // ── Errors ────────────────────────────────────────────────────────────────
+  'err.pr.notfound':    'Pending registration not found',
+  'err.invite.pending': 'A registration for this invite is already pending admin approval',
 };

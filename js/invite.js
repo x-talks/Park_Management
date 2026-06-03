@@ -62,16 +62,22 @@ async function registerViaInvite({ token, password, licensePlate, carModel, carC
   if (!spotRows.length) throw new Error(typeof t === 'function' ? t('err.spot.notfound') : 'Spot not found');
   if (spotRows[0].assignedUserId) throw new Error(typeof t === 'function' ? t('err.spot.assigned') : 'Spot already assigned');
 
-  const passwordHash = await hashPassword(password);
-  const id = 'u' + Date.now();
-  const registeredAt = new Date().toISOString();
+  // Check no duplicate pending registration for this token
+  const prRes = await fetch(
+    `${CONFIG.supabaseUrl}/rest/v1/pending_registrations?token=eq.${encodeURIComponent(token)}&limit=1`,
+    { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey } }
+  );
+  const prRows = await prRes.json();
+  if (prRows.length) throw new Error(typeof t === 'function' ? t('err.invite.pending') : 'A registration for this invite is already pending admin approval');
 
-  // Create user
-  await upsertRow('data/users.json', {
+  const passwordHash = await hashPassword(password);
+  const id = 'pr' + Date.now();
+
+  // Write only to pending_registrations — admin approves to create user+assign spot
+  await upsertRow('data/pending_registrations', {
     id,
-    username:      finalLicensePlate,
-    passwordHash,
-    lastPassword:  password,
+    token,
+    spotId:        invite.spotId,
     name:          invite.name     || '',
     lastName:      invite.lastName || '',
     phone:         invite.phone    || '',
@@ -79,21 +85,9 @@ async function registerViaInvite({ token, password, licensePlate, carModel, carC
     licensePlate:  finalLicensePlate,
     carModel:      finalCarModel,
     carColor:      finalCarColor,
-    role:          'renter',
-    active:        true,
-    assignedSpots: [invite.spotId],
-    pendingEdits:  null,
-    registeredAt
+    passwordHash,
+    submittedAt:   new Date().toISOString()
   });
-
-  // Assign spot
-  await patchRow('data/spots.json', invite.spotId, {
-    assignedUserId: id,
-    state: 'occupied'
-  });
-
-  // Mark invite as used
-  await patchRow('data/invites.json', invite.id, { usedBy: id });
 
   return invite.spotId;
 }
