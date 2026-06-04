@@ -1,27 +1,12 @@
 // js/auth.js
 
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
 async function login(username, password) {
-  const hash = await hashPassword(password);
-  const url = `${CONFIG.supabaseUrl}/rest/v1/users?username=eq.${encodeURIComponent(username)}&passwordHash=eq.${encodeURIComponent(hash)}&active=eq.true&limit=1`;
-  const res = await fetch(url, {
-    headers: {
-      'apikey': CONFIG.supabaseKey,
-      'Authorization': 'Bearer ' + CONFIG.supabaseKey
-    }
+  const { accessToken, refreshToken, user } = await workerRequest('POST', '/auth/login', {
+    username: username.trim().toUpperCase(),
+    password,
   });
-  if (!res.ok) throw new Error(typeof t === 'function' ? t('login.error.failed') : 'Login failed');
-  const rows = await res.json();
-  if (!rows.length) throw new Error(typeof t === 'function' ? t('err.auth.invalid') : 'Invalid credentials or account inactive');
-  const user = rows[0];
+  sessionStorage.setItem('pm_access_token', accessToken);
+  if (refreshToken) sessionStorage.setItem('pm_refresh_token', refreshToken);
   sessionStorage.setItem('pm_user', JSON.stringify(user));
   return user;
 }
@@ -42,6 +27,9 @@ function requireAuth(minRole) {
 }
 
 function logout() {
+  workerRequest('POST', '/auth/logout').catch(() => {});
+  sessionStorage.removeItem('pm_access_token');
+  sessionStorage.removeItem('pm_refresh_token');
   sessionStorage.removeItem('pm_user');
   location.href = 'index.html';
 }

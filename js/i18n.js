@@ -43,7 +43,7 @@
     try {
       const session = typeof getSession === 'function' ? getSession() : null;
       if (!session) return;
-      await patchRow('data/users.json', session.id, { language: lang });
+      await workerRequest('PATCH', `/users/${session.id}`, { language: lang });
     } catch (_) { /* silent — not critical */ }
   }
 

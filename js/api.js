@@ -26,13 +26,36 @@ function _table(path) {
   return t;
 }
 
+function _accessToken() {
+  return sessionStorage.getItem('pm_access_token');
+}
+
 function _headers() {
+  const token = _accessToken();
   return {
     'apikey': CONFIG.supabaseKey,
-    'Authorization': 'Bearer ' + CONFIG.supabaseKey,
+    'Authorization': 'Bearer ' + (token || CONFIG.supabaseKey),
     'Content-Type': 'application/json',
     'Prefer': 'return=representation'
   };
+}
+
+// Send a request to the Cloudflare Worker (requires valid JWT)
+async function workerRequest(method, path, body) {
+  const token = _accessToken();
+  const res = await fetch(CONFIG.workerUrl + path, {
+    method,
+    headers: {
+      'Authorization': 'Bearer ' + (token || ''),
+      'Content-Type': 'application/json',
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(data.error || 'Request failed');
+  }
+  return res.json().catch(() => null);
 }
 
 async function _get(table, params) {

@@ -45,48 +45,17 @@ async function registerViaInvite({ token, password, licensePlate, carModel, carC
   if (!finalCarColor)     throw new Error(typeof t === 'function' ? t('err.color.required') : 'Car color is required');
   if (!password)          throw new Error(typeof t === 'function' ? t('err.password.required') : 'Password is required');
 
-  // Check license plate not already taken
-  const checkRes = await fetch(
-    `${CONFIG.supabaseUrl}/rest/v1/users?username=eq.${encodeURIComponent(finalLicensePlate)}&limit=1`,
-    { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey } }
-  );
-  const existing = await checkRes.json();
-  if (existing.length) throw new Error(typeof t === 'function' ? t('err.plate.registered') : 'License plate already registered');
-
-  // Check spot is still free
-  const spotRes = await fetch(
-    `${CONFIG.supabaseUrl}/rest/v1/spots?id=eq.${encodeURIComponent(invite.spotId)}&limit=1`,
-    { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey } }
-  );
-  const spotRows = await spotRes.json();
-  if (!spotRows.length) throw new Error(typeof t === 'function' ? t('err.spot.notfound') : 'Spot not found');
-  if (spotRows[0].assignedUserId) throw new Error(typeof t === 'function' ? t('err.spot.assigned') : 'Spot already assigned');
-
-  // Check no duplicate pending registration for this token
-  const prRes = await fetch(
-    `${CONFIG.supabaseUrl}/rest/v1/pending_registrations?token=eq.${encodeURIComponent(token)}&limit=1`,
-    { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': 'Bearer ' + CONFIG.supabaseKey } }
-  );
-  const prRows = await prRes.json();
-  if (prRows.length) throw new Error(typeof t === 'function' ? t('err.invite.pending') : 'A registration for this invite is already pending admin approval');
-
-  const passwordHash = await hashPassword(password);
-  const id = 'pr' + Date.now();
-
-  // Write only to pending_registrations — admin approves to create user+assign spot
-  await upsertRow('data/pending_registrations', {
-    id,
+  // Submit to Worker — it validates invite, checks for duplicates, writes pending_registrations
+  await workerRequest('POST', '/pending-registrations', {
     token,
-    spotId:        invite.spotId,
-    name:          invite.name     || '',
-    lastName:      invite.lastName || '',
-    phone:         invite.phone    || '',
-    address:       invite.address  || '',
-    licensePlate:  finalLicensePlate,
-    carModel:      finalCarModel,
-    carColor:      finalCarColor,
-    passwordHash,
-    submittedAt:   new Date().toISOString()
+    name:         invite.name     || '',
+    lastName:     invite.lastName || '',
+    phone:        invite.phone    || '',
+    address:      invite.address  || '',
+    licensePlate: finalLicensePlate,
+    carModel:     finalCarModel,
+    carColor:     finalCarColor,
+    password,
   });
 
   return invite.spotId;

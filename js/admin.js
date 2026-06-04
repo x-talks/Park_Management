@@ -11,50 +11,25 @@ async function toggleUserActive(userId) {
   const user = users.find(u => u.id === userId);
   if (!user) throw new Error(typeof t === 'function' ? t('err.user.notfound') : 'User not found');
   if (user.role === 'master') throw new Error(typeof t === 'function' ? t('err.deactivate.master') : 'Cannot deactivate master admin');
-  await patchRow('data/users.json', userId, { active: !user.active });
+  await workerRequest('PATCH', `/users/${userId}`, { active: !user.active });
 }
 
 async function setUserRole(userId, newRole, callerRole) {
   if (callerRole !== 'master') throw new Error(typeof t === 'function' ? t('err.role.master') : 'Only master can change roles');
-  const users = await loadUsers();
-  const user = users.find(u => u.id === userId);
-  if (!user || user.role === 'master') throw new Error(typeof t === 'function' ? t('err.user.master') : 'Cannot modify master admin');
-  await patchRow('data/users.json', userId, { role: newRole });
+  await workerRequest('POST', `/users/${userId}/role`, { role: newRole });
 }
 
 async function resetPassword(userId, newPassword, callerRole) {
   if (callerRole !== 'admin' && callerRole !== 'master') throw new Error(typeof t === 'function' ? t('err.pw.notauthorized') : 'Not authorized');
-  const users = await loadUsers();
-  const user = users.find(u => u.id === userId);
-  if (!user || user.role === 'master') throw new Error(typeof t === 'function' ? t('err.pw.master') : 'Cannot reset master password here');
-  const passwordHash = await hashPassword(newPassword);
-  await patchRow('data/users.json', userId, { passwordHash, lastPassword: newPassword });
+  await workerRequest('POST', `/users/${userId}/password`, { password: newPassword });
 }
 
 async function deleteUser(userId) {
-  const users = await loadUsers();
-  const user = users.find(u => u.id === userId);
-  if (!user) throw new Error(typeof t === 'function' ? t('err.user.notfound') : 'User not found');
-  if (user.role === 'master') throw new Error(typeof t === 'function' ? t('err.user.master') : 'Cannot modify master admin');
-  for (const spotId of (user.assignedSpots || [])) {
-    await unassignSpot(spotId);
-  }
-  await deleteRow('data/users.json', userId);
+  await workerRequest('DELETE', `/users/${userId}`);
 }
 
 async function updateUser(userId, changes) {
-  const users = await loadUsers();
-  const user = users.find(u => u.id === userId);
-  if (!user) throw new Error(typeof t === 'function' ? t('err.user.notfound') : 'User not found');
-  if (user.role === 'master') throw new Error(typeof t === 'function' ? t('err.user.master') : 'Cannot modify master admin');
-  if (changes.licensePlate) {
-    const plate = changes.licensePlate.toUpperCase().trim();
-    const conflict = users.find(u => u.id !== userId && u.username === plate);
-    if (conflict) throw new Error(typeof t === 'function' ? t('err.plate.taken') : 'License plate already in use');
-    changes.licensePlate = plate;
-    changes.username = plate;
-  }
-  await patchRow('data/users.json', userId, changes);
+  await workerRequest('PATCH', `/users/${userId}`, changes);
 }
 
 async function approvePendingEdit(userId) {
@@ -62,16 +37,15 @@ async function approvePendingEdit(userId) {
   const user = users.find(u => u.id === userId);
   if (!user || !user.pendingEdits) throw new Error(typeof t === 'function' ? t('err.nopending') : 'No pending edits');
   const { requestedAt, ...changes } = user.pendingEdits;
-  await patchRow('data/users.json', userId, { ...changes, pendingEdits: null });
+  await workerRequest('PATCH', `/users/${userId}`, { ...changes, pendingEdits: null });
 }
 
 async function rejectPendingEdit(userId) {
-  await patchRow('data/users.json', userId, { pendingEdits: null });
+  await workerRequest('PATCH', `/users/${userId}`, { pendingEdits: null });
 }
 
 async function setTerminationDate(userId, date) {
-  // date: 'YYYY-MM-DD' or null to clear
-  await patchRow('data/users.json', userId, { terminationDate: date || null });
+  await workerRequest('PATCH', `/users/${userId}`, { terminationDate: date || null });
 }
 
 // ── Spot assignment ───────────────────────────────────────────────────────────
@@ -91,8 +65,8 @@ async function assignSpot(spotId, userId) {
   if (!assignedSpots.includes(spotId)) assignedSpots.push(spotId);
 
   await Promise.all([
-    patchRow('data/spots.json', spotId, { assignedUserId: userId, state: 'occupied' }),
-    patchRow('data/users.json', userId, { assignedSpots })
+    workerRequest('PATCH', `/spots/${spotId}`, { assignedUserId: userId, state: 'occupied' }),
+    workerRequest('PATCH', `/users/${userId}`, { assignedSpots }),
   ]);
 }
 
@@ -106,35 +80,44 @@ async function unassignSpot(spotId) {
   const user = users.find(u => u.id === spot.assignedUserId);
 
   const patches = [
-    patchRow('data/spots.json', spotId, { assignedUserId: null, state: 'free' })
+    workerRequest('PATCH', `/spots/${spotId}`, { assignedUserId: null, state: 'free' }),
   ];
   if (user) {
     const assignedSpots = (user.assignedSpots || []).filter(id => id !== spotId);
-    patches.push(patchRow('data/users.json', user.id, { assignedSpots }));
+    patches.push(workerRequest('PATCH', `/users/${user.id}`, { assignedSpots }));
   }
   await Promise.all(patches);
 }
 
 async function setSpotReserved(spotId, reserved) {
-  // reserved=true marks the spot grey (external owner, not available).
-  // Clears any assigned user when reserving.
   if (reserved) {
-    await patchRow('data/spots.json', spotId, { reserved: true, state: 'reserved', assignedUserId: null });
+    await workerRequest('PATCH', `/spots/${spotId}`, { reserved: true, state: 'reserved', assignedUserId: null });
   } else {
-    await patchRow('data/spots.json', spotId, { reserved: false, state: 'free' });
+    await workerRequest('PATCH', `/spots/${spotId}`, { reserved: false, state: 'free' });
   }
+}
+
+async function setSpotRent(spotId, rent, fromMonth) {
+  // fromMonth: 'YYYY-MM' string
+  const spots = await readFile('data/spots.json');
+  const spot = spots.find(s => s.id === spotId);
+  if (!spot) throw new Error('Spot not found');
+  const history = [...(spot.rentHistory || [])];
+  // Remove existing entry for same month if present
+  const idx = history.findIndex(h => h.from === fromMonth);
+  if (idx >= 0) history[idx] = { from: fromMonth, rent };
+  else history.push({ from: fromMonth, rent });
+  history.sort((a, b) => a.from.localeCompare(b.from));
+  await workerRequest('PATCH', `/spots/${spotId}`, { monthlyRent: rent, rentHistory: history });
 }
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 
 // Returns the effective monthly rent for a given spot and month/year.
-// Uses rentHistory (array of {from: 'YYYY-MM', rent: number}) if present,
-// falling back to monthlyRent for backwards compatibility.
 function getRentForMonth(spot, year, month) {
   const history = spot.rentHistory;
   if (history && history.length > 0) {
     const key = `${year}-${String(month).padStart(2,'0')}`;
-    // Find the last entry whose 'from' <= key
     const applicable = history
       .filter(h => h.from <= key)
       .sort((a, b) => b.from.localeCompare(a.from));
@@ -143,24 +126,13 @@ function getRentForMonth(spot, year, month) {
   return spot.monthlyRent || 80;
 }
 
-// type: 'commission' | 'rent'
 async function markPaid(spotId, userId, month, year, adminId, type) {
   type = type || 'rent';
-  const payments = await readFile('data/payments.json');
-  const existing = payments.find(p =>
-    p.spotId === spotId && p.month === month && p.year === year && p.type === type
-  );
-  if (existing) throw new Error(typeof t === 'function' ? t('err.pay.alreadypaid') : 'Already marked paid');
-  const id = 'p' + Date.now() + '_' + type;
-  await upsertRow('data/payments.json', {
-    id, spotId, userId, month, year, type,
-    paidDate: new Date().toISOString().slice(0, 10),
-    markedByAdminId: adminId
-  });
+  await workerRequest('POST', '/payments', { spotId, userId, month, year, type });
 }
 
 async function unmarkPaid(paymentId) {
-  await deleteRow('data/payments.json', paymentId);
+  await workerRequest('DELETE', `/payments/${paymentId}`);
 }
 
 async function getPaymentMatrix() {
@@ -178,76 +150,26 @@ async function loadPendingRegistrations() {
 }
 
 async function approvePendingRegistration(prId) {
-  const prs = await loadPendingRegistrations();
-  const pr = prs.find(r => r.id === prId);
-  if (!pr) throw new Error(typeof t === 'function' ? t('err.pr.notfound') : 'Pending registration not found');
-
-  const [invites, spots, users] = await Promise.all([
-    readFile('data/invites.json'),
-    readFile('data/spots.json'),
-    readFile('data/users.json')
-  ]);
-
-  const invite = invites.find(i => i.token === pr.token);
-  if (!invite || invite.usedBy) throw new Error(typeof t === 'function' ? t('err.invite.invalid') : 'Invalid invite link');
-
-  const spot = spots.find(s => s.id === pr.spotId);
-  if (!spot || spot.assignedUserId) throw new Error(typeof t === 'function' ? t('err.spot.assigned') : 'Spot already assigned');
-
-  if (users.find(u => u.username === pr.licensePlate)) throw new Error(typeof t === 'function' ? t('err.plate.registered') : 'License plate already registered');
-
-  const userId = 'u' + Date.now();
-  await Promise.all([
-    upsertRow('data/users.json', {
-      id:           userId,
-      username:     pr.licensePlate,
-      passwordHash: pr.passwordHash,
-      lastPassword: null,
-      name:         pr.name,
-      lastName:     pr.lastName,
-      phone:        pr.phone,
-      address:      pr.address,
-      licensePlate: pr.licensePlate,
-      carModel:     pr.carModel,
-      carColor:     pr.carColor,
-      role:         'renter',
-      active:       true,
-      assignedSpots:[pr.spotId],
-      pendingEdits: null,
-      registeredAt: pr.submittedAt
-    }),
-    patchRow('data/spots.json', pr.spotId, { assignedUserId: userId, state: 'occupied' }),
-    patchRow('data/invites.json', invite.id, { usedBy: userId }),
-    deleteRow('data/pending_registrations', prId)
-  ]);
+  const result = await workerRequest('POST', `/pending-registrations/${prId}/approve`);
+  return result; // { ok, userId, tempPassword }
 }
 
 async function rejectPendingRegistration(prId) {
-  await deleteRow('data/pending_registrations', prId);
+  await workerRequest('DELETE', `/pending-registrations/${prId}`);
 }
 
 // ── Invite links ──────────────────────────────────────────────────────────────
 
 async function createAndInviteUser({ name, lastName, phone, address, spotId, licensePlate, carModel, carColor }) {
-  const spots = await readFile('data/spots.json');
-  const spot = spots.find(s => s.id === spotId);
-  if (!spot) throw new Error('Spot not found');
-  if (spot.assignedUserId) throw new Error('Spot already assigned');
-
-  const token = Array.from(crypto.getRandomValues(new Uint8Array(24)))
-    .map(b => b.toString(16).padStart(2, '0')).join('');
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const id = 'inv' + Date.now();
-
-  await upsertRow('data/invites.json', {
-    id, token, spotId, expiresAt, usedBy: null,
+  const result = await workerRequest('POST', '/invites', {
     name: name || '', lastName: lastName || '',
     phone: phone || '', address: address || '',
+    spotId,
     licensePlate: licensePlate || null,
     carModel: carModel || null,
-    carColor: carColor || null
+    carColor: carColor || null,
   });
 
   const base = location.origin + location.pathname.replace('admin.html', '');
-  return `${base}register.html?token=${token}`;
+  return `${base}register.html?token=${result.token}`;
 }

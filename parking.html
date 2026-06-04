@@ -421,7 +421,7 @@ function renderProfile() {
       msg.className = 'alert warn'; msg.textContent = t('profile.warn.nochange'); return;
     }
     try {
-      await patchRow('data/users.json', me.id, {
+      await workerRequest('PATCH', `/users/${me.id}`, {
         pendingEdits: { ...changes, requestedAt: new Date().toISOString() }
       });
       msg.className = 'alert success'; msg.textContent = t('profile.success');
