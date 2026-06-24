@@ -1,0 +1,1211 @@
+# UI Modernization Phase 1: Design System Foundation — Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Replace the current rigid flat UI with a modern design system — Inter font, Lucide SVG icons, 3-theme token architecture (Light Premium / Dark Glass / Dark Deep), sticky frosted header, and a persistent theme toggle on all authenticated pages.
+
+**Architecture:** Rewrite `css/style.css` with CSS custom property tokens; add `js/theme.js` for theme persistence; inject Inter font link and Lucide ESM import into every HTML page; update `iconBtn()` in `admin.html` to produce `<i data-lucide>` elements. No build step — vanilla CSS + JS only.
+
+**Tech Stack:** CSS custom properties, Inter (Google Fonts CDN), Lucide 0.x (jsDelivr CDN ESM), `localStorage`
+
+---
+
+### Task 1: Rewrite `css/style.css` with design tokens and updated component styles
+
+**Files:**
+- Modify: `/Users/D069379/My_X/Park_Management/css/style.css` (full rewrite)
+
+This is the foundation. Replace the entire file content with the new token-based system. All later tasks depend on these tokens being in place.
+
+- [ ] **Step 1: Replace the full contents of `css/style.css`**
+
+Open the file and replace everything with:
+
+```css
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Design Tokens: Light Premium (default) ──────────────────────────────── */
+:root {
+  /* Surface */
+  --bg-page:        #f0f2f5;
+  --bg-card:        #ffffff;
+  --bg-card-hover:  #f8f9fb;
+  --bg-input:       #ffffff;
+  --bg-input-focus: #ffffff;
+
+  /* Header */
+  --header-bg:      #0f0f14;
+  --header-text:    #ffffff;
+
+  /* Text */
+  --text-primary:   #0d0d12;
+  --text-secondary: #6b7280;
+  --text-muted:     #9ca3af;
+  --text-inverse:   #ffffff;
+
+  /* Borders */
+  --border:         #e5e7eb;
+  --border-focus:   #0d0d12;
+
+  /* Brand / accent */
+  --accent:         #4f46e5;
+  --accent-hover:   #4338ca;
+  --accent-text:    #ffffff;
+
+  /* Semantic colours */
+  --green:          #059669;
+  --green-bg:       #d1fae5;
+  --red:            #dc2626;
+  --red-bg:         #fee2e2;
+  --amber:          #d97706;
+  --amber-bg:       #fef3c7;
+  --blue:           #2563eb;
+  --blue-bg:        #eff6ff;
+
+  /* Parking spots */
+  --spot-free-fill:   #4ade80;
+  --spot-free-stroke: #16a34a;
+  --spot-occ-fill:    #f87171;
+  --spot-occ-stroke:  #dc2626;
+  --spot-res-fill:    #9ca3af;
+  --spot-res-stroke:  #6b7280;
+  --spot-pend-fill:   #fbbf24;
+  --spot-pend-stroke: #d97706;
+  --spot-mine-fill:   #818cf8;
+  --spot-mine-stroke: #4f46e5;
+
+  /* Elevation */
+  --shadow-sm:  0 1px 2px rgba(0,0,0,.05);
+  --shadow:     0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:  0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.05);
+  --shadow-lg:  0 10px 15px rgba(0,0,0,.08), 0 4px 6px rgba(0,0,0,.05);
+
+  /* Shape */
+  --radius-sm: 4px;
+  --radius:    8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Motion */
+  --transition:    0.15s ease;
+  --transition-md: 0.25s ease;
+
+  /* Legacy aliases (keep for backward compat with inline styles) */
+  --black:    #0d0d12;
+  --white:    #ffffff;
+  --gray-50:  #f9f9f9;
+  --gray-100: #f2f2f2;
+  --gray-200: #e5e5e5;
+  --gray-400: #aaa;
+  --gray-600: #666;
+  --gray-800: #333;
+}
+
+/* ── Design Tokens: Dark Glass ────────────────────────────────────────────── */
+[data-theme="dark-glass"] {
+  --bg-page:        #0a0a12;
+  --bg-card:        rgba(255,255,255,0.06);
+  --bg-card-hover:  rgba(255,255,255,0.09);
+  --bg-input:       rgba(255,255,255,0.08);
+  --bg-input-focus: rgba(255,255,255,0.12);
+
+  --header-bg:      rgba(10,10,20,0.85);
+  --header-text:    #ffffff;
+
+  --text-primary:   #f0f0ff;
+  --text-secondary: #a5b4fc;
+  --text-muted:     #6366f1;
+  --text-inverse:   #0a0a12;
+
+  --border:         rgba(255,255,255,0.10);
+  --border-focus:   #818cf8;
+
+  --accent:         #818cf8;
+  --accent-hover:   #a5b4fc;
+  --accent-text:    #0a0a12;
+
+  --green:          #34d399;
+  --green-bg:       rgba(52,211,153,0.12);
+  --red:            #f87171;
+  --red-bg:         rgba(248,113,113,0.12);
+  --amber:          #fbbf24;
+  --amber-bg:       rgba(251,191,36,0.12);
+  --blue:           #60a5fa;
+  --blue-bg:        rgba(96,165,250,0.12);
+
+  --spot-free-fill:   rgba(74,222,128,0.8);
+  --spot-free-stroke: #4ade80;
+  --spot-occ-fill:    rgba(248,113,113,0.8);
+  --spot-occ-stroke:  #f87171;
+  --spot-res-fill:    rgba(156,163,175,0.5);
+  --spot-res-stroke:  #9ca3af;
+  --spot-pend-fill:   rgba(251,191,36,0.8);
+  --spot-pend-stroke: #fbbf24;
+  --spot-mine-fill:   rgba(129,140,248,0.85);
+  --spot-mine-stroke: #818cf8;
+
+  --shadow-sm:  0 1px 2px rgba(0,0,0,.4);
+  --shadow:     0 1px 3px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.05);
+  --shadow-md:  0 4px 24px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.06);
+  --shadow-lg:  0 10px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.07);
+
+  --black:    #f0f0ff;
+  --white:    rgba(255,255,255,0.06);
+  --gray-50:  rgba(255,255,255,0.04);
+  --gray-100: rgba(255,255,255,0.06);
+  --gray-200: rgba(255,255,255,0.10);
+  --gray-400: rgba(255,255,255,0.30);
+  --gray-600: #a5b4fc;
+  --gray-800: #e0e0ff;
+}
+
+/* ── Design Tokens: Dark Deep ─────────────────────────────────────────────── */
+[data-theme="dark-deep"] {
+  --bg-page:        #0d1117;
+  --bg-card:        #161b22;
+  --bg-card-hover:  #1c2128;
+  --bg-input:       #1c2128;
+  --bg-input-focus: #21262d;
+
+  --header-bg:      #010409;
+  --header-text:    #e6edf3;
+
+  --text-primary:   #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted:     #484f58;
+  --text-inverse:   #0d1117;
+
+  --border:         #30363d;
+  --border-focus:   #58a6ff;
+
+  --accent:         #58a6ff;
+  --accent-hover:   #79c0ff;
+  --accent-text:    #0d1117;
+
+  --green:          #3fb950;
+  --green-bg:       rgba(63,185,80,0.10);
+  --red:            #f85149;
+  --red-bg:         rgba(248,81,73,0.10);
+  --amber:          #e3b341;
+  --amber-bg:       rgba(227,179,65,0.10);
+  --blue:           #58a6ff;
+  --blue-bg:        rgba(88,166,255,0.10);
+
+  --spot-free-fill:   #238636;
+  --spot-free-stroke: #3fb950;
+  --spot-occ-fill:    #8b1a1a;
+  --spot-occ-stroke:  #f85149;
+  --spot-res-fill:    #2d333b;
+  --spot-res-stroke:  #484f58;
+  --spot-pend-fill:   #735c0f;
+  --spot-pend-stroke: #e3b341;
+  --spot-mine-fill:   #1a345c;
+  --spot-mine-stroke: #58a6ff;
+
+  --shadow-sm:  0 1px 2px rgba(0,0,0,.6);
+  --shadow:     0 1px 3px rgba(0,0,0,.7);
+  --shadow-md:  0 4px 12px rgba(0,0,0,.5);
+  --shadow-lg:  0 10px 30px rgba(0,0,0,.6);
+
+  --black:    #e6edf3;
+  --white:    #161b22;
+  --gray-50:  #0d1117;
+  --gray-100: #161b22;
+  --gray-200: #30363d;
+  --gray-400: #484f58;
+  --gray-600: #8b949e;
+  --gray-800: #c9d1d9;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.6;
+  font-size: 15px;
+  transition: background var(--transition-md), color var(--transition-md);
+}
+
+.page-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 clamp(0.75rem, 4vw, 1.5rem) 3rem;
+}
+
+/* ── Typography ───────────────────────────────────────────────────────────── */
+h1 {
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+h2 { font-size: clamp(1rem, 3vw, 1.2rem); font-weight: 700; margin: 0 0 0.75rem; letter-spacing: -0.01em; }
+h3 { font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Header / Nav ─────────────────────────────────────────────────────────── */
+.site-header {
+  background: var(--header-bg);
+  color: var(--header-text);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 clamp(0.75rem, 4vw, 1.5rem);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  gap: 1rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.site-header h1 { color: var(--header-text); font-size: 1.1rem; }
+.site-nav { display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap; }
+.site-nav a {
+  color: rgba(255,255,255,0.7);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius);
+  transition: background var(--transition), color var(--transition);
+  text-decoration: none;
+}
+.site-nav a:hover { background: rgba(255,255,255,.12); color: #fff; }
+.site-nav a.active { background: rgba(255,255,255,.18); color: #fff; }
+.site-nav .nav-sep { color: rgba(255,255,255,0.3); padding: 0 0.1rem; }
+.site-header .logo-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+}
+.site-header .logo-link:hover { opacity: 0.85; }
+
+/* ── Cards ────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  transition: box-shadow var(--transition-md);
+}
+[data-theme="dark-glass"] .card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.card-header h2 { margin: 0; }
+
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius) var(--radius) 0 0;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+  min-height: 0;
+}
+.tab-btn:hover { color: var(--text-primary); background: var(--bg-card-hover); }
+.tab-btn.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--red);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  margin-left: 0.35rem;
+  min-width: 1.2rem;
+  line-height: 1.4;
+}
+
+/* ── Forms ────────────────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 0.9rem; }
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+input, select, textarea {
+  font-family: 'Inter', inherit;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  background: var(--bg-input-focus);
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.10);
+}
+input[readonly] { background: var(--bg-page); color: var(--text-secondary); cursor: default; }
+input:focus[readonly] { border-color: var(--border); box-shadow: none; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+button {
+  font-family: 'Inter', inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-focus);
+  padding: 0.45rem 1rem;
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  cursor: pointer;
+  min-height: 2.25rem;
+  transition: opacity var(--transition), box-shadow var(--transition);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+button:hover { opacity: 0.88; box-shadow: var(--shadow); }
+button:active { transform: translateY(1px); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+button.secondary:hover { background: var(--bg-card-hover); border-color: var(--border-focus); opacity: 1; }
+button.danger { background: var(--red); border-color: var(--red); color: #fff; }
+button.danger:hover { opacity: 0.88; }
+button.success-btn { background: var(--green); border-color: var(--green); color: #fff; }
+button.success-btn:hover { opacity: 0.88; }
+button.accent { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+button.accent:hover { opacity: 0.88; }
+button[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+button.sm { padding: 0.25rem 0.6rem; font-size: 0.78rem; min-height: 1.8rem; }
+
+/* ── Alerts ───────────────────────────────────────────────────────────────── */
+.alert {
+  border-radius: var(--radius);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.alert::before { font-size: 1rem; flex-shrink: 0; margin-top: 0.05rem; }
+.alert.error   { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(220,38,38,.2); }
+.alert.error::before { content: '✕'; }
+.alert.success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(5,150,105,.2); }
+.alert.success::before { content: '✓'; }
+.alert.info    { background: var(--blue-bg);  color: var(--blue);  border: 1px solid rgba(37,99,235,.2); }
+.alert.info::before { content: 'ℹ'; }
+.alert.warn    { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(217,119,6,.2); }
+.alert.warn::before { content: '⚠'; }
+
+/* legacy compat */
+.error  { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(220,38,38,.2); border-radius: var(--radius); padding: 0.65rem 0.9rem; font-size: 0.85rem; margin-top: 0.5rem; }
+.success{ background: var(--green-bg); color: var(--green); border: 1px solid rgba(5,150,105,.2);  border-radius: var(--radius); padding: 0.65rem 0.9rem; font-size: 0.85rem; margin-top: 0.5rem; }
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  display: table;
+}
+th {
+  background: var(--bg-page);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  vertical-align: middle;
+  color: var(--text-primary);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg-card-hover); }
+.pending-row td { background: var(--amber-bg); }
+.pending-row:hover td { background: var(--amber-bg); filter: brightness(0.96); }
+
+/* ── Status chips ─────────────────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.chip.free     { background: var(--green-bg); color: var(--green); }
+.chip.occupied { background: var(--red-bg);   color: var(--red);   }
+.chip.active   { background: var(--green-bg); color: var(--green); }
+.chip.inactive { background: var(--bg-page);  color: var(--text-secondary); }
+.chip.pending  { background: var(--amber-bg); color: var(--amber); }
+.chip.paid     { background: var(--green-bg); color: var(--green); }
+.chip.unpaid   { background: var(--red-bg);   color: var(--red);   }
+.chip.partial  { background: var(--amber-bg); color: var(--amber); }
+
+/* ── Payment fraction labels ─────────────────────────────────────────────── */
+.pay-fraction { font-size: 0.75rem; color: var(--text-secondary); }
+
+/* ── SVG parking ─────────────────────────────────────────────────────────── */
+.spot { transition: filter 0.12s; cursor: pointer; }
+.spot:hover { filter: brightness(0.88); }
+.spot.free     { fill: var(--spot-free-fill);  stroke: var(--spot-free-stroke);  stroke-width: 1.5; }
+.spot.occupied { fill: var(--spot-occ-fill);   stroke: var(--spot-occ-stroke);   stroke-width: 1.5; }
+.spot.reserved { fill: var(--spot-res-fill);   stroke: var(--spot-res-stroke);   stroke-width: 1.5; }
+.spot.pending  { fill: var(--spot-pend-fill);  stroke: var(--spot-pend-stroke);  stroke-width: 1.5; }
+.spot.mine     { fill: var(--spot-mine-fill);  stroke: var(--spot-mine-stroke);  stroke-width: 2; }
+.spot-label {
+  font-family: 'Inter', inherit;
+  font-size: 13px;
+  font-weight: 800;
+  fill: var(--text-primary);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+/* ── Map legend ───────────────────────────────────────────────────────────── */
+.map-legend {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  color: var(--text-primary);
+}
+.legend-item { display: flex; align-items: center; gap: 0.4rem; }
+.legend-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1.5px solid;
+}
+.legend-swatch.free     { background: var(--spot-free-fill);  border-color: var(--spot-free-stroke); }
+.legend-swatch.occupied { background: var(--spot-occ-fill);   border-color: var(--spot-occ-stroke); }
+.legend-swatch.reserved { background: var(--spot-res-fill);   border-color: var(--spot-res-stroke); }
+.legend-swatch.pending  { background: var(--spot-pend-fill);  border-color: var(--spot-pend-stroke); }
+.legend-swatch.mine     { background: var(--spot-mine-fill);  border-color: var(--spot-mine-stroke); }
+
+/* ── Info panel ───────────────────────────────────────────────────────────── */
+#info-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.85rem 1rem;
+  min-height: 3rem;
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+  color: var(--text-secondary);
+  transition: all var(--transition);
+}
+#info-panel strong { color: var(--text-primary); }
+
+/* ── Collapsible sections ─────────────────────────────────────────────────── */
+.collapse-toggle {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0.6rem 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text-primary);
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  min-height: 0;
+}
+.collapse-toggle:hover { background: none; color: var(--text-secondary); box-shadow: none; opacity: 1; }
+.collapse-icon { transition: transform 0.2s; display: inline-flex; align-items: center; }
+.collapse-toggle.open .collapse-icon { transform: rotate(90deg); }
+
+/* ── Inline edit row ─────────────────────────────────────────────────────── */
+.edit-row-inner {
+  background: var(--bg-page);
+  padding: 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.edit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+/* ── Diff block ───────────────────────────────────────────────────────────── */
+.diff-block { font-size: 0.78rem; margin: 0.3rem 0; }
+.diff-old { color: var(--text-muted); text-decoration: line-through; }
+.diff-new { color: var(--text-primary); font-weight: 700; }
+
+/* ── Invite link box ──────────────────────────────────────────────────────── */
+.invite-link-box {
+  background: var(--blue-bg);
+  border: 1px solid rgba(37,99,235,.2);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-top: 0.75rem;
+  word-break: break-all;
+  font-size: 0.8rem;
+}
+.wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  background: #25D366;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  text-decoration: none;
+}
+.wa-btn:hover { background: #1da851; text-decoration: none; }
+
+/* ── Payment table ────────────────────────────────────────────────────────── */
+.payment-cell-paid   { background: var(--green-bg); color: var(--green); font-weight: 600; font-size: 0.75rem; vertical-align: middle; }
+.payment-cell-unpaid { background: var(--red-bg); vertical-align: middle; }
+
+/* ── Icon buttons ─────────────────────────────────────────────────────────── */
+.icon-btn {
+  font-size: 0.9rem;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  min-width: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+}
+.icon-btn i, .icon-btn svg { width: 15px; height: 15px; stroke-width: 2; pointer-events: none; }
+
+/* ── Spot badge ───────────────────────────────────────────────────────────── */
+.spot-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  border-radius: var(--radius);
+  padding: 0.4rem 1rem;
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0.5rem 0 1rem;
+  letter-spacing: 0.02em;
+}
+
+/* ── Info card ────────────────────────────────────────────────────────────── */
+.info-card {
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+}
+.info-card table { border: none; display: table; width: auto; }
+.info-card td, .info-card th {
+  border: none;
+  padding: 0.2rem 0.75rem 0.2rem 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: normal;
+  white-space: nowrap;
+  font-size: 0.875rem;
+}
+.info-card th { font-weight: 700; color: var(--text-secondary); width: 130px; font-size: 0.8rem; text-transform: uppercase; }
+.info-card tr:hover td, .info-card tr:hover th { background: transparent; }
+
+/* ── Terms box ────────────────────────────────────────────────────────────── */
+.terms-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.7;
+}
+.terms-box ol { padding-left: 1.25rem; }
+.terms-box li { margin-bottom: 0.4rem; }
+
+/* ── Step indicator ───────────────────────────────────────────────────────── */
+.step-indicator {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.step-item { display: flex; align-items: center; gap: 0.4rem; color: var(--text-muted); }
+.step-item.active { color: var(--text-primary); }
+.step-item.done { color: var(--green); }
+.step-dot {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
+  color: var(--text-secondary);
+}
+.step-item.active .step-dot { background: var(--text-primary); color: var(--text-inverse); }
+.step-item.done   .step-dot { background: var(--green); color: #fff; }
+.step-connector { width: 2rem; height: 2px; background: var(--border); margin: 0 0.3rem; align-self: center; flex-shrink: 0; }
+.step-connector.done { background: var(--green); }
+
+/* ── Login page ───────────────────────────────────────────────────────────── */
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--bg-page);
+}
+.login-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 2rem 2rem 1.5rem;
+  width: 100%;
+  max-width: 380px;
+}
+.login-card h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+.login-card .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+/* ── Btn row ──────────────────────────────────────────────────────────────── */
+.btn-row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+
+/* ── Responsive grid helpers ──────────────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1rem; }
+@media (max-width: 600px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ── pw-cell ──────────────────────────────────────────────────────────────── */
+.pw-cell { font-family: monospace; font-size: 0.8rem; color: var(--text-secondary); }
+
+/* ── Maps button ──────────────────────────────────────────────────────────── */
+.maps-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #1a73e8;
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background var(--transition), box-shadow var(--transition);
+}
+.maps-btn:hover { background: #1558b0; box-shadow: var(--shadow); text-decoration: none; color: #fff; }
+
+/* ── Theme toggle button ──────────────────────────────────────────────────── */
+#theme-toggle {
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.15);
+  color: rgba(255,255,255,.85);
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  justify-content: center;
+}
+#theme-toggle:hover { background: rgba(255,255,255,.20); opacity: 1; }
+#theme-toggle i, #theme-toggle svg { width: 15px; height: 15px; }
+```
+
+- [ ] **Step 2: Verify the file was saved (no truncation)**
+
+```bash
+wc -l /Users/D069379/My_X/Park_Management/css/style.css
+```
+
+Expected: ~360+ lines
+
+- [ ] **Step 3: Commit**
+
+```bash
+cd /Users/D069379/My_X/Park_Management
+git add css/style.css
+git commit -m "style: rewrite CSS with design tokens and 3-theme system"
+```
+
+---
+
+### Task 2: Create `js/theme.js`
+
+**Files:**
+- Create: `/Users/D069379/My_X/Park_Management/js/theme.js`
+
+This module handles theme persistence and switching. It is loaded as an ES module from each authenticated HTML page.
+
+- [ ] **Step 1: Create `js/theme.js`**
+
+```js
+// js/theme.js
+// Theme cycling: Light Premium → Dark Glass → Dark Deep → (loop)
+
+const THEMES = ['light', 'dark-glass', 'dark-deep'];
+const ICONS  = { 'light': 'sun', 'dark-glass': 'sparkles', 'dark-deep': 'moon' };
+const LABELS = { 'light': 'Light', 'dark-glass': 'Dark Glass', 'dark-deep': 'Dark Deep' };
+const KEY = 'pm-theme';
+
+export function initTheme() {
+  const saved = localStorage.getItem(KEY) || 'light';
+  _applyTheme(saved);
+}
+
+export function cycleTheme() {
+  const current = document.documentElement.dataset.theme || 'light';
+  const idx = THEMES.indexOf(current);
+  const next = THEMES[(idx + 1) % THEMES.length];
+  _applyTheme(next);
+  localStorage.setItem(KEY, next);
+}
+
+function _applyTheme(theme) {
+  if (theme === 'light') {
+    delete document.documentElement.dataset.theme;
+  } else {
+    document.documentElement.dataset.theme = theme;
+  }
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    const icon = btn.querySelector('i');
+    if (icon) {
+      icon.dataset.lucide = ICONS[theme];
+      if (window.lucide) window.lucide.createIcons();
+    }
+    btn.title = LABELS[theme];
+  }
+}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+cd /Users/D069379/My_X/Park_Management
+git add js/theme.js
+git commit -m "feat: add theme.js for 3-way theme cycling with localStorage"
+```
+
+---
+
+### Task 3: Add Inter font + Lucide + theme toggle to `parking.html`
+
+**Files:**
+- Modify: `/Users/D069379/My_X/Park_Management/parking.html`
+
+Three changes: (1) Inter font `<link>` in `<head>`, (2) theme toggle `<button>` in nav, (3) module `<script>` at bottom for Lucide + theme init.
+
+- [ ] **Step 1: Add Inter font links inside `<head>`, after the existing `<meta>` tags and before `<link rel="stylesheet">`**
+
+Find this line (line 7):
+```html
+<link rel="stylesheet" href="css/style.css"/>
+```
+
+Insert these three lines immediately before it:
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+```
+
+- [ ] **Step 2: Add theme toggle button to nav**
+
+Find this line in `<nav class="site-nav">` (line 21):
+```html
+    <div id="lang-switcher-nav" style="display:inline-flex"></div>
+```
+
+Insert immediately before it:
+```html
+    <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
+```
+
+- [ ] **Step 3: Add Lucide + theme module script at the bottom, before `</body>`**
+
+Find the closing `</body>` tag and insert this block immediately before it (before the existing `<script>` tags — it must come first so `window.lucide` is available):
+
+Actually, insert it as the very last `<script>` before `</body>`, AFTER all existing scripts:
+```html
+<script type="module">
+  import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
+  import { initTheme, cycleTheme } from './js/theme.js';
+  window.lucide = { createIcons: () => createIcons({ icons }) };
+  initTheme();
+  window.lucide.createIcons();
+  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
+</script>
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd /Users/D069379/My_X/Park_Management
+git add parking.html
+git commit -m "feat: add Inter font, Lucide icons, and theme toggle to parking.html"
+```
+
+---
+
+### Task 4: Add Inter font + Lucide + theme toggle to `incident.html`
+
+**Files:**
+- Modify: `/Users/D069379/My_X/Park_Management/incident.html`
+
+Same three changes as Task 3.
+
+- [ ] **Step 1: Add Inter font links in `<head>` before `<link rel="stylesheet">`**
+
+Find (line 7):
+```html
+<link rel="stylesheet" href="css/style.css"/>
+```
+
+Insert immediately before it:
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+```
+
+- [ ] **Step 2: Add theme toggle button in `<nav class="site-nav">`**
+
+Find the `<div id="lang-switcher-nav"...>` line inside the nav and insert before it:
+```html
+    <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
+```
+
+- [ ] **Step 3: Add Lucide + theme module script before `</body>`**
+
+Insert as the last script before `</body>`:
+```html
+<script type="module">
+  import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
+  import { initTheme, cycleTheme } from './js/theme.js';
+  window.lucide = { createIcons: () => createIcons({ icons }) };
+  initTheme();
+  window.lucide.createIcons();
+  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
+</script>
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd /Users/D069379/My_X/Park_Management
+git add incident.html
+git commit -m "feat: add Inter font, Lucide icons, and theme toggle to incident.html"
+```
+
+---
+
+### Task 5: Add Inter font + Lucide + theme toggle to `admin.html`, update `iconBtn()`
+
+**Files:**
+- Modify: `/Users/D069379/My_X/Park_Management/admin.html`
+
+Four changes: Inter font, theme toggle, Lucide script, and update the `iconBtn()` function to use `<i data-lucide>` instead of text.
+
+- [ ] **Step 1: Add Inter font links in `<head>` before `<link rel="stylesheet">`**
+
+Find (line 7):
+```html
+<link rel="stylesheet" href="css/style.css"/>
+```
+
+Insert immediately before it:
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+```
+
+- [ ] **Step 2: Add theme toggle button in `<nav class="site-nav">`**
+
+Find the `<div id="lang-switcher-nav"...>` line inside the nav and insert before it:
+```html
+    <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
+```
+
+- [ ] **Step 3: Update `iconBtn()` to use Lucide icons**
+
+The icon mapping (old symbol → Lucide name):
+- `'✓'` → `'check'`
+- `'✕'` → `'x'`
+- `'■'` → `'square'`
+- `'▶'` → `'play'` (activate/unreserve)
+- `'~'` → `'pencil'`
+- `'🔑'` → `'key-round'`
+- `'✂'` → `'scissors'`
+- `'🗑'` → `'trash-2'`
+- `'💾'` → `'save'`
+- `'⛔'` → `'ban'`
+- `'€'` → `'euro'`
+- `'↩'` → `'undo-2'`
+
+Find this block (around line 185 in admin.html):
+```js
+function iconBtn(icon, title, cls, onClick) {
+  const b = document.createElement('button');
+  b.className = 'icon-btn ' + (cls || 'secondary');
+  b.title = title;
+  b.textContent = icon;
+  b.addEventListener('click', onClick);
+  return b;
+}
+```
+
+Replace with:
+```js
+const ICON_MAP = {
+  '✓':'check', '✕':'x', '■':'square', '▶':'play', '~':'pencil',
+  '🔑':'key-round', '✂':'scissors', '🗑':'trash-2', '💾':'save',
+  '⛔':'ban', '€':'euro', '↩':'undo-2'
+};
+function iconBtn(icon, title, cls, onClick) {
+  const b = document.createElement('button');
+  b.className = 'icon-btn ' + (cls || 'secondary');
+  b.title = title;
+  const lucideName = ICON_MAP[icon];
+  if (lucideName) {
+    const i = document.createElement('i');
+    i.dataset.lucide = lucideName;
+    b.appendChild(i);
+  } else {
+    b.textContent = icon;
+  }
+  b.addEventListener('click', onClick);
+  return b;
+}
+```
+
+- [ ] **Step 4: Call `window.lucide.createIcons()` after every render that injects icon buttons**
+
+Find the function `renderPendingRegs` (search for `function renderPendingRegs`). At the very end of that function, before the closing `}`, add:
+```js
+  if (window.lucide) window.lucide.createIcons();
+```
+
+Do the same for `renderUsers`, `renderSpots`, and `renderPayments` — add `if (window.lucide) window.lucide.createIcons();` as the last line of each function body (before the closing `}`).
+
+- [ ] **Step 5: Add Lucide + theme module script before `</body>`**
+
+Insert as the last script before `</body>`:
+```html
+<script type="module">
+  import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
+  import { initTheme, cycleTheme } from './js/theme.js';
+  window.lucide = { createIcons: () => createIcons({ icons }) };
+  initTheme();
+  window.lucide.createIcons();
+  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
+</script>
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+cd /Users/D069379/My_X/Park_Management
+git add admin.html
+git commit -m "feat: add Inter font, Lucide icons, theme toggle, and icon mapping to admin.html"
+```
+
+---
+
+### Task 6: Add Inter font to `index.html`, `invite.html`, `register.html`
+
+**Files:**
+- Modify: `/Users/D069379/My_X/Park_Management/index.html`
+- Modify: `/Users/D069379/My_X/Park_Management/invite.html`
+- Modify: `/Users/D069379/My_X/Park_Management/register.html`
+
+These pages have no nav (login/registration flow) so no theme toggle, just the font.
+
+- [ ] **Step 1: In `index.html`, insert Inter font links before `<link rel="stylesheet">`**
+
+Find:
+```html
+<link rel="stylesheet" href="css/style.css"/>
+```
+
+Insert before it:
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+```
+
+- [ ] **Step 2: Do the same in `invite.html` — insert Inter font links before `<link rel="stylesheet">`**
+
+Find:
+```html
+<link rel="stylesheet" href="css/style.css"/>
+```
+
+Insert before it:
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+```
+
+- [ ] **Step 3: Do the same in `register.html`**
+
+Find:
+```html
+<link rel="stylesheet" href="css/style.css"/>
+```
+
+Insert before it:
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd /Users/D069379/My_X/Park_Management
+git add index.html invite.html register.html
+git commit -m "feat: add Inter font to login, invite, and register pages"
+```
+
+---
+
+### Task 7: Update collapse toggle in `parking.html` to use Lucide chevron
+
+**Files:**
+- Modify: `/Users/D069379/My_X/Park_Management/parking.html`
+
+The residents collapse button uses a Unicode `▶` character. Replace it with a Lucide icon so it animates cleanly with the CSS transform.
+
+- [ ] **Step 1: Find and replace the collapse toggle content**
+
+Find (line 63):
+```html
+      <span class="collapse-icon">▶</span> <span data-i18n="residents.title">Residents</span>
+```
+
+Replace with:
+```html
+      <span class="collapse-icon"><i data-lucide="chevron-right"></i></span> <span data-i18n="residents.title">Residents</span>
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+cd /Users/D069379/My_X/Park_Management
+git add parking.html
+git commit -m "style: replace Unicode chevron with Lucide icon in residents toggle"
+```
+
+---
+
+### Task 8: Push all changes
+
+- [ ] **Step 1: Verify all 6 files changed**
+
+```bash
+cd /Users/D069379/My_X/Park_Management
+git log --oneline -8
+```
+
+Expected output (most recent first):
+```
+<sha> style: replace Unicode chevron with Lucide icon in residents toggle
+<sha> feat: add Inter font to login, invite, and register pages
+<sha> feat: add Inter font, Lucide icons, theme toggle, and icon mapping to admin.html
+<sha> feat: add Inter font, Lucide icons, and theme toggle to incident.html
+<sha> feat: add Inter font, Lucide icons, and theme toggle to parking.html
+<sha> feat: add theme.js for 3-way theme cycling with localStorage
+<sha> style: rewrite CSS with design tokens and 3-theme system
+```
+
+- [ ] **Step 2: Push**
+
+```bash
+cd /Users/D069379/My_X/Park_Management
+git push
+```
