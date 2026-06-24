@@ -4,6 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title data-i18n="inc.title">Park Management — Report Incident</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css"/>
 <style>
 /* ── Camera / upload UI ─────────────────────────────────────────────────── */
@@ -115,6 +118,7 @@
     <span id="admin-link" style="display:none"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
     <a href="incident.html" class="active" data-i18n="nav.incidents">Incidents</a>
     <a href="#" id="logout-link" data-i18n="nav.logout">Logout</a>
+    <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
     <div id="lang-switcher-nav" style="display:inline-flex"></div>
   </nav>
 </header>
@@ -414,6 +418,15 @@ document.getElementById('lightbox').addEventListener('click', e => {
 // ── Init ───────────────────────────────────────────────────────────────────────
 loadSpots();
 loadLog();
+</script>
+
+<script type="module">
+  import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
+  import { initTheme, cycleTheme } from './js/theme.js';
+  window.lucide = { createIcons: () => createIcons({ icons }) };
+  initTheme();
+  window.lucide.createIcons();
+  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
 </script>
 </body>
 </html>
