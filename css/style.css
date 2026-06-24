@@ -78,6 +78,16 @@ a:hover { text-decoration: underline; }
 .site-nav a:hover { background: rgba(255,255,255,.12); color: var(--white); }
 .site-nav a.active { background: rgba(255,255,255,.18); color: var(--white); }
 .site-nav .nav-sep { color: var(--gray-400); padding: 0 0.1rem; }
+.site-header .logo-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+}
+.site-header .logo-link:hover {
+  opacity: 0.85;
+}
 
 /* ── Cards ────────────────────────────────────────────────────────────────── */
 .card {
