@@ -50,26 +50,14 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   const byTop    = LANE_TOP - 10;
   const byBottom = BOTTOM_ROW_Y + SPOT_H + 30;
 
-  // Outer boundary — use CSS variable references so colors update with theme
+  // Outer boundary — rounded corners, theme-aware
   const boundary = document.createElementNS(svgNS, 'rect');
   boundary.setAttribute('x', bxLeft); boundary.setAttribute('y', byTop);
   boundary.setAttribute('width', bxRight - bxLeft);
   boundary.setAttribute('height', byBottom - byTop);
+  boundary.setAttribute('rx', '10');
   boundary.setAttribute('style', 'fill:var(--svg-boundary);stroke:var(--svg-boundary-stroke);stroke-width:2');
   svg.appendChild(boundary);
-
-  // Entrance label
-  const entranceText = document.createElementNS(svgNS, 'text');
-  entranceText.setAttribute('x', (LANE_LEFT + LANE_RIGHT) / 2);
-  entranceText.setAttribute('y', byTop + 16);
-  entranceText.setAttribute('text-anchor', 'middle');
-  entranceText.setAttribute('dominant-baseline', 'middle');
-  entranceText.setAttribute('font-family', 'inherit');
-  entranceText.setAttribute('font-size', '13');
-  entranceText.setAttribute('font-weight', 'bold');
-  entranceText.setAttribute('style', 'fill:var(--svg-text)');
-  entranceText.textContent = 'Entrance';
-  svg.appendChild(entranceText);
 
   // Driving lane
   const lane = document.createElementNS(svgNS, 'rect');
@@ -79,11 +67,35 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   lane.setAttribute('style', 'fill:var(--svg-lane);stroke:var(--svg-lane-stroke);stroke-width:1');
   svg.appendChild(lane);
 
+  // Center dashed line down the driving lane
+  const ax = (LANE_LEFT + LANE_RIGHT) / 2;
+  const dashLen = 18, dashGap = 12;
+  for (let y = LANE_TOP + 36; y < LANE_BOTTOM - 10; y += dashLen + dashGap) {
+    const dash = document.createElementNS(svgNS, 'line');
+    dash.setAttribute('x1', ax); dash.setAttribute('y1', y);
+    dash.setAttribute('x2', ax); dash.setAttribute('y2', Math.min(y + dashLen, LANE_BOTTOM - 10));
+    dash.setAttribute('style', 'stroke:var(--svg-arrow);stroke-width:2;opacity:0.4');
+    svg.appendChild(dash);
+  }
+
+  // Entrance label (above arrow)
+  const entranceText = document.createElementNS(svgNS, 'text');
+  entranceText.setAttribute('x', ax);
+  entranceText.setAttribute('y', byTop + 14);
+  entranceText.setAttribute('text-anchor', 'middle');
+  entranceText.setAttribute('dominant-baseline', 'middle');
+  entranceText.setAttribute('font-family', 'inherit');
+  entranceText.setAttribute('font-size', '10');
+  entranceText.setAttribute('font-weight', '700');
+  entranceText.setAttribute('letter-spacing', '1.5');
+  entranceText.setAttribute('style', 'fill:var(--svg-text)');
+  entranceText.textContent = 'ENTRANCE';
+  svg.appendChild(entranceText);
+
   // Entry arrow
   const arrow = document.createElementNS(svgNS, 'polygon');
-  const ax = (LANE_LEFT + LANE_RIGHT) / 2;
   arrow.setAttribute('points',
-    `${ax - 12},${LANE_TOP + 10} ${ax + 12},${LANE_TOP + 10} ${ax},${LANE_TOP + 32}`);
+    `${ax - 10},${LANE_TOP + 8} ${ax + 10},${LANE_TOP + 8} ${ax},${LANE_TOP + 26}`);
   arrow.setAttribute('style', 'fill:var(--svg-arrow)');
   svg.appendChild(arrow);
 
@@ -110,16 +122,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     rect.setAttribute('y', cy - SPOT_H / 2);
     rect.setAttribute('width', SPOT_W);
     rect.setAttribute('height', SPOT_H);
-    rect.setAttribute('rx', '2');
-    g.appendChild(rect);
-
-    // Spot number — centred in the rect
-    const numText = document.createElementNS(svgNS, 'text');
-    numText.setAttribute('class', 'spot-label');
-    numText.setAttribute('x', cx);
-    numText.setAttribute('y', cy);
-    numText.textContent = label;
-    g.appendChild(numText);
+    rect.setAttribute('rx', '4');
 
     // License plate — outside the rect, on the wall (back) side.
     // Back edge: left spots → left side (cx - SPOT_W/2), right spots → right side (cx + SPOT_W/2).
@@ -267,10 +270,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     const rect = document.createElementNS(svgNS, 'rect');
     rect.setAttribute('x', x); rect.setAttribute('y', y);
     rect.setAttribute('width', w); rect.setAttribute('height', h);
-    rect.setAttribute('rx', '2');
-    g.appendChild(rect);
-
-    // Spot number — upper portion
+    rect.setAttribute('rx', '4');
     const numText = document.createElementNS(svgNS, 'text');
     numText.setAttribute('class', 'spot-label');
     numText.setAttribute('x', x + w / 2);
@@ -317,7 +317,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   const laneCenterX = (LANE_LEFT + LANE_RIGHT) / 2;
 
   svg.appendChild(makeBottomLanePerpSpot('22', LANE_LEFT + 4, bottomY, perpW, bottomH));
-  svg.appendChild(makeBottomLanePerpSpot('21', laneCenterX + 4, bottomY, perpW, bottomH));
+  svg.appendChild(makeBottomLanePerpSpot('21', laneCenterX + 4, bottomY, perpW - 4, bottomH));
 
   svg.appendChild(makeWedge('B', [
     [bxLeft,    bottomY],

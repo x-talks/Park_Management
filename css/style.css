@@ -502,22 +502,28 @@ tr:hover td { background: var(--bg-card-hover); }
 .pay-fraction { font-size: 0.75rem; color: var(--text-secondary); }
 
 /* ── SVG parking ─────────────────────────────────────────────────────────── */
-.spot { transition: filter 0.12s; cursor: pointer; }
-.spot:hover { filter: brightness(0.88); }
+.spot { transition: filter 0.15s, transform 0.1s; cursor: pointer; }
+.spot:hover { filter: brightness(1.12) drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
 .spot.free     { fill: var(--spot-free-fill);  stroke: var(--spot-free-stroke);  stroke-width: 1.5; }
 .spot.occupied { fill: var(--spot-occ-fill);   stroke: var(--spot-occ-stroke);   stroke-width: 1.5; }
 .spot.reserved { fill: var(--spot-res-fill);   stroke: var(--spot-res-stroke);   stroke-width: 1.5; }
 .spot.pending  { fill: var(--spot-pend-fill);  stroke: var(--spot-pend-stroke);  stroke-width: 1.5; }
 .spot.mine     { fill: var(--spot-mine-fill);  stroke: var(--spot-mine-stroke);  stroke-width: 2; }
+.spot.highlighted { filter: drop-shadow(0 0 6px var(--accent)) brightness(1.1); }
 .spot-label {
   font-family: 'Inter', inherit;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
-  fill: var(--text-primary);
+  fill: rgba(0,0,0,0.75);
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
+  letter-spacing: -0.3px;
 }
+.spot.occupied .spot-label,
+.spot.mine .spot-label { fill: rgba(255,255,255,0.9); }
+[data-theme="dark-glass"] .spot-label,
+[data-theme="dark-deep"] .spot-label { fill: rgba(255,255,255,0.85); }
 
 /* ── Map legend ───────────────────────────────────────────────────────────── */
 .map-legend {
