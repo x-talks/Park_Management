@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#818cf8"/>
 <title data-i18n="app.admin">Park Management — Admin</title>
+<link rel="manifest" href="manifest.json"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 /* Icon button strip — scoped to action cells only, does not override header theme toggle */
 .action-cell .icon-btn { font-size:1rem; padding:0.3rem 0.5rem; min-width:2rem; min-height:2rem; line-height:1; }
@@ -55,6 +58,14 @@
 
     <!-- Stat cards -->
     <div id="stat-cards" class="stat-grid"></div>
+
+    <!-- Occupancy chart -->
+    <div class="card" id="chart-card">
+      <div class="card-header">
+        <h2 data-i18n="admin.chart.title">Occupancy Overview</h2>
+      </div>
+      <canvas id="occupancy-chart" height="90" style="max-width:100%"></canvas>
+    </div>
 
     <div class="card">
       <div class="card-header">
@@ -122,9 +133,12 @@
     <div class="card">
       <div class="card-header">
         <h2 data-i18n="admin.pay.title">Payment Overview</h2>
-        <div class="year-select-wrap">
-          <label data-i18n="pay.year">Year</label>
-          <select id="payment-year"></select>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <div class="year-select-wrap" style="margin:0">
+            <label data-i18n="pay.year">Year</label>
+            <select id="payment-year"></select>
+          </div>
+          <button id="csv-export-btn" class="secondary" style="white-space:nowrap;font-size:0.82rem;padding:0.35rem 0.75rem" data-i18n="admin.csv.export">Export CSV</button>
         </div>
       </div>
       <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.75rem">
@@ -352,6 +366,65 @@ async function renderStatCards(users, spots, pendingRegs) {
   if (window.lucide) window.lucide.createIcons();
 }
 
+// ── Occupancy chart ────────────────────────────────────────────────────────────
+let _chartInstance = null;
+function renderOccupancyChart(spots) {
+  if (typeof Chart === 'undefined') return;
+  const canvas = document.getElementById('occupancy-chart');
+  if (!canvas) return;
+
+  const occupied = spots.filter(s => s.assignedUserId).length;
+  const free     = spots.filter(s => !s.assignedUserId && !s.reserved).length;
+  const reserved = spots.filter(s => s.reserved && !s.assignedUserId).length;
+  const total    = spots.length;
+
+  // Get computed CSS custom properties for theme-aware colors
+  const style = getComputedStyle(document.documentElement);
+  const green = style.getPropertyValue('--green').trim() || '#34d399';
+  const blue  = style.getPropertyValue('--blue').trim()  || '#60a5fa';
+  const amber = style.getPropertyValue('--amber').trim() || '#fbbf24';
+  const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#6b7280';
+  const border = style.getPropertyValue('--border').trim() || '#e5e7eb';
+
+  if (_chartInstance) { _chartInstance.destroy(); _chartInstance = null; }
+
+  _chartInstance = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: ['Occupied', 'Free', 'Reserved'],
+      datasets: [{
+        data: [occupied, free, reserved],
+        backgroundColor: [green, blue, amber],
+        borderColor: 'transparent',
+        hoverBorderColor: 'transparent',
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '68%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: textSecondary,
+            font: { family: 'Inter, sans-serif', size: 12 },
+            padding: 16,
+            usePointStyle: true,
+            pointStyleWidth: 10,
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} / ${total} spots`
+          }
+        }
+      }
+    }
+  });
+}
+
 // ── Users tab ─────────────────────────────────────────────────────────────────
 async function renderUsers() {
   const [users, spots, pendingRegs] = await Promise.all([
@@ -367,6 +440,7 @@ async function renderUsers() {
 
   // Render stat cards
   renderStatCards(users, spots, pendingRegs);
+  renderOccupancyChart(spots);
 
   // Render pending registrations section
   renderPendingRegistrations(pendingRegs, spots);
@@ -860,6 +934,51 @@ async function renderPayments() {
   container.appendChild(wrap);
   if (window.lucide) window.lucide.createIcons();
 }
+
+// ── CSV Export ─────────────────────────────────────────────────────────────────
+async function exportPaymentsCsv() {
+  const selectedYear = parseInt(document.getElementById('payment-year').value);
+  const [payments, spots, users] = await Promise.all([
+    readFile('data/payments.json'),
+    readFile('data/spots.json'),
+    loadUsers()
+  ]);
+
+  const months = Array.from({length: 12}, (_, i) => ({
+    month: i + 1,
+    year: selectedYear,
+    label: new Date(selectedYear, i, 1).toLocaleString('default', { month: 'short' })
+  }));
+
+  const assignedSpots = spots.filter(s => s.assignedUserId);
+  const rows = [];
+
+  // Header row
+  rows.push(['Spot', 'Renter', ...months.map(m => m.label)].join(','));
+
+  assignedSpots.forEach(s => {
+    const user = users.find(u => u.id === s.assignedUserId);
+    const renterName = user ? `${user.name || ''} ${user.lastName || ''}`.trim() || user.username : '';
+    const spotLabel = `Spot ${s.label}`;
+    const cells = months.map(m => {
+      const paid = payments.find(p => p.spotId === s.id && p.type === 'rent' && p.month === m.month && p.year === m.year);
+      return paid ? 'Paid' : 'Pending';
+    });
+    rows.push([`"${spotLabel}"`, `"${renterName}"`, ...cells].join(','));
+  });
+
+  const csv = rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `payments_${selectedYear}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(t('admin.csv.export') + ' ✓', 'success', 2000);
+}
+
+document.getElementById('csv-export-btn').addEventListener('click', exportPaymentsCsv);
 </script>
 <script type="module">
   import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
@@ -868,6 +987,7 @@ async function renderPayments() {
   initTheme();
   window.lucide.createIcons();
   document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 </script>
 </body>
 </html>

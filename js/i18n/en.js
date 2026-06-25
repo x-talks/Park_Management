@@ -79,6 +79,8 @@ const LANG_EN = {
   'admin.tab.payments': 'Payments',
 
   // ── Admin — users ─────────────────────────────────────────────────────────
+  'admin.chart.title':        'Occupancy Overview',
+  'admin.csv.export':         'Export CSV',
   'admin.users.title':       'Users',
   'admin.users.updated':     'Updated {0}',
   'admin.users.legend':      'Button legend:',

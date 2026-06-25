@@ -71,6 +71,8 @@ const LANG_DE = {
   'admin.tab.spots':    'Plätze',
   'admin.tab.payments': 'Zahlungen',
 
+  'admin.chart.title':        'Belegungsübersicht',
+  'admin.csv.export':         'CSV exportieren',
   'admin.users.title':       'Nutzer',
   'admin.users.updated':     'Aktualisiert {0}',
   'admin.users.legend':      'Schaltflächen:',

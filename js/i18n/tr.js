@@ -71,6 +71,8 @@ const LANG_TR = {
   'admin.tab.spots':    'Yerler',
   'admin.tab.payments': 'Ödemeler',
 
+  'admin.chart.title':        'Doluluk Özeti',
+  'admin.csv.export':         'CSV İndir',
   'admin.users.title':       'Kullanıcılar',
   'admin.users.updated':     'Güncellendi {0}',
   'admin.users.legend':      'Butonlar:',

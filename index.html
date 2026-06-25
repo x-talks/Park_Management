@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#818cf8"/>
 <title>Park Management — Login</title>
+<link rel="manifest" href="manifest.json"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -49,6 +51,7 @@
   initTheme();
   window.lucide.createIcons();
   document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 </script>
 <script>
 buildSwitcher('lang-switcher');
