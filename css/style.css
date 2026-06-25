@@ -502,14 +502,50 @@ tr:hover td { background: var(--bg-card-hover); }
 .pay-fraction { font-size: 0.75rem; color: var(--text-secondary); }
 
 /* ── SVG parking ─────────────────────────────────────────────────────────── */
-.spot { transition: filter 0.15s, transform 0.1s; cursor: pointer; }
-.spot:hover { filter: brightness(1.12) drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+.spot { transition: filter 0.15s; cursor: pointer; }
+.spot:hover { filter: brightness(1.12) drop-shadow(0 2px 5px rgba(0,0,0,0.35)); }
 .spot.free     { fill: var(--spot-free-fill);  stroke: var(--spot-free-stroke);  stroke-width: 1.5; }
 .spot.occupied { fill: var(--spot-occ-fill);   stroke: var(--spot-occ-stroke);   stroke-width: 1.5; }
 .spot.reserved { fill: var(--spot-res-fill);   stroke: var(--spot-res-stroke);   stroke-width: 1.5; }
 .spot.pending  { fill: var(--spot-pend-fill);  stroke: var(--spot-pend-stroke);  stroke-width: 1.5; }
 .spot.mine     { fill: var(--spot-mine-fill);  stroke: var(--spot-mine-stroke);  stroke-width: 2; }
 .spot.highlighted { filter: drop-shadow(0 0 6px var(--accent)) brightness(1.1); }
+
+/* Dark theme glows — persistent subtle glow on each spot state */
+[data-theme="dark-glass"] .spot.free,
+[data-theme="dark-deep"]  .spot.free {
+  filter: drop-shadow(0 0 5px rgba(74,222,128,0.55));
+}
+[data-theme="dark-glass"] .spot.occupied,
+[data-theme="dark-deep"]  .spot.occupied {
+  filter: drop-shadow(0 0 5px rgba(248,113,113,0.55));
+}
+[data-theme="dark-glass"] .spot.pending,
+[data-theme="dark-deep"]  .spot.pending {
+  filter: drop-shadow(0 0 5px rgba(251,191,36,0.55));
+}
+[data-theme="dark-glass"] .spot.mine,
+[data-theme="dark-deep"]  .spot.mine {
+  filter: drop-shadow(0 0 7px rgba(129,140,248,0.7));
+}
+/* Hover in dark — brighter glow */
+[data-theme="dark-glass"] .spot.free:hover,
+[data-theme="dark-deep"]  .spot.free:hover {
+  filter: drop-shadow(0 0 9px rgba(74,222,128,0.85)) brightness(1.1);
+}
+[data-theme="dark-glass"] .spot.occupied:hover,
+[data-theme="dark-deep"]  .spot.occupied:hover {
+  filter: drop-shadow(0 0 9px rgba(248,113,113,0.85)) brightness(1.1);
+}
+[data-theme="dark-glass"] .spot.reserved:hover,
+[data-theme="dark-deep"]  .spot.reserved:hover {
+  filter: drop-shadow(0 0 6px rgba(156,163,175,0.6)) brightness(1.1);
+}
+[data-theme="dark-glass"] .spot.pending:hover,
+[data-theme="dark-deep"]  .spot.pending:hover {
+  filter: drop-shadow(0 0 9px rgba(251,191,36,0.85)) brightness(1.1);
+}
+
 .spot-label {
   font-family: 'Inter', inherit;
   font-size: 11px;
@@ -523,7 +559,7 @@ tr:hover td { background: var(--bg-card-hover); }
 .spot.occupied .spot-label,
 .spot.mine .spot-label { fill: rgba(255,255,255,0.9); }
 [data-theme="dark-glass"] .spot-label,
-[data-theme="dark-deep"] .spot-label { fill: rgba(255,255,255,0.85); }
+[data-theme="dark-deep"] .spot-label { fill: rgba(255,255,255,0.88); }
 
 /* ── Map legend ───────────────────────────────────────────────────────────── */
 .map-legend {
