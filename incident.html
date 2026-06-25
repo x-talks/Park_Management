@@ -175,7 +175,6 @@
         <button type="submit" id="submit-btn" data-i18n="inc.btn.submit">Submit Report</button>
         <button type="button" class="secondary" id="reset-btn" data-i18n="inc.btn.clear">Clear</button>
       </div>
-      <div id="inc-msg" style="margin-top:0.5rem"></div>
     </form>
   </div>
 
@@ -205,6 +204,7 @@
 <script src="js/i18n/de.js"></script>
 <script src="js/i18n/tr.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/toast.js"></script>
 <script>
 buildSwitcher('lang-switcher-nav');
 applyPage();
@@ -276,8 +276,6 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 // ── Submit ─────────────────────────────────────────────────────────────────────
 document.getElementById('incident-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const msg = document.getElementById('inc-msg');
-  msg.textContent = '';
   const btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.textContent = t('inc.btn.uploading');
 
@@ -308,13 +306,11 @@ document.getElementById('incident-form').addEventListener('submit', async e => {
       reportedAt: new Date().toISOString()
     });
 
-    msg.className = 'alert success';
-    msg.textContent = t('inc.success');
+    toast(t('inc.success'), 'success');
     document.getElementById('reset-btn').click();
     loadLog();
   } catch (err) {
-    msg.className = 'alert error';
-    msg.textContent = err.message;
+    toast(err.message, 'error');
   } finally {
     btn.disabled = false; btn.textContent = t('inc.btn.submit');
   }
@@ -360,7 +356,7 @@ async function loadLog() {
       : '—';
 
     const card = document.createElement('div');
-    card.className = 'incident-card';
+    card.className = 'incident-card stagger-item';
 
     if (inc.imageUrl) {
       const img = document.createElement('img');

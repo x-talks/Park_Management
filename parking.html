@@ -83,6 +83,7 @@
 <script src="js/i18n/de.js"></script>
 <script src="js/i18n/tr.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/toast.js"></script>
 <script>
 buildSwitcher('lang-switcher-nav');
 applyPage();
@@ -402,13 +403,11 @@ function renderProfile() {
   const submitBtn = document.createElement('button');
   submitBtn.type = 'submit';
   submitBtn.textContent = t('profile.btn.submit');
-  const msg = document.createElement('div');
   btnRow.appendChild(submitBtn);
-  btnRow.appendChild(msg);
   form.appendChild(btnRow);
 
   const note = document.createElement('p');
-  note.style.cssText = 'font-size:0.78rem;color:var(--gray-600);margin-top:0.5rem';
+  note.style.cssText = 'font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem';
   note.textContent = t('profile.note');
   form.appendChild(note);
 
@@ -422,16 +421,16 @@ function renderProfile() {
     if (carModel !== (me.carModel || '')) changes.carModel = carModel;
     if (carColor !== (me.carColor || '')) changes.carColor = carColor;
     if (!Object.keys(changes).length) {
-      msg.className = 'alert warn'; msg.textContent = t('profile.warn.nochange'); return;
+      toast(t('profile.warn.nochange'), 'warn'); return;
     }
     try {
       await workerRequest('PATCH', `/users/${me.id}`, {
         pendingEdits: { ...changes, requestedAt: new Date().toISOString() }
       });
-      msg.className = 'alert success'; msg.textContent = t('profile.success');
+      toast(t('profile.success'), 'success');
       submitBtn.disabled = true;
       refresh();
-    } catch(err) { msg.className = 'alert error'; msg.textContent = err.message; }
+    } catch(err) { toast(err.message, 'error'); }
   });
 
   card.appendChild(form);

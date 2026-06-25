@@ -15,7 +15,7 @@
 .action-cell .btn-row { gap:0.25rem; flex-wrap:nowrap; }
 /* Year selector */
 .year-select-wrap { display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; font-size:0.85rem; }
-.year-select-wrap label { font-weight:600; color:var(--gray-600); text-transform:uppercase; font-size:0.75rem; letter-spacing:.04em; }
+.year-select-wrap label { font-weight:600; color:var(--text-secondary); text-transform:uppercase; font-size:0.75rem; letter-spacing:.04em; }
 .year-select-wrap select { width:auto; }
 /* Payment table cells */
 .pay-col { min-width:110px; }
@@ -67,7 +67,7 @@
     <div class="card">
       <div class="card-header">
         <h2 data-i18n="admin.users.title">Users</h2>
-        <span id="last-refresh" style="font-size:0.75rem;color:var(--gray-600)"></span>
+        <span id="last-refresh" style="font-size:0.75rem;color:var(--text-secondary)"></span>
       </div>
       <div id="user-list"></div>
     </div>
@@ -91,7 +91,7 @@
           <label><span data-i18n="admin.create.label.spot">Parking Spot *</span> <small style="font-weight:400;text-transform:none" data-i18n="admin.create.spot.hint">(free spots only)</small></label>
           <select id="cu-spot" required><option value="" data-i18n="admin.create.spot.default">— select —</option></select>
         </div>
-        <p style="font-size:0.8rem;color:var(--gray-600);margin:0 0 0.75rem" data-i18n="admin.create.car.note">
+        <p style="font-size:0.8rem;color:var(--text-secondary);margin:0 0 0.75rem" data-i18n="admin.create.car.note">
           Car details are optional — user must complete missing fields during registration.
         </p>
         <div class="grid-3">
@@ -100,7 +100,6 @@
           <div class="form-group"><label data-i18n="admin.create.label.color">Car Color</label><input id="cu-carcolor" placeholder="blue"/></div>
         </div>
         <button type="submit" data-i18n="admin.create.btn">Generate Invite Link</button>
-        <div id="cu-msg" style="margin-top:0.5rem"></div>
       </form>
       <div id="invite-result-box" style="display:none" class="invite-link-box">
         <strong data-i18n="admin.invite.label">Invite link (valid 7 days):</strong><br>
@@ -128,7 +127,7 @@
           <select id="payment-year"></select>
         </div>
       </div>
-      <div style="font-size:0.78rem;color:var(--gray-600);margin-bottom:0.75rem">
+      <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.75rem">
         <span style="display:inline-block;width:10px;height:10px;background:var(--blue-bg);border:1px solid #bfdbfe;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.commission">Commission row</span> &nbsp;
         <span style="display:inline-block;width:10px;height:10px;background:var(--green-bg);border:1px solid #b2dfca;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.paid">Paid</span> &nbsp;
         <span style="display:inline-block;width:10px;height:10px;background:var(--red-bg);border:1px solid #f5c6c2;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.pending">Pending</span>
@@ -143,6 +142,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/modal.js"></script>
+<script src="js/toast.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/i18n/en.js"></script>
 <script src="js/i18n/de.js"></script>
@@ -240,7 +240,7 @@ function renderPendingRegistrations(pendingRegs, spots) {
 
   if (!pendingRegs.length) {
     const empty = document.createElement('p');
-    empty.style.cssText = 'color:var(--gray-600);font-size:0.85rem;margin:0.5rem 0';
+    empty.style.cssText = 'color:var(--text-secondary);font-size:0.85rem;margin:0.5rem 0';
     empty.textContent = t('admin.pr.empty');
     container.appendChild(empty);
     return;
@@ -555,7 +555,6 @@ async function loadFreeSpots() {
 // ── Create user + invite ──────────────────────────────────────────────────────
 document.getElementById('create-user-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const msg = document.getElementById('cu-msg'); msg.textContent = '';
   const resultBox = document.getElementById('invite-result-box'); resultBox.style.display = 'none';
   const submitBtn = e.target.querySelector('button[type=submit]');
   submitBtn.disabled = true; submitBtn.textContent = t('admin.create.btn.loading');
@@ -577,10 +576,10 @@ document.getElementById('create-user-form').addEventListener('submit', async e =
     );
     document.getElementById('invite-wa-link').href = `https://wa.me/?text=${waText}`;
     resultBox.style.display = 'block';
-    msg.className = 'alert success'; msg.textContent = t('admin.create.success');
+    toast(t('admin.create.success'), 'success');
     e.target.reset(); loadFreeSpots(); renderUsers();
   } catch(err) {
-    msg.className = 'alert error'; msg.textContent = err.message;
+    toast(err.message, 'error');
   } finally {
     submitBtn.disabled = false; submitBtn.textContent = t('admin.create.btn');
   }
