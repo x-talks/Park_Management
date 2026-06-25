@@ -766,6 +766,15 @@ tr:hover td { background: var(--bg-card-hover); }
 .step-connector.done { background: var(--green); }
 
 /* ── Login page ───────────────────────────────────────────────────────────── */
+@keyframes login-gradient {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes login-card-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 .login-wrap {
   min-height: 100vh;
   display: flex;
@@ -773,6 +782,7 @@ tr:hover td { background: var(--bg-card-hover); }
   justify-content: center;
   padding: 1rem;
   background: var(--bg-page);
+  position: relative;
 }
 .login-card {
   background: var(--bg-card);
@@ -782,9 +792,38 @@ tr:hover td { background: var(--bg-card-hover); }
   padding: 2rem 2rem 1.5rem;
   width: 100%;
   max-width: 380px;
+  animation: login-card-in 0.45s cubic-bezier(0.16,1,0.3,1) both;
 }
 .login-card h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
 .login-card .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+/* Dark themes: animated gradient backdrop + frosted glass card */
+[data-theme="dark-glass"] .login-wrap,
+[data-theme="dark-deep"]  .login-wrap {
+  background: linear-gradient(135deg, #0a0a18 0%, #0d1130 30%, #0a1a24 60%, #0a0a18 100%);
+  background-size: 400% 400%;
+  animation: login-gradient 12s ease infinite;
+}
+[data-theme="dark-glass"] .login-card {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.12);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+[data-theme="dark-deep"] .login-card {
+  background: rgba(22,27,34,0.92);
+  border-color: #30363d;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(88,166,255,0.08);
+}
+
+/* Theme toggle pinned to top-right on login page */
+.login-theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+}
 
 /* ── Btn row ──────────────────────────────────────────────────────────────── */
 .btn-row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }

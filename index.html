@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
+<button id="theme-toggle" class="icon-btn login-theme-toggle" title="Toggle theme"><i data-lucide="sun"></i></button>
 <div class="login-wrap">
   <div class="login-card">
     <div style="text-align:center;margin-bottom:1.25rem">
@@ -41,6 +42,14 @@
 <script src="js/i18n/de.js"></script>
 <script src="js/i18n/tr.js"></script>
 <script src="js/i18n.js"></script>
+<script type="module">
+  import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
+  import { initTheme, cycleTheme } from './js/theme.js';
+  window.lucide = { createIcons: () => createIcons({ icons }) };
+  initTheme();
+  window.lucide.createIcons();
+  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
+</script>
 <script>
 buildSwitcher('lang-switcher');
 applyPage();
