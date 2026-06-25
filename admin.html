@@ -53,6 +53,9 @@
   <!-- ── Users tab ── -->
   <div id="tab-users" class="tab-panel">
 
+    <!-- Stat cards -->
+    <div id="stat-cards" class="stat-grid"></div>
+
     <div class="card">
       <div class="card-header">
         <h2 data-i18n="admin.pr.title">Pending Registrations</h2>
@@ -139,6 +142,7 @@
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/modal.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/i18n/en.js"></script>
 <script src="js/i18n/de.js"></script>
@@ -273,15 +277,15 @@ function renderPendingRegistrations(pendingRegs, spots) {
       try {
         await approvePendingRegistration(pr.id);
         renderUsers();
-      } catch(e) { alert(e.message); }
+      } catch(e) { await modalAlert(e.message); }
     }));
 
     bRow.appendChild(iconBtn('✕', t('admin.pr.reject'), 'secondary', async () => {
-      if (!confirm(t('admin.pr.confirm.reject'))) return;
+      if (!await modalConfirm(t('admin.pr.confirm.reject'), { danger: true })) return;
       try {
         await rejectPendingRegistration(pr.id);
         renderUsers();
-      } catch(e) { alert(e.message); }
+      } catch(e) { await modalAlert(e.message); }
     }));
 
     ac.appendChild(bRow);
@@ -291,6 +295,61 @@ function renderPendingRegistrations(pendingRegs, spots) {
 
   wrap.appendChild(table);
   container.appendChild(wrap);
+}
+
+// ── Stat cards ────────────────────────────────────────────────────────────────
+async function renderStatCards(users, spots, pendingRegs) {
+  const grid = document.getElementById('stat-cards');
+  if (!grid) return;
+
+  const activeRenters = users.filter(u => u.active && u.role === 'renter').length;
+  const occupiedSpots = spots.filter(s => s.assignedUserId).length;
+  const pendingEdits  = users.filter(u => u.pendingEdits).length;
+  const pendingActions = pendingRegs.length + pendingEdits;
+
+  // Count unpaid rent for current month across all occupied spots
+  let unpaidCount = 0;
+  try {
+    const now = new Date();
+    const payments = await readFile('data/payments.json');
+    spots.filter(s => s.assignedUserId).forEach(s => {
+      const paid = payments.find(p =>
+        p.spotId === s.id && p.type === 'rent' &&
+        p.month === now.getMonth() + 1 && p.year === now.getFullYear()
+      );
+      if (!paid) unpaidCount++;
+    });
+  } catch(_) {}
+
+  const cards = [
+    { label: 'Active Renters',   value: activeRenters, color: 'green', icon: 'users' },
+    { label: 'Occupied Spots',   value: `${occupiedSpots} / ${spots.length}`, color: 'blue', icon: 'parking-square' },
+    { label: 'Unpaid This Month',value: unpaidCount,   color: 'amber', icon: 'circle-alert' },
+    { label: 'Pending Actions',  value: pendingActions, color: 'red',  icon: 'bell' },
+  ];
+
+  grid.innerHTML = '';
+  cards.forEach(c => {
+    const card = document.createElement('div');
+    card.className = `stat-card ${c.color}`;
+
+    const label = document.createElement('div');
+    label.className = 'stat-card-label';
+    const icon = document.createElement('i');
+    icon.dataset.lucide = c.icon;
+    label.appendChild(icon);
+    label.appendChild(document.createTextNode(c.label));
+
+    const val = document.createElement('div');
+    val.className = 'stat-card-value';
+    val.textContent = c.value;
+
+    card.appendChild(label);
+    card.appendChild(val);
+    grid.appendChild(card);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
 }
 
 // ── Users tab ─────────────────────────────────────────────────────────────────
@@ -305,6 +364,9 @@ async function renderUsers() {
   const prBadge = document.getElementById('pr-badge');
   prBadge.textContent = pendingRegs.length;
   prBadge.style.display = pendingRegs.length > 0 ? 'inline-flex' : 'none';
+
+  // Render stat cards
+  renderStatCards(users, spots, pendingRegs);
 
   // Render pending registrations section
   renderPendingRegistrations(pendingRegs, spots);
@@ -382,21 +444,21 @@ async function renderUsers() {
       }));
 
       btnRow.appendChild(iconBtn('🔑', t('admin.btn.resetpw'), 'secondary', async () => {
-        const pw = prompt(t('admin.prompt.resetpw', u.licensePlate || u.username));
+        const pw = await modalPrompt(t('admin.prompt.resetpw', u.licensePlate || u.username), { placeholder: 'new password' });
         if (!pw) return;
         try { await resetPassword(u.id, pw, currentUser.role); renderUsers(); }
-        catch(e) { alert(e.message); }
+        catch(e) { await modalAlert(e.message); }
       }));
 
       btnRow.appendChild(iconBtn('✂', t('admin.btn.termination'), 'secondary', async () => {
         const current = u.terminationDate || '';
-        const d = prompt(
+        const d = await modalPrompt(
           t('admin.prompt.termination', u.licensePlate || u.username),
-          current
+          { defaultValue: current, placeholder: 'YYYY-MM-DD or leave empty' }
         );
         if (d === null) return; // cancelled
         try { await setTerminationDate(u.id, d.trim() || null); renderUsers(); }
-        catch(e) { alert(e.message); }
+        catch(e) { await modalAlert(e.message); }
       }));
 
       if (u.pendingEdits) {
@@ -415,9 +477,9 @@ async function renderUsers() {
       }
 
       btnRow.appendChild(iconBtn('🗑', t('admin.btn.delete'), 'danger', async () => {
-        if (!confirm(t('admin.confirm.delete', u.licensePlate || u.username))) return;
+        if (!await modalConfirm(t('admin.confirm.delete', u.licensePlate || u.username), { danger: true })) return;
         try { await deleteUser(u.id); renderUsers(); }
-        catch(e) { alert(e.message); }
+        catch(e) { await modalAlert(e.message); }
       }));
     }
 
@@ -575,18 +637,18 @@ async function renderSpots() {
       });
       bRow.appendChild(sel);
       bRow.appendChild(iconBtn('✓', t('admin.btn.assign'), 'success-btn', async () => {
-        if (!sel.value) { alert(t('admin.alert.selectuser')); return; }
+        if (!sel.value) { await modalAlert(t('admin.alert.selectuser')); return; }
         try { await assignSpot(s.id, sel.value); renderSpots(); }
-        catch(e) { alert(e.message); }
+        catch(e) { await modalAlert(e.message); }
       }));
       bRow.appendChild(iconBtn('⛔', t('admin.btn.reserve'), 'secondary', async () => {
-        if (!confirm(t('admin.confirm.reserve', s.label))) return;
+        if (!await modalConfirm(t('admin.confirm.reserve', s.label))) return;
         await setSpotReserved(s.id, true); renderSpots();
       }));
     } else {
       // Occupied: can unassign
       bRow.appendChild(iconBtn('⛔', t('admin.btn.unassign'), 'secondary', async () => {
-        if (!confirm(t('admin.confirm.unassign', s.label))) return;
+        if (!await modalConfirm(t('admin.confirm.unassign', s.label), { danger: true })) return;
         await unassignSpot(s.id); renderSpots();
       }));
     }
@@ -600,7 +662,7 @@ async function renderSpots() {
       bRow.appendChild(rentInput);
       bRow.appendChild(iconBtn('€', t('admin.btn.setrent'), 'secondary', async () => {
         const val = parseFloat(rentInput.value);
-        if (isNaN(val) || val < 0) { alert(t('admin.alert.invalidrent')); return; }
+        if (isNaN(val) || val < 0) { await modalAlert(t('admin.alert.invalidrent')); return; }
         const now = new Date();
         const fromKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
         const history = [...(s.rentHistory || [])];
@@ -611,7 +673,7 @@ async function renderSpots() {
         try {
           await patchRow('data/spots.json', s.id, { monthlyRent: val, rentHistory: updated });
           renderSpots();
-        } catch(e) { alert(e.message); }
+        } catch(e) { await modalAlert(e.message); }
       }));
     }
 
@@ -701,20 +763,20 @@ async function renderPayments() {
       const textNode = document.createTextNode(`✓ ${commPaid.paidDate} `);
       commCell.appendChild(textNode);
       commCell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
-        if (!confirm(t('admin.confirm.revert.commission'))) return;
+        if (!await modalConfirm(t('admin.confirm.revert.commission'), { danger: true })) return;
         await unmarkPaid(commPaid.id); renderPayments();
       }));
     } else {
       commCell.className = 'payment-cell-unpaid';
       const amtDiv = document.createElement('div');
-      amtDiv.style.cssText = 'font-size:0.72rem;color:var(--gray-600);margin-bottom:0.2rem';
+      amtDiv.style.cssText = 'font-size:0.72rem;color:var(--text-secondary);margin-bottom:0.2rem';
       amtDiv.textContent = `€${commissionRent.toFixed(2)} (1 month)`;
       commCell.appendChild(amtDiv);
       commCell.appendChild(iconBtn('✓', t('admin.btn.markpaid'), 'success-btn', async () => {
         try {
           await markPaid(s.id, s.assignedUserId, 0, selectedYear, currentUser.id, 'commission');
           renderPayments();
-        } catch(e) { alert(e.message); }
+        } catch(e) { await modalAlert(e.message); }
       }));
     }
     commRow.appendChild(commCell);
@@ -774,20 +836,20 @@ async function renderPayments() {
         const textNode = document.createTextNode(`✓ ${p.paidDate} `);
         cell.appendChild(textNode);
         cell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
-          if (!confirm(t('admin.confirm.revert.rent', m.label, m.year))) return;
+          if (!await modalConfirm(t('admin.confirm.revert.rent', m.label, m.year), { danger: true })) return;
           await unmarkPaid(p.id); renderPayments();
         }));
       } else {
         cell.className = 'payment-cell-unpaid';
         const amtDiv = document.createElement('div');
-        amtDiv.style.cssText = 'font-size:0.72rem;color:var(--gray-600);margin-bottom:0.2rem';
+        amtDiv.style.cssText = 'font-size:0.72rem;color:var(--text-secondary);margin-bottom:0.2rem';
         amtDiv.textContent = `€${amount}${fractionLabel}`;
         cell.appendChild(amtDiv);
         cell.appendChild(iconBtn('✓', t('admin.btn.markpaid'), 'success-btn', async () => {
           try {
             await markPaid(s.id, s.assignedUserId, m.month, m.year, currentUser.id, 'rent');
             renderPayments();
-          } catch(e) { alert(e.message); }
+          } catch(e) { await modalAlert(e.message); }
         }));
       }
       rentRow.appendChild(cell);
