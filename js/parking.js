@@ -45,6 +45,15 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   const svg = document.getElementById('parking-svg');
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
+  // Read theme-aware colors from CSS custom properties
+  const cs = getComputedStyle(document.documentElement);
+  const clrBoundary = cs.getPropertyValue('--svg-boundary-fill').trim() || cs.getPropertyValue('--bg-page').trim() || '#f0f4f0';
+  const clrBoundaryStroke = cs.getPropertyValue('--border').trim() || '#444';
+  const clrLane     = cs.getPropertyValue('--svg-lane-fill').trim() || cs.getPropertyValue('--bg-card-hover').trim() || '#e8e8e8';
+  const clrLaneStroke = cs.getPropertyValue('--border').trim() || '#bbb';
+  const clrText     = cs.getPropertyValue('--text-secondary').trim() || '#444';
+  const clrArrow    = cs.getPropertyValue('--text-muted').trim() || '#555';
+
   const bxLeft   = LANE_LEFT  - SPOT_W - SIDE_MARGIN - 60;
   const bxRight  = LANE_RIGHT + SPOT_W + SIDE_MARGIN + 60;
   const byTop    = LANE_TOP - 10;
@@ -55,8 +64,8 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   boundary.setAttribute('x', bxLeft); boundary.setAttribute('y', byTop);
   boundary.setAttribute('width', bxRight - bxLeft);
   boundary.setAttribute('height', byBottom - byTop);
-  boundary.setAttribute('fill', '#f0f4f0');
-  boundary.setAttribute('stroke', '#444'); boundary.setAttribute('stroke-width', '2');
+  boundary.setAttribute('fill', clrBoundary);
+  boundary.setAttribute('stroke', clrBoundaryStroke); boundary.setAttribute('stroke-width', '2');
   svg.appendChild(boundary);
 
   // Entrance label
@@ -68,7 +77,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   entranceText.setAttribute('font-family', 'inherit');
   entranceText.setAttribute('font-size', '13');
   entranceText.setAttribute('font-weight', 'bold');
-  entranceText.setAttribute('fill', '#444');
+  entranceText.setAttribute('fill', clrText);
   entranceText.textContent = 'Entrance';
   svg.appendChild(entranceText);
 
@@ -77,7 +86,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   lane.setAttribute('x', LANE_LEFT); lane.setAttribute('y', LANE_TOP);
   lane.setAttribute('width', LANE_RIGHT - LANE_LEFT);
   lane.setAttribute('height', LANE_BOTTOM - LANE_TOP);
-  lane.setAttribute('fill', '#e8e8e8'); lane.setAttribute('stroke', '#bbb');
+  lane.setAttribute('fill', clrLane); lane.setAttribute('stroke', clrLaneStroke);
   lane.setAttribute('stroke-width', '1');
   svg.appendChild(lane);
 
@@ -86,7 +95,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   const ax = (LANE_LEFT + LANE_RIGHT) / 2;
   arrow.setAttribute('points',
     `${ax - 12},${LANE_TOP + 10} ${ax + 12},${LANE_TOP + 10} ${ax},${LANE_TOP + 32}`);
-  arrow.setAttribute('fill', '#555');
+  arrow.setAttribute('fill', clrArrow);
   svg.appendChild(arrow);
 
   // ── Diagonal spot factory ──
