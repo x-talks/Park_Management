@@ -51,6 +51,13 @@ async function workerRequest(method, path, body) {
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+  if (res.status === 401) {
+    sessionStorage.removeItem('pm_access_token');
+    sessionStorage.removeItem('pm_refresh_token');
+    sessionStorage.removeItem('pm_user');
+    location.href = 'index.html';
+    throw new Error('Session expired');
+  }
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(data.error || 'Request failed');
@@ -58,10 +65,21 @@ async function workerRequest(method, path, body) {
   return res.json().catch(() => null);
 }
 
+function _checkExpired(res) {
+  if (res.status === 401) {
+    sessionStorage.removeItem('pm_access_token');
+    sessionStorage.removeItem('pm_refresh_token');
+    sessionStorage.removeItem('pm_user');
+    location.href = 'index.html';
+    throw new Error('Session expired');
+  }
+}
+
 async function _get(table, params) {
   let url = `${CONFIG.supabaseUrl}/rest/v1/${table}`;
   if (params) url += '?' + params;
   const res = await fetch(url, { headers: _headers() });
+  _checkExpired(res);
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`GET ${table}: ${res.status} ${err}`);
@@ -75,6 +93,7 @@ async function _upsert(table, rows) {
     headers: { ..._headers(), 'Prefer': 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify(rows)
   });
+  _checkExpired(res);
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`UPSERT ${table}: ${res.status} ${err}`);
@@ -87,6 +106,7 @@ async function _delete(table, column, value) {
     method: 'DELETE',
     headers: _headers()
   });
+  _checkExpired(res);
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`DELETE ${table}: ${res.status} ${err}`);
@@ -102,6 +122,7 @@ async function _patch(table, filterCol, filterVal, changes) {
       body: JSON.stringify(changes)
     }
   );
+  _checkExpired(res);
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`PATCH ${table}: ${res.status} ${err}`);
