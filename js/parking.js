@@ -47,12 +47,12 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
 
   // Read theme-aware colors from CSS custom properties
   const cs = getComputedStyle(document.documentElement);
-  const clrBoundary = cs.getPropertyValue('--svg-boundary-fill').trim() || cs.getPropertyValue('--bg-page').trim() || '#f0f4f0';
-  const clrBoundaryStroke = cs.getPropertyValue('--border').trim() || '#444';
-  const clrLane     = cs.getPropertyValue('--svg-lane-fill').trim() || cs.getPropertyValue('--bg-card-hover').trim() || '#e8e8e8';
-  const clrLaneStroke = cs.getPropertyValue('--border').trim() || '#bbb';
-  const clrText     = cs.getPropertyValue('--text-secondary').trim() || '#444';
-  const clrArrow    = cs.getPropertyValue('--text-muted').trim() || '#555';
+  const clrBoundary       = cs.getPropertyValue('--svg-boundary').trim()        || '#e8ede8';
+  const clrBoundaryStroke = cs.getPropertyValue('--svg-boundary-stroke').trim() || '#aaa';
+  const clrLane           = cs.getPropertyValue('--svg-lane').trim()             || '#d4d4d4';
+  const clrLaneStroke     = cs.getPropertyValue('--svg-lane-stroke').trim()      || '#bbb';
+  const clrText           = cs.getPropertyValue('--svg-text').trim()             || '#555';
+  const clrArrow          = cs.getPropertyValue('--svg-arrow').trim()            || '#666';
 
   const bxLeft   = LANE_LEFT  - SPOT_W - SIDE_MARGIN - 60;
   const bxRight  = LANE_RIGHT + SPOT_W + SIDE_MARGIN + 60;
