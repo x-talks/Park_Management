@@ -64,7 +64,7 @@
       <div class="card-header">
         <h2 data-i18n="admin.chart.title">Occupancy Overview</h2>
       </div>
-      <canvas id="occupancy-chart" height="90" style="max-width:100%"></canvas>
+      <canvas id="occupancy-chart" height="120" style="max-width:100%"></canvas>
     </div>
 
     <div class="card">
@@ -317,7 +317,8 @@ async function renderStatCards(users, spots, pendingRegs) {
   if (!grid) return;
 
   const activeRenters = users.filter(u => u.active && u.role === 'renter').length;
-  const occupiedSpots = spots.filter(s => s.assignedUserId).length;
+  const ownedSpots   = spots.filter(s => s.owned);
+  const occupiedOwned = ownedSpots.filter(s => s.assignedUserId).length;
   const pendingEdits  = users.filter(u => u.pendingEdits).length;
   const pendingActions = pendingRegs.length + pendingEdits;
 
@@ -336,10 +337,10 @@ async function renderStatCards(users, spots, pendingRegs) {
   } catch(_) {}
 
   const cards = [
-    { label: 'Active Renters',   value: activeRenters, color: 'green', icon: 'users' },
-    { label: 'Occupied Spots',   value: `${occupiedSpots} / ${spots.length}`, color: 'blue', icon: 'parking-square' },
-    { label: 'Unpaid This Month',value: unpaidCount,   color: 'amber', icon: 'circle-alert' },
-    { label: 'Pending Actions',  value: pendingActions, color: 'red',  icon: 'bell' },
+    { label: t('admin.stat.renters'),    value: activeRenters, color: 'green', icon: 'users' },
+    { label: t('admin.stat.occupied'),   value: `${occupiedOwned} / ${ownedSpots.length}`, color: 'blue', icon: 'parking-square' },
+    { label: t('admin.stat.unpaid'),     value: unpaidCount,   color: 'amber', icon: 'circle-alert' },
+    { label: t('admin.stat.pending'),    value: pendingActions, color: 'red',  icon: 'bell' },
   ];
 
   grid.innerHTML = '';
@@ -373,52 +374,68 @@ function renderOccupancyChart(spots) {
   const canvas = document.getElementById('occupancy-chart');
   if (!canvas) return;
 
-  const occupied = spots.filter(s => s.assignedUserId).length;
-  const free     = spots.filter(s => !s.assignedUserId && !s.reserved).length;
-  const reserved = spots.filter(s => s.reserved && !s.assignedUserId).length;
-  const total    = spots.length;
+  const owned    = spots.filter(s => s.owned);
+  const occupied = owned.filter(s => s.assignedUserId).length;
+  const free     = owned.filter(s => !s.assignedUserId && !s.reserved).length;
+  const reserved = owned.filter(s => s.reserved && !s.assignedUserId).length;
+  const total    = owned.length;
+  const pct      = total > 0 ? Math.round((occupied / total) * 100) : 0;
 
-  // Get computed CSS custom properties for theme-aware colors
   const style = getComputedStyle(document.documentElement);
-  const green = style.getPropertyValue('--green').trim() || '#34d399';
-  const blue  = style.getPropertyValue('--blue').trim()  || '#60a5fa';
-  const amber = style.getPropertyValue('--amber').trim() || '#fbbf24';
+  const green  = style.getPropertyValue('--green').trim()         || '#34d399';
+  const blue   = style.getPropertyValue('--blue').trim()          || '#60a5fa';
+  const amber  = style.getPropertyValue('--amber').trim()         || '#fbbf24';
+  const textPrimary   = style.getPropertyValue('--text-primary').trim()   || '#111';
   const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#6b7280';
-  const border = style.getPropertyValue('--border').trim() || '#e5e7eb';
+  const bgCard = style.getPropertyValue('--bg-card').trim()       || '#fff';
 
   if (_chartInstance) { _chartInstance.destroy(); _chartInstance = null; }
 
   _chartInstance = new Chart(canvas, {
-    type: 'doughnut',
+    type: 'bar',
     data: {
       labels: ['Occupied', 'Free', 'Reserved'],
       datasets: [{
         data: [occupied, free, reserved],
         backgroundColor: [green, blue, amber],
-        borderColor: 'transparent',
-        hoverBorderColor: 'transparent',
-        borderWidth: 0,
+        borderRadius: 5,
+        barThickness: 28,
       }]
     },
     options: {
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: true,
-      cutout: '68%',
       plugins: {
-        legend: {
-          position: 'right',
-          labels: {
-            color: textSecondary,
-            font: { family: 'Inter, sans-serif', size: 12 },
-            padding: 16,
-            usePointStyle: true,
-            pointStyleWidth: 10,
-          }
-        },
+        legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => ` ${ctx.label}: ${ctx.parsed} / ${total} spots`
+            label: ctx => {
+              const v = ctx.parsed.x;
+              const p = total > 0 ? Math.round((v / total) * 100) : 0;
+              return ` ${v} of ${total} owned spots (${p}%)`;
+            }
           }
+        },
+        title: {
+          display: true,
+          text: total > 0
+            ? `${pct}% occupied  (${occupied} / ${total} owned spots)`
+            : 'No owned spots marked yet',
+          color: textPrimary,
+          font: { family: 'Inter, sans-serif', size: 13, weight: '600' },
+          padding: { bottom: 12 }
+        }
+      },
+      scales: {
+        x: {
+          max: Math.max(total, 1),
+          grid: { color: 'rgba(128,128,128,0.12)' },
+          ticks: { color: textSecondary, font: { size: 11 }, stepSize: 1 }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: textSecondary, font: { size: 12 } }
         }
       }
     }
@@ -670,13 +687,29 @@ async function renderSpots() {
   const table = document.createElement('table');
 
   const headRow = document.createElement('tr');
-  ['admin.spots.col.spot','admin.spots.col.state','admin.spots.col.user','admin.spots.col.plate','admin.spots.col.rent','admin.spots.col.actions'].forEach(k => headRow.appendChild(mkTh(t(k))));
+  ['admin.spots.col.spot','admin.spots.col.owned','admin.spots.col.state','admin.spots.col.user','admin.spots.col.plate','admin.spots.col.rent','admin.spots.col.actions'].forEach(k => headRow.appendChild(mkTh(t(k))));
   table.appendChild(headRow);
 
   sortSpots(spots).forEach(s => {
     const renter = users.find(u => u.id === s.assignedUserId);
     const row = document.createElement('tr');
     row.appendChild(mkTd(s.label));
+
+    // ── Mine / Owned toggle cell ──
+    const ownedCell = document.createElement('td');
+    ownedCell.style.cssText = 'text-align:center;vertical-align:middle';
+    const ownedBtn = document.createElement('button');
+    ownedBtn.className = s.owned ? 'success-btn' : 'secondary';
+    ownedBtn.style.cssText = 'font-size:1rem;padding:0.15rem 0.4rem;min-height:0;min-width:0;line-height:1';
+    ownedBtn.textContent = s.owned ? '★' : '☆';
+    ownedBtn.title = s.owned ? 'Mark as not mine' : 'Mark as mine';
+    ownedBtn.addEventListener('click', async () => {
+      await workerRequest('PATCH', `/spots/${s.id}`, { owned: !s.owned });
+      renderSpots();
+      renderUsers(); // refresh stat cards + chart
+    });
+    ownedCell.appendChild(ownedBtn);
+    row.appendChild(ownedCell);
 
     const stateCell = document.createElement('td');
     const stateClass = s.reserved ? 'inactive' : (s.state === 'free' ? 'free' : 'occupied');

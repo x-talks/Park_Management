@@ -72,6 +72,10 @@ const LANG_TR = {
   'admin.tab.payments': 'Ödemeler',
 
   'admin.chart.title':        'Doluluk Özeti',
+  'admin.stat.renters':       'Aktif Kiracılar',
+  'admin.stat.occupied':      'Dolu (sahip olunan)',
+  'admin.stat.unpaid':        'Bu Ay Ödenmemiş',
+  'admin.stat.pending':       'Bekleyen İşlemler',
   'admin.csv.export':         'CSV İndir',
   'admin.users.title':       'Kullanıcılar',
   'admin.users.updated':     'Güncellendi {0}',
@@ -124,6 +128,7 @@ const LANG_TR = {
 
   'admin.spots.title':       'Yer Yönetimi',
   'admin.spots.col.spot':    'Yer',
+  'admin.spots.col.owned':   'Benim',
   'admin.spots.col.state':   'Durum',
   'admin.spots.col.user':    'Atanan Kişi',
   'admin.spots.col.plate':   'Plaka',

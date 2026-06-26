@@ -1,26 +1,170 @@
 [
-  {"id":"s1","label":"1","assignedUserId":null,"state":"free"},
-  {"id":"s2","label":"2","assignedUserId":null,"state":"free"},
-  {"id":"s3","label":"3","assignedUserId":null,"state":"free"},
-  {"id":"s4","label":"4","assignedUserId":null,"state":"free"},
-  {"id":"s5","label":"5","assignedUserId":null,"state":"free"},
-  {"id":"s6","label":"6","assignedUserId":null,"state":"free"},
-  {"id":"s7","label":"7","assignedUserId":null,"state":"free"},
-  {"id":"s8","label":"8","assignedUserId":null,"state":"free"},
-  {"id":"s9","label":"9","assignedUserId":null,"state":"free"},
-  {"id":"s10","label":"10","assignedUserId":null,"state":"free"},
-  {"id":"s11","label":"11","assignedUserId":null,"state":"free"},
-  {"id":"s12","label":"12","assignedUserId":null,"state":"free"},
-  {"id":"s13","label":"13","assignedUserId":null,"state":"free"},
-  {"id":"s14","label":"14","assignedUserId":null,"state":"free"},
-  {"id":"s15","label":"15","assignedUserId":null,"state":"free"},
-  {"id":"s16","label":"16","assignedUserId":null,"state":"free"},
-  {"id":"s17","label":"17","assignedUserId":null,"state":"free"},
-  {"id":"s18","label":"18","assignedUserId":null,"state":"free"},
-  {"id":"s19","label":"19","assignedUserId":null,"state":"free"},
-  {"id":"s20","label":"20","assignedUserId":null,"state":"free"},
-  {"id":"s21","label":"21","assignedUserId":null,"state":"free"},
-  {"id":"s22","label":"22","assignedUserId":null,"state":"free"},
-  {"id":"sA","label":"A","assignedUserId":null,"state":"free"},
-  {"id":"sB","label":"B","assignedUserId":null,"state":"free"}
+  {
+    "id": "s1",
+    "label": "1",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s2",
+    "label": "2",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s3",
+    "label": "3",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s4",
+    "label": "4",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s5",
+    "label": "5",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s6",
+    "label": "6",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s7",
+    "label": "7",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s8",
+    "label": "8",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s9",
+    "label": "9",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s10",
+    "label": "10",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s11",
+    "label": "11",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s12",
+    "label": "12",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s13",
+    "label": "13",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s14",
+    "label": "14",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s15",
+    "label": "15",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s16",
+    "label": "16",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s17",
+    "label": "17",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s18",
+    "label": "18",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s19",
+    "label": "19",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s20",
+    "label": "20",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s21",
+    "label": "21",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "s22",
+    "label": "22",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "sA",
+    "label": "A",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  },
+  {
+    "id": "sB",
+    "label": "B",
+    "assignedUserId": null,
+    "state": "free",
+    "owned": false
+  }
 ]

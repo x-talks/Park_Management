@@ -72,6 +72,10 @@ const LANG_DE = {
   'admin.tab.payments': 'Zahlungen',
 
   'admin.chart.title':        'Belegungsübersicht',
+  'admin.stat.renters':       'Aktive Mieter',
+  'admin.stat.occupied':      'Belegt (eigene)',
+  'admin.stat.unpaid':        'Unbezahlt diesen Monat',
+  'admin.stat.pending':       'Offene Aktionen',
   'admin.csv.export':         'CSV exportieren',
   'admin.users.title':       'Nutzer',
   'admin.users.updated':     'Aktualisiert {0}',
@@ -124,6 +128,7 @@ const LANG_DE = {
 
   'admin.spots.title':       'Stellplatzverwaltung',
   'admin.spots.col.spot':    'Platz',
+  'admin.spots.col.owned':   'Mein',
   'admin.spots.col.state':   'Status',
   'admin.spots.col.user':    'Zugewiesen an',
   'admin.spots.col.plate':   'Kennzeichen',

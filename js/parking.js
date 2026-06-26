@@ -125,6 +125,17 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     rect.setAttribute('rx', '4');
     g.appendChild(rect);
 
+    // Owned indicator — small dot in top-right corner of the rect
+    if (spotData.owned) {
+      const dot = document.createElementNS(svgNS, 'circle');
+      dot.setAttribute('cx', cx + SPOT_W / 2 - 5);
+      dot.setAttribute('cy', cy - SPOT_H / 2 + 5);
+      dot.setAttribute('r', '3.5');
+      dot.setAttribute('fill', 'rgba(255,255,255,0.9)');
+      dot.setAttribute('pointer-events', 'none');
+      g.appendChild(dot);
+    }
+
     // Spot number label — centered inside rect
     const numText = document.createElementNS(svgNS, 'text');
     numText.setAttribute('class', 'spot-label');
@@ -219,6 +230,16 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     poly.setAttribute('points', points.map(p => p.join(',')).join(' '));
     g.appendChild(poly);
 
+    // Owned indicator
+    if (spotData.owned) {
+      const dot = document.createElementNS(svgNS, 'circle');
+      dot.setAttribute('cx', points[1][0] - 8); dot.setAttribute('cy', points[0][1] + 8);
+      dot.setAttribute('r', '4');
+      dot.setAttribute('fill', 'rgba(255,255,255,0.9)');
+      dot.setAttribute('pointer-events', 'none');
+      g.appendChild(dot);
+    }
+
     const cx = points.reduce((a, p) => a + p[0], 0) / points.length;
     const cy = points.reduce((a, p) => a + p[1], 0) / points.length;
 
@@ -281,6 +302,15 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     rect.setAttribute('width', w); rect.setAttribute('height', h);
     rect.setAttribute('rx', '4');
     g.appendChild(rect);
+    // Owned indicator
+    if (spotData.owned) {
+      const dot = document.createElementNS(svgNS, 'circle');
+      dot.setAttribute('cx', x + w - 6); dot.setAttribute('cy', y + 6);
+      dot.setAttribute('r', '3.5');
+      dot.setAttribute('fill', 'rgba(255,255,255,0.9)');
+      dot.setAttribute('pointer-events', 'none');
+      g.appendChild(dot);
+    }
     const numText = document.createElementNS(svgNS, 'text');
     numText.setAttribute('class', 'spot-label');
     numText.setAttribute('x', x + w / 2);
