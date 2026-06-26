@@ -193,6 +193,11 @@ document.addEventListener('visibilitychange', () => {
     if (activeTab === 'payments') renderPayments();
   }
 });
+window.addEventListener('langchange', () => {
+  if (activeTab === 'users')    renderUsers();
+  if (activeTab === 'spots')    renderSpots();
+  if (activeTab === 'payments') renderPayments();
+});
 
 // ── DOM helpers ───────────────────────────────────────────────────────────────
 function mkTd(text, cls) {

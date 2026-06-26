@@ -36,7 +36,9 @@
     // Persist to user profile in background (non-blocking)
     _syncLangToProfile(lang);
     applyPage();
-    _updateSwitcher();
+    _updateAllSwitchers();
+    // Let pages re-render dynamic content
+    window.dispatchEvent(new CustomEvent('langchange', { detail: { lang } }));
   }
 
   async function _syncLangToProfile(lang) {
@@ -47,12 +49,22 @@
     } catch (_) { /* silent — not critical */ }
   }
 
-  // On login, call this to pull language from profile and apply it
+  // Called after login: only applies profile language if the user has never
+  // explicitly set one in this browser (i.e. localStorage has no 'lang' key).
+  // If the user already picked a language on the login page, that choice wins
+  // and gets pushed to the profile instead.
   function applySavedLangFromProfile(user) {
+    const hasLocalPref = localStorage.getItem('lang') !== null;
+    if (hasLocalPref) {
+      // User already has a local preference — push it to profile, don't overwrite
+      _syncLangToProfile(getLang());
+      return;
+    }
+    // No local preference yet — pull from profile
     if (user && user.language && SUPPORTED.includes(user.language)) {
       localStorage.setItem('lang', user.language);
       applyPage();
-      _updateSwitcher();
+      _updateAllSwitchers();
     }
   }
 
@@ -79,19 +91,20 @@
   }
 
   // ── Language switcher widget ─────────────────────────────────────────────
-  // Renders into any element with id="lang-switcher"
-  function _updateSwitcher() {
-    const sw = document.getElementById('lang-switcher');
-    if (!sw) return;
-    const cur = getLang();
-    sw.querySelectorAll('button').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.lang === cur);
+  // Updates ALL switchers on the page (multiple containers supported)
+  function _updateAllSwitchers() {
+    document.querySelectorAll('[data-lang-switcher]').forEach(sw => {
+      const cur = getLang();
+      sw.querySelectorAll('button[data-lang]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === cur);
+      });
     });
   }
 
   function buildSwitcher(containerId) {
     const sw = document.getElementById(containerId || 'lang-switcher');
     if (!sw) return;
+    sw.setAttribute('data-lang-switcher', '');
     sw.innerHTML = '';
     sw.style.cssText = 'display:flex;gap:0.2rem;align-items:center';
     SUPPORTED.forEach(lang => {

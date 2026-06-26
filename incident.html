@@ -416,6 +416,7 @@ document.getElementById('lightbox').addEventListener('click', e => {
 // ── Init ───────────────────────────────────────────────────────────────────────
 loadSpots();
 loadLog();
+window.addEventListener('langchange', () => { loadSpots(); loadLog(); });
 </script>
 
 <script type="module">
