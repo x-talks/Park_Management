@@ -123,6 +123,15 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     rect.setAttribute('width', SPOT_W);
     rect.setAttribute('height', SPOT_H);
     rect.setAttribute('rx', '4');
+    g.appendChild(rect);
+
+    // Spot number label — centered inside rect
+    const numText = document.createElementNS(svgNS, 'text');
+    numText.setAttribute('class', 'spot-label');
+    numText.setAttribute('x', cx);
+    numText.setAttribute('y', renter ? cy - 4 : cy);
+    numText.textContent = label;
+    g.appendChild(numText);
 
     // License plate — outside the rect, on the wall (back) side.
     // Back edge: left spots → left side (cx - SPOT_W/2), right spots → right side (cx + SPOT_W/2).
@@ -271,6 +280,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     rect.setAttribute('x', x); rect.setAttribute('y', y);
     rect.setAttribute('width', w); rect.setAttribute('height', h);
     rect.setAttribute('rx', '4');
+    g.appendChild(rect);
     const numText = document.createElementNS(svgNS, 'text');
     numText.setAttribute('class', 'spot-label');
     numText.setAttribute('x', x + w / 2);
