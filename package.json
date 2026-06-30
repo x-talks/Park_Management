@@ -11,8 +11,10 @@
     "test:all": "npm run test:unit && npm run test:e2e"
   },
   "devDependencies": {
-    "vitest": "^2.1.0",
+    "@playwright/test": "^1.61.1",
+    "@supabase/supabase-js": "^2.110.0",
     "@vitest/coverage-v8": "^2.1.0",
-    "jsdom": "^25.0.0"
+    "jsdom": "^25.0.0",
+    "vitest": "^2.1.0"
   }
 }
