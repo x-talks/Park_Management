@@ -16,6 +16,13 @@
 	"upload_source_maps": true,
 	"vars": {
 		"SUPABASE_URL": "https://fnluagvzowbcuzlblfmr.supabase.co"
+	},
+	"env": {
+		"staging": {
+			"vars": {
+				"SUPABASE_URL": "REPLACE_WITH_STAGING_SUPABASE_URL"
+			}
+		}
 	}
 	/**
 	 * Smart Placement
