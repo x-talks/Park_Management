@@ -78,7 +78,7 @@ function _checkExpired(res) {
 async function _get(table, params) {
   let url = `${CONFIG.supabaseUrl}/rest/v1/${table}`;
   if (params) url += '?' + params;
-  const res = await fetch(url, { headers: _headers() });
+  const res = await fetch(url, { headers: { ..._headers(), 'Cache-Control': 'no-store' } });
   _checkExpired(res);
   if (!res.ok) {
     const err = await res.text();
