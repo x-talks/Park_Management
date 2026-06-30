@@ -40,24 +40,59 @@ function _headers() {
   };
 }
 
+// Attempt to get a fresh access token using the stored refresh token.
+// Returns true if successful, false if no refresh token or refresh failed.
+async function _tryRefresh() {
+  const refreshToken = sessionStorage.getItem('pm_refresh_token');
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch(`${CONFIG.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: {
+        'apikey': CONFIG.supabaseKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    if (!data.access_token) return false;
+    sessionStorage.setItem('pm_access_token', data.access_token);
+    if (data.refresh_token) sessionStorage.setItem('pm_refresh_token', data.refresh_token);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function _clearSession() {
+  sessionStorage.removeItem('pm_access_token');
+  sessionStorage.removeItem('pm_refresh_token');
+  sessionStorage.removeItem('pm_user');
+  location.href = 'index.html';
+}
+
 // Send a request to the Cloudflare Worker (requires valid JWT)
 async function workerRequest(method, path, body) {
-  const token = _accessToken();
-  const res = await fetch(CONFIG.workerUrl + path, {
+  const _doRequest = () => fetch(CONFIG.workerUrl + path, {
     method,
     headers: {
-      'Authorization': 'Bearer ' + (token || ''),
+      'Authorization': 'Bearer ' + (_accessToken() || ''),
       'Content-Type': 'application/json',
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+
+  let res = await _doRequest();
+
+  // Token expired — try refresh once, then retry
   if (res.status === 401) {
-    sessionStorage.removeItem('pm_access_token');
-    sessionStorage.removeItem('pm_refresh_token');
-    sessionStorage.removeItem('pm_user');
-    location.href = 'index.html';
-    throw new Error('Session expired');
+    const refreshed = await _tryRefresh();
+    if (!refreshed) { _clearSession(); throw new Error('Session expired'); }
+    res = await _doRequest();
+    if (res.status === 401) { _clearSession(); throw new Error('Session expired'); }
   }
+
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(data.error || 'Request failed');
@@ -66,11 +101,10 @@ async function workerRequest(method, path, body) {
 }
 
 function _checkExpired(res) {
+  // Supabase direct calls use the anon key so they don't expire the same way,
+  // but guard anyway.
   if (res.status === 401) {
-    sessionStorage.removeItem('pm_access_token');
-    sessionStorage.removeItem('pm_refresh_token');
-    sessionStorage.removeItem('pm_user');
-    location.href = 'index.html';
+    _clearSession();
     throw new Error('Session expired');
   }
 }
