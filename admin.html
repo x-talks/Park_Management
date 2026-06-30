@@ -22,7 +22,6 @@
 .year-select-wrap select { width:auto; }
 /* Payment table cells */
 .pay-col { min-width:110px; }
-.commission-row td { background:var(--blue-bg); }
 .termination-chip { font-size:0.68rem; background:var(--amber-bg); color:var(--amber); border:1px solid #fde68a; border-radius:999px; padding:0.1rem 0.45rem; white-space:nowrap; }
 </style>
 </head>
@@ -81,12 +80,6 @@
         <span id="last-refresh" style="font-size:0.75rem;color:var(--text-secondary)"></span>
       </div>
       <div id="user-list"></div>
-    </div>
-
-    <!-- Button legend -->
-    <div class="card" style="padding:0.75rem 1.25rem;font-size:0.8rem;">
-      <strong data-i18n="admin.users.legend">Button legend:</strong>
-      <span style="margin-left:0.75rem" data-i18n="admin.users.legend.text">■ Deactivate &nbsp;▶ Activate / Unreserve &nbsp;~ Edit &nbsp;* Reset PW &nbsp;/ Set termination &nbsp;✓ Approve / Assign &nbsp;✕ Reject &nbsp;× Delete &nbsp;○ Unassign / Reserve</span>
     </div>
 
     <div class="card">
@@ -218,7 +211,7 @@ function mkTh(text) { const c = document.createElement('th'); c.textContent = te
 const ICON_MAP = {
   '✓':'check', '✕':'x', '■':'square', '▶':'play', '~':'pencil',
   '🔑':'key-round', '✂':'scissors', '🗑':'trash-2', '💾':'save',
-  '⛔':'ban', '€':'euro', '↩':'undo-2'
+  '⛔':'ban', '↩':'undo-2', '👤':'user-minus'
 };
 function iconBtn(icon, title, cls, onClick) {
   const b = document.createElement('button');
@@ -763,26 +756,26 @@ async function renderSpots() {
       }));
     } else {
       // Occupied: can unassign
-      bRow.appendChild(iconBtn('⛔', t('admin.btn.unassign'), 'secondary', async () => {
+      bRow.appendChild(iconBtn('👤', t('admin.btn.unassign'), 'secondary', async () => {
         if (!await modalConfirm(t('admin.confirm.unassign', s.label), { danger: true })) return;
         await unassignSpot(s.id); refreshAll();
       }));
     }
 
-    // Set rent inline (not shown for reserved spots)
+    // Set rent inline (not shown for reserved spots) — saves on blur or Enter
     if (!s.reserved) {
       const rentInput = document.createElement('input');
       rentInput.type = 'number'; rentInput.min = '0'; rentInput.step = '0.01';
       rentInput.value = s.monthlyRent != null ? s.monthlyRent : 80;
+      rentInput.title = t('admin.btn.setrent');
       rentInput.style.cssText = 'width:70px;display:inline-block;font-size:0.8rem';
-      bRow.appendChild(rentInput);
-      bRow.appendChild(iconBtn('€', t('admin.btn.setrent'), 'secondary', async () => {
+      async function saveRent() {
         const val = parseFloat(rentInput.value);
         if (isNaN(val) || val < 0) { await modalAlert(t('admin.alert.invalidrent')); return; }
+        if (val === (s.monthlyRent != null ? s.monthlyRent : 80)) return; // no change
         const now = new Date();
         const fromKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
         const history = [...(s.rentHistory || [])];
-        // Remove any existing entry for the same month, then add new one
         const updated = history.filter(h => h.from !== fromKey);
         updated.push({ from: fromKey, rent: val });
         updated.sort((a, b) => a.from.localeCompare(b.from));
@@ -790,7 +783,10 @@ async function renderSpots() {
           await patchRow('data/spots.json', s.id, { monthlyRent: val, rentHistory: updated });
           refreshAll();
         } catch(e) { await modalAlert(e.message); }
-      }));
+      }
+      rentInput.addEventListener('blur', saveRent);
+      rentInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); rentInput.blur(); } });
+      bRow.appendChild(rentInput);
     }
 
     ac.appendChild(bRow); row.appendChild(ac);
@@ -823,14 +819,18 @@ async function renderPayments() {
     loadUsers()
   ]);
 
-  // All 12 months of the selected year
-  const months = Array.from({length: 12}, (_, i) => {
+  const now = new Date();
+  const currentYear  = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
+  // Only show months up to current month for the selected year;
+  // for past years show all 12, for future years show none (edge case).
+  const maxMonth = selectedYear < currentYear ? 12
+                 : selectedYear === currentYear ? currentMonth
+                 : 0;
+  const months = Array.from({length: maxMonth}, (_, i) => {
     const d = new Date(selectedYear, i, 1);
-    return {
-      month: i + 1,
-      year: selectedYear,
-      label: d.toLocaleString('default', { month: 'short' })
-    };
+    return { month: i + 1, year: selectedYear, label: d.toLocaleString('default', { month: 'short' }) };
   });
 
   const container = document.getElementById('payment-matrix');
@@ -840,26 +840,27 @@ async function renderPayments() {
   wrap.className = 'table-wrap';
   const table = document.createElement('table');
 
+  // Header
   const headRow = document.createElement('tr');
   headRow.appendChild(mkTh(t('admin.pay.col.spot')));
   headRow.appendChild(mkTh(t('admin.pay.col.renter')));
   headRow.appendChild(mkTh(t('admin.pay.col.commission')));
-  months.forEach(m => { const th = mkTh(m.label); th.className='pay-col'; headRow.appendChild(th); });
+  months.forEach(m => { const th = mkTh(m.label); th.className = 'pay-col'; headRow.appendChild(th); });
   table.appendChild(headRow);
 
   sortSpots(spots).filter(s => s.assignedUserId).forEach(s => {
-    const renter = users.find(u => u.id === s.assignedUserId);
-    const regDate = renter && renter.registeredAt ? new Date(renter.registeredAt) : null;
-    const commissionRent = getRentForMonth(s, selectedYear, 1); // commission = rent at time of signing
-    const termDate = renter && renter.terminationDate ? new Date(renter.terminationDate) : null;
+    const renter  = users.find(u => u.id === s.assignedUserId);
+    const regDate = renter && renter.registeredAt  ? new Date(renter.registeredAt)  : null;
+    const termDate= renter && renter.terminationDate ? new Date(renter.terminationDate) : null;
 
-    // ── Commission row ──
-    const commRow = document.createElement('tr');
-    commRow.className = 'commission-row';
-    commRow.appendChild(mkTd(`Spot ${s.label}`));
+    const row = document.createElement('tr');
+
+    // Spot label
+    row.appendChild(mkTd(`Spot ${s.label}`));
+
+    // Renter name (+ termination chip if set)
     const renterName = renter ? `${renter.name||''} ${renter.lastName||''}`.trim() : '—';
     const renterTd = mkTd(renterName);
-    // Show termination chip on renter cell
     if (termDate) {
       renterTd.appendChild(document.createTextNode(' '));
       const tc = document.createElement('span');
@@ -867,26 +868,24 @@ async function renderPayments() {
       tc.textContent = t('admin.users.termination.chip', renter.terminationDate);
       renterTd.appendChild(tc);
     }
-    commRow.appendChild(renterTd);
+    row.appendChild(renterTd);
 
-    // Commission cell
+    // Commission cell (single column, not tied to any specific month)
     const commCell = document.createElement('td');
-    const commPaid = payments.find(p =>
-      p.spotId === s.id && p.type === 'commission' && p.year === selectedYear
-    );
+    const commPaid = payments.find(p => p.spotId === s.id && p.type === 'commission');
     if (commPaid) {
       commCell.className = 'payment-cell-paid';
-      const textNode = document.createTextNode(`✓ ${commPaid.paidDate} `);
-      commCell.appendChild(textNode);
+      commCell.appendChild(document.createTextNode(`✓ ${commPaid.paidDate} `));
       commCell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
         if (!await modalConfirm(t('admin.confirm.revert.commission'), { danger: true })) return;
         await unmarkPaid(commPaid.id); refreshAll();
       }));
     } else {
       commCell.className = 'payment-cell-unpaid';
+      const commissionRent = getRentForMonth(s, selectedYear, 1);
       const amtDiv = document.createElement('div');
       amtDiv.style.cssText = 'font-size:0.72rem;color:var(--text-secondary);margin-bottom:0.2rem';
-      amtDiv.textContent = `€${commissionRent.toFixed(2)} (1 month)`;
+      amtDiv.textContent = `€${commissionRent.toFixed(2)} (1×)`;
       commCell.appendChild(amtDiv);
       commCell.appendChild(iconBtn('✓', t('admin.btn.markpaid'), 'success-btn', async () => {
         try {
@@ -895,50 +894,40 @@ async function renderPayments() {
         } catch(e) { await modalAlert(e.message); }
       }));
     }
-    commRow.appendChild(commCell);
-    // Fill remaining month columns with empty cells
-    months.forEach(() => commRow.appendChild(document.createElement('td')));
-    table.appendChild(commRow);
+    row.appendChild(commCell);
 
-    // ── Rent row ──
-    const rentRow = document.createElement('tr');
-    rentRow.appendChild(mkTd(`Spot ${s.label}`));
-    rentRow.appendChild(mkTd(renterName));
-    rentRow.appendChild(mkTd(t('admin.pay.commission.above')));
-
+    // Monthly rent cells (only up to current month)
     months.forEach(m => {
       const cell = document.createElement('td');
       cell.className = 'pay-col';
 
-      // Is this month before the renter started?
+      // Before renter started → dash
       if (regDate) {
-        const regYear  = regDate.getFullYear();
-        const regMonth = regDate.getMonth() + 1;
-        if (selectedYear < regYear || (selectedYear === regYear && m.month < regMonth)) {
+        const ry = regDate.getFullYear(), rm = regDate.getMonth() + 1;
+        if (selectedYear < ry || (selectedYear === ry && m.month < rm)) {
           cell.textContent = '—';
-          rentRow.appendChild(cell);
+          row.appendChild(cell);
           return;
         }
       }
-      // Is this month after termination?
+      // After termination → dash
       if (termDate) {
-        const tYear  = termDate.getFullYear();
-        const tMonth = termDate.getMonth() + 1;
-        if (selectedYear > tYear || (selectedYear === tYear && m.month > tMonth)) {
+        const ty = termDate.getFullYear(), tm2 = termDate.getMonth() + 1;
+        if (selectedYear > ty || (selectedYear === ty && m.month > tm2)) {
           cell.textContent = '—';
-          rentRow.appendChild(cell);
+          row.appendChild(cell);
           return;
         }
       }
 
       const p = payments.find(x => x.spotId === s.id && x.month === m.month && x.year === m.year && x.type === 'rent');
-
-      // Pro-rate first month; use effective rent for this month
       const monthRent = getRentForMonth(s, m.year, m.month);
+
+      // Pro-rate first month
       let fraction = 1, fractionLabel = '';
       if (regDate) {
-        const rYear = regDate.getFullYear(), rMonth = regDate.getMonth() + 1;
-        if (m.year === rYear && m.month === rMonth) {
+        const ry = regDate.getFullYear(), rm = regDate.getMonth() + 1;
+        if (m.year === ry && m.month === rm) {
           const day = regDate.getDate();
           if (day <= 10)      { fraction = 1;   fractionLabel = ''; }
           else if (day <= 20) { fraction = 0.5; fractionLabel = ' ½'; }
@@ -949,8 +938,7 @@ async function renderPayments() {
 
       if (p) {
         cell.className = 'payment-cell-paid';
-        const textNode = document.createTextNode(`✓ ${p.paidDate} `);
-        cell.appendChild(textNode);
+        cell.appendChild(document.createTextNode(`✓ ${p.paidDate} `));
         cell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
           if (!await modalConfirm(t('admin.confirm.revert.rent', m.label, m.year), { danger: true })) return;
           await unmarkPaid(p.id); refreshAll();
@@ -968,9 +956,10 @@ async function renderPayments() {
           } catch(e) { await modalAlert(e.message); }
         }));
       }
-      rentRow.appendChild(cell);
+      row.appendChild(cell);
     });
-    table.appendChild(rentRow);
+
+    table.appendChild(row);
   });
 
   wrap.appendChild(table);
