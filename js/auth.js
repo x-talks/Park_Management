@@ -5,14 +5,15 @@ async function login(username, password) {
     username: username.trim().toUpperCase(),
     password,
   });
-  sessionStorage.setItem('pm_access_token', accessToken);
-  if (refreshToken) sessionStorage.setItem('pm_refresh_token', refreshToken);
-  sessionStorage.setItem('pm_user', JSON.stringify(user));
+  localStorage.setItem('pm_access_token', accessToken);
+  if (refreshToken) localStorage.setItem('pm_refresh_token', refreshToken);
+  localStorage.setItem('pm_user', JSON.stringify(user));
+  scheduleRefresh(accessToken);
   return user;
 }
 
 function getSession() {
-  const raw = sessionStorage.getItem('pm_user');
+  const raw = localStorage.getItem('pm_user');
   return raw ? JSON.parse(raw) : null;
 }
 
@@ -28,8 +29,9 @@ function requireAuth(minRole) {
 
 function logout() {
   workerRequest('POST', '/auth/logout').catch(() => {});
-  sessionStorage.removeItem('pm_access_token');
-  sessionStorage.removeItem('pm_refresh_token');
-  sessionStorage.removeItem('pm_user');
+  _cancelRefreshTimer();
+  localStorage.removeItem('pm_access_token');
+  localStorage.removeItem('pm_refresh_token');
+  localStorage.removeItem('pm_user');
   location.href = 'index.html';
 }

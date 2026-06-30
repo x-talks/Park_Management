@@ -27,7 +27,7 @@ function _table(path) {
 }
 
 function _accessToken() {
-  return sessionStorage.getItem('pm_access_token');
+  return localStorage.getItem('pm_access_token');
 }
 
 function _headers() {
@@ -43,7 +43,7 @@ function _headers() {
 // Attempt to get a fresh access token using the stored refresh token.
 // Returns true if successful, false if no refresh token or refresh failed.
 async function _tryRefresh() {
-  const refreshToken = sessionStorage.getItem('pm_refresh_token');
+  const refreshToken = localStorage.getItem('pm_refresh_token');
   if (!refreshToken) return false;
   try {
     const res = await fetch(`${CONFIG.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
@@ -57,8 +57,9 @@ async function _tryRefresh() {
     if (!res.ok) return false;
     const data = await res.json();
     if (!data.access_token) return false;
-    sessionStorage.setItem('pm_access_token', data.access_token);
-    if (data.refresh_token) sessionStorage.setItem('pm_refresh_token', data.refresh_token);
+    localStorage.setItem('pm_access_token', data.access_token);
+    if (data.refresh_token) localStorage.setItem('pm_refresh_token', data.refresh_token);
+    scheduleRefresh(data.access_token);
     return true;
   } catch (_) {
     return false;
@@ -66,9 +67,10 @@ async function _tryRefresh() {
 }
 
 function _clearSession() {
-  sessionStorage.removeItem('pm_access_token');
-  sessionStorage.removeItem('pm_refresh_token');
-  sessionStorage.removeItem('pm_user');
+  _cancelRefreshTimer();
+  localStorage.removeItem('pm_access_token');
+  localStorage.removeItem('pm_refresh_token');
+  localStorage.removeItem('pm_user');
   location.href = 'index.html';
 }
 
