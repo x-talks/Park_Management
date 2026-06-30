@@ -253,6 +253,18 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     poly.setAttribute('points', points.map(p => p.join(',')).join(' '));
     g.appendChild(poly);
 
+    // Enlarged transparent hit target for mobile (bounding box of the polygon)
+    const xs = points.map(p => p[0]);
+    const ys = points.map(p => p[1]);
+    const bx = Math.min(...xs) - 10, by = Math.min(...ys) - 10;
+    const bw = Math.max(...xs) - bx + 20, bh = Math.max(...ys) - by + 20;
+    const hitRect = document.createElementNS(svgNS, 'rect');
+    hitRect.setAttribute('x', bx); hitRect.setAttribute('y', by);
+    hitRect.setAttribute('width', bw); hitRect.setAttribute('height', bh);
+    hitRect.setAttribute('fill', 'transparent');
+    hitRect.setAttribute('style', 'cursor:pointer');
+    g.appendChild(hitRect);
+
     // Owned indicator
     if (spotData.owned) {
       const dot = document.createElementNS(svgNS, 'circle');
@@ -338,6 +350,17 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     rect.setAttribute('width', w); rect.setAttribute('height', h);
     rect.setAttribute('rx', '4');
     g.appendChild(rect);
+
+    // Enlarged transparent hit target for mobile
+    const hitRect = document.createElementNS(svgNS, 'rect');
+    hitRect.setAttribute('x', x - 15);
+    hitRect.setAttribute('y', y - 15);
+    hitRect.setAttribute('width', w + 30);
+    hitRect.setAttribute('height', h + 30);
+    hitRect.setAttribute('fill', 'transparent');
+    hitRect.setAttribute('style', 'cursor:pointer');
+    g.appendChild(hitRect);
+
     // Owned indicator
     if (spotData.owned) {
       const dot = document.createElementNS(svgNS, 'circle');
