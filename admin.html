@@ -185,14 +185,20 @@ function showTab(name) {
 );
 showTab('users');
 
-setInterval(() => { if (activeTab === 'users') renderUsers(); }, 30000);
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
-    if (activeTab === 'users')    renderUsers();
-    if (activeTab === 'spots')    renderSpots();
-    if (activeTab === 'payments') renderPayments();
-  }
-});
+// Refresh ALL tabs after any mutation so cross-tab data is always in sync.
+// Inactive tab panels are hidden but their render functions still run and
+// fetch fresh data — when the user switches tabs the DOM is already current.
+async function refreshAll() {
+  await Promise.all([
+    renderUsers(),
+    renderSpots(),
+    renderPayments(),
+    loadFreeSpots(),
+  ]);
+}
+
+setInterval(refreshAll, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAll(); });
 window.addEventListener('langchange', () => {
   if (activeTab === 'users')    renderUsers();
   if (activeTab === 'spots')    renderSpots();
@@ -295,7 +301,7 @@ function renderPendingRegistrations(pendingRegs, spots) {
     bRow.appendChild(iconBtn('✓', t('admin.pr.approve'), 'success-btn', async () => {
       try {
         await approvePendingRegistration(pr.id);
-        renderUsers();
+        refreshAll();
       } catch(e) { await modalAlert(e.message); }
     }));
 
@@ -303,7 +309,7 @@ function renderPendingRegistrations(pendingRegs, spots) {
       if (!await modalConfirm(t('admin.pr.confirm.reject'), { danger: true })) return;
       try {
         await rejectPendingRegistration(pr.id);
-        renderUsers();
+        refreshAll();
       } catch(e) { await modalAlert(e.message); }
     }));
 
@@ -531,7 +537,7 @@ async function renderUsers() {
         u.active ? '■' : '▶',
         u.active ? t('admin.btn.deactivate') : t('admin.btn.activate'),
         'secondary',
-        async () => { await toggleUserActive(u.id); renderUsers(); }
+        async () => { await toggleUserActive(u.id); refreshAll(); }
       ));
 
       btnRow.appendChild(iconBtn('~', t('admin.btn.edit'), 'secondary', () => {
@@ -542,7 +548,7 @@ async function renderUsers() {
       btnRow.appendChild(iconBtn('🔑', t('admin.btn.resetpw'), 'secondary', async () => {
         const pw = await modalPrompt(t('admin.prompt.resetpw', u.licensePlate || u.username), { placeholder: 'new password' });
         if (!pw) return;
-        try { await resetPassword(u.id, pw, currentUser.role); renderUsers(); }
+        try { await resetPassword(u.id, pw, currentUser.role); refreshAll(); }
         catch(e) { await modalAlert(e.message); }
       }));
 
@@ -553,7 +559,7 @@ async function renderUsers() {
           { defaultValue: current, placeholder: 'YYYY-MM-DD or leave empty' }
         );
         if (d === null) return; // cancelled
-        try { await setTerminationDate(u.id, d.trim() || null); renderUsers(); }
+        try { await setTerminationDate(u.id, d.trim() || null); refreshAll(); }
         catch(e) { await modalAlert(e.message); }
       }));
 
@@ -565,16 +571,16 @@ async function renderUsers() {
         diffDiv.textContent = summary;
         btnRow.appendChild(diffDiv);
         btnRow.appendChild(iconBtn('✓', t('admin.btn.approve'), 'success-btn', async () => {
-          await approvePendingEdit(u.id); renderUsers();
+          await approvePendingEdit(u.id); refreshAll();
         }));
         btnRow.appendChild(iconBtn('✕', t('admin.btn.reject'), 'secondary', async () => {
-          await rejectPendingEdit(u.id); renderUsers();
+          await rejectPendingEdit(u.id); refreshAll();
         }));
       }
 
       btnRow.appendChild(iconBtn('🗑', t('admin.btn.delete'), 'danger', async () => {
         if (!await modalConfirm(t('admin.confirm.delete', u.licensePlate || u.username), { danger: true })) return;
-        try { await deleteUser(u.id); renderUsers(); }
+        try { await deleteUser(u.id); refreshAll(); }
         catch(e) { await modalAlert(e.message); }
       }));
     }
@@ -620,7 +626,7 @@ async function renderUsers() {
             address:get('address'), licensePlate:get('licensePlate'),
             carModel:get('carModel'), carColor:get('carColor'),
           });
-          renderUsers();
+          refreshAll();
         } catch(e) { msgEl.textContent = e.message; msgEl.style.color='var(--red)'; }
       }));
       saveBtns.appendChild(iconBtn('✕', 'Cancel', 'secondary', () => { editRow.style.display='none'; }));
@@ -673,7 +679,7 @@ document.getElementById('create-user-form').addEventListener('submit', async e =
     document.getElementById('invite-wa-link').href = `https://wa.me/?text=${waText}`;
     resultBox.style.display = 'block';
     toast(t('admin.create.success'), 'success');
-    e.target.reset(); loadFreeSpots(); renderUsers();
+    e.target.reset(); loadFreeSpots(); refreshAll();
   } catch(err) {
     toast(err.message, 'error');
   } finally {
@@ -710,8 +716,7 @@ async function renderSpots() {
     ownedBtn.title = s.owned ? 'Mark as not mine' : 'Mark as mine';
     ownedBtn.addEventListener('click', async () => {
       await workerRequest('PATCH', `/spots/${s.id}`, { owned: !s.owned });
-      renderSpots();
-      renderUsers(); // refresh stat cards + chart
+      refreshAll();
     });
     ownedCell.appendChild(ownedBtn);
     row.appendChild(ownedCell);
@@ -733,7 +738,7 @@ async function renderSpots() {
     // Reserve / unreserve toggle (admin only)
     if (s.reserved) {
       bRow.appendChild(iconBtn('▶', t('admin.btn.unreserve'), 'success-btn', async () => {
-        await setSpotReserved(s.id, false); renderSpots();
+        await setSpotReserved(s.id, false); refreshAll();
       }));
     } else if (!s.assignedUserId) {
       // Free spot: can assign a user OR mark as reserved
@@ -749,18 +754,18 @@ async function renderSpots() {
       bRow.appendChild(sel);
       bRow.appendChild(iconBtn('✓', t('admin.btn.assign'), 'success-btn', async () => {
         if (!sel.value) { await modalAlert(t('admin.alert.selectuser')); return; }
-        try { await assignSpot(s.id, sel.value); renderSpots(); }
+        try { await assignSpot(s.id, sel.value); refreshAll(); }
         catch(e) { await modalAlert(e.message); }
       }));
       bRow.appendChild(iconBtn('⛔', t('admin.btn.reserve'), 'secondary', async () => {
         if (!await modalConfirm(t('admin.confirm.reserve', s.label))) return;
-        await setSpotReserved(s.id, true); renderSpots();
+        await setSpotReserved(s.id, true); refreshAll();
       }));
     } else {
       // Occupied: can unassign
       bRow.appendChild(iconBtn('⛔', t('admin.btn.unassign'), 'secondary', async () => {
         if (!await modalConfirm(t('admin.confirm.unassign', s.label), { danger: true })) return;
-        await unassignSpot(s.id); renderSpots();
+        await unassignSpot(s.id); refreshAll();
       }));
     }
 
@@ -783,7 +788,7 @@ async function renderSpots() {
         updated.sort((a, b) => a.from.localeCompare(b.from));
         try {
           await patchRow('data/spots.json', s.id, { monthlyRent: val, rentHistory: updated });
-          renderSpots();
+          refreshAll();
         } catch(e) { await modalAlert(e.message); }
       }));
     }
@@ -875,7 +880,7 @@ async function renderPayments() {
       commCell.appendChild(textNode);
       commCell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
         if (!await modalConfirm(t('admin.confirm.revert.commission'), { danger: true })) return;
-        await unmarkPaid(commPaid.id); renderPayments();
+        await unmarkPaid(commPaid.id); refreshAll();
       }));
     } else {
       commCell.className = 'payment-cell-unpaid';
@@ -886,7 +891,7 @@ async function renderPayments() {
       commCell.appendChild(iconBtn('✓', t('admin.btn.markpaid'), 'success-btn', async () => {
         try {
           await markPaid(s.id, s.assignedUserId, 0, selectedYear, currentUser.id, 'commission');
-          renderPayments();
+          refreshAll();
         } catch(e) { await modalAlert(e.message); }
       }));
     }
@@ -948,7 +953,7 @@ async function renderPayments() {
         cell.appendChild(textNode);
         cell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
           if (!await modalConfirm(t('admin.confirm.revert.rent', m.label, m.year), { danger: true })) return;
-          await unmarkPaid(p.id); renderPayments();
+          await unmarkPaid(p.id); refreshAll();
         }));
       } else {
         cell.className = 'payment-cell-unpaid';
@@ -959,7 +964,7 @@ async function renderPayments() {
         cell.appendChild(iconBtn('✓', t('admin.btn.markpaid'), 'success-btn', async () => {
           try {
             await markPaid(s.id, s.assignedUserId, m.month, m.year, currentUser.id, 'rent');
-            renderPayments();
+            refreshAll();
           } catch(e) { await modalAlert(e.message); }
         }));
       }
