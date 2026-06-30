@@ -18,11 +18,13 @@ function spotStateClass(spotData, pendingSpotIds) {
 // ── sortSpots ─────────────────────────────────────────────────────────────────
 function sortSpots(spots) {
   return [...spots].sort((a, b) => {
+    const aOcc = a.assignedUserId ? 0 : 1;
+    const bOcc = b.assignedUserId ? 0 : 1;
+    if (aOcc !== bOcc) return aOcc - bOcc;
     const aNum = parseInt(a.label), bNum = parseInt(b.label);
-    const aIsNum = !isNaN(aNum), bIsNum = !isNaN(bNum);
-    if (aIsNum && bIsNum) return aNum - bNum;
-    if (aIsNum) return -1;
-    if (bIsNum) return 1;
+    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+    if (!isNaN(aNum)) return -1;
+    if (!isNaN(bNum)) return 1;
     return a.label.localeCompare(b.label);
   });
 }
@@ -90,5 +92,16 @@ describe('sortSpots', () => {
     const spots = [{ label: '2' }, { label: '1' }];
     sortSpots(spots);
     expect(spots[0].label).toBe('2');
+  });
+
+  it('puts assigned spots before unassigned spots', () => {
+    const spots = [
+      { label: '1', assignedUserId: null },
+      { label: '2', assignedUserId: 'u1' },
+      { label: '3', assignedUserId: null },
+      { label: '4', assignedUserId: 'u2' },
+    ];
+    const sorted = sortSpots(spots).map(s => s.label);
+    expect(sorted).toEqual(['2', '4', '1', '3']);
   });
 });
