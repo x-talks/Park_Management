@@ -125,6 +125,16 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     rect.setAttribute('rx', '4');
     g.appendChild(rect);
 
+    // Enlarged transparent hit target for mobile tapping
+    const hitRect = document.createElementNS(svgNS, 'rect');
+    hitRect.setAttribute('x', cx - (SPOT_W + 40) / 2);
+    hitRect.setAttribute('y', cy - (SPOT_H + 30) / 2);
+    hitRect.setAttribute('width', SPOT_W + 40);
+    hitRect.setAttribute('height', SPOT_H + 30);
+    hitRect.setAttribute('fill', 'transparent');
+    hitRect.setAttribute('style', 'cursor:pointer');
+    g.appendChild(hitRect);
+
     // Owned indicator — small dot in top-right corner of the rect
     if (spotData.owned) {
       const dot = document.createElementNS(svgNS, 'circle');
