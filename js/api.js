@@ -108,7 +108,100 @@ function _clearSession() {
   localStorage.removeItem('pm_access_token');
   localStorage.removeItem('pm_refresh_token');
   localStorage.removeItem('pm_user');
-  location.href = 'index.html';
+}
+
+// Re-auth modal: shown when the refresh token is dead and silent refresh failed.
+// Returns a Promise that resolves after the user successfully re-authenticates.
+// All pending workerRequest calls await this same promise (no stacked modals).
+let _reauthPromise = null;
+
+function _handleAuthFailure() {
+  if (_reauthPromise) return _reauthPromise;
+
+  // Capture username BEFORE clearing session
+  let username = null;
+  try {
+    const raw = localStorage.getItem('pm_user');
+    if (raw) {
+      const u = JSON.parse(raw);
+      username = u.licensePlate || u.username || null;
+    }
+  } catch (_) {}
+
+  _clearSession();
+
+  // Inject modal HTML once
+  if (!document.getElementById('reauth-overlay')) {
+    const _lang = localStorage.getItem('pm_lang') || 'en';
+    const _ra = {
+      en: { title: 'Session expired', body: 'Your session has expired. Please enter your password to continue.', label: 'Password', placeholder: 'Your password', btn: 'Sign in again' },
+      de: { title: 'Sitzung abgelaufen', body: 'Deine Sitzung ist abgelaufen. Bitte gib dein Passwort ein, um fortzufahren.', label: 'Passwort', placeholder: 'Dein Passwort', btn: 'Erneut anmelden' },
+      tr: { title: 'Oturum süresi doldu', body: 'Oturumunuz sona erdi. Devam etmek için şifrenizi girin.', label: 'Şifre', placeholder: 'Şifreniz', btn: 'Tekrar giriş yap' },
+    }[_lang] || { title: 'Session expired', body: 'Your session has expired. Please enter your password to continue.', label: 'Password', placeholder: 'Your password', btn: 'Sign in again' };
+
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="reauth-overlay">
+        <div id="reauth-card">
+          <h2>${_ra.title}</h2>
+          <p>${_ra.body}</p>
+          <div class="form-group">
+            <label>${_ra.label}</label>
+            <input id="reauth-password" type="password" autocomplete="current-password" placeholder="${_ra.placeholder}"/>
+          </div>
+          <span id="reauth-error"></span>
+          <button id="reauth-submit">${_ra.btn}</button>
+        </div>
+      </div>
+    `);
+  }
+
+  const overlay   = document.getElementById('reauth-overlay');
+  const pwInput   = document.getElementById('reauth-password');
+  const errEl     = document.getElementById('reauth-error');
+  const submitBtn = document.getElementById('reauth-submit');
+
+  overlay.classList.add('active');
+  pwInput.value = '';
+  errEl.style.display = 'none';
+  submitBtn.disabled = false;
+  setTimeout(() => pwInput.focus(), 50);
+
+  _reauthPromise = new Promise(resolve => {
+    async function attempt() {
+      const password = pwInput.value;
+      if (!password) return;
+      submitBtn.disabled = true;
+      errEl.style.display = 'none';
+      try {
+        const res = await fetch(`${CONFIG.workerUrl}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username ? username.trim().toUpperCase() : '', password }),
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(d.error || 'Login failed');
+        }
+        const data = await res.json();
+        localStorage.setItem('pm_access_token', data.accessToken);
+        if (data.refreshToken) localStorage.setItem('pm_refresh_token', data.refreshToken);
+        localStorage.setItem('pm_user', JSON.stringify(data.user));
+        scheduleRefresh(data.accessToken);
+        overlay.classList.remove('active');
+        _reauthPromise = null;
+        resolve();
+      } catch (e) {
+        errEl.textContent = e.message || 'Incorrect password';
+        errEl.style.display = 'block';
+        submitBtn.disabled = false;
+      }
+    }
+
+    submitBtn.onclick = attempt;
+    pwInput.onkeydown = e => { if (e.key === 'Enter') attempt(); };
+  });
+
+  return _reauthPromise;
 }
 
 // Send a request to the Cloudflare Worker (requires valid JWT)
@@ -124,12 +217,21 @@ async function workerRequest(method, path, body) {
 
   let res = await _doRequest();
 
-  // Token expired — try refresh once, then retry
+  // Token expired — try silent refresh first, then re-auth modal as last resort
   if (res.status === 401) {
     const refreshed = await _tryRefresh();
-    if (!refreshed) { _clearSession(); throw new Error('Session expired'); }
-    res = await _doRequest();
-    if (res.status === 401) { _clearSession(); throw new Error('Session expired'); }
+    if (!refreshed) {
+      await _handleAuthFailure();
+      res = await _doRequest();
+      if (res.status === 401) { _clearSession(); location.href = 'index.html'; throw new Error('Session expired'); }
+    } else {
+      res = await _doRequest();
+      if (res.status === 401) {
+        await _handleAuthFailure();
+        res = await _doRequest();
+        if (res.status === 401) { _clearSession(); location.href = 'index.html'; throw new Error('Session expired'); }
+      }
+    }
   }
 
   if (!res.ok) {
@@ -140,10 +242,9 @@ async function workerRequest(method, path, body) {
 }
 
 function _checkExpired(res) {
-  // Supabase direct calls use the anon key so they don't expire the same way,
-  // but guard anyway.
   if (res.status === 401) {
     _clearSession();
+    location.href = 'index.html';
     throw new Error('Session expired');
   }
 }
