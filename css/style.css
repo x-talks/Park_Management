@@ -590,18 +590,20 @@ tr:hover td { background: var(--bg-card-hover); }
 
 /* ── Info panel ───────────────────────────────────────────────────────────── */
 #info-panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 0.85rem 1rem;
-  min-height: 3rem;
-  font-size: 0.875rem;
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 0;
+  font-size: 0.82rem;
   color: var(--text-secondary);
-  transition: all var(--transition);
+  line-height: 1.55;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.2s ease, padding 0.2s ease;
 }
-#info-panel strong { color: var(--text-primary); }
+
+#info-panel.has-content {
+  max-height: 120px;
+  padding: 0.5rem 0.25rem;
+}
 
 /* ── Collapsible sections ─────────────────────────────────────────────────── */
 .collapse-toggle {
