@@ -1059,3 +1059,94 @@ tr:hover td { background: var(--bg-card-hover); }
 .skeleton-line { height: 0.85rem; border-radius: 4px; margin-bottom: 0.4rem; }
 .skeleton-line.wide  { width: 75%; }
 .skeleton-line.short { width: 40%; }
+
+/* ── Bottom nav (mobile renter pages) ────────────────────────────────────── */
+.bottom-nav {
+  display: none; /* hidden by default — shown only on mobile */
+}
+
+@media (max-width: 640px) {
+  /* Hide top nav page links on mobile — keep theme toggle + lang switcher */
+  .site-nav a,
+  .site-nav .nav-sep {
+    display: none;
+  }
+
+  /* Show bottom nav */
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: rgba(15, 15, 20, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .bottom-nav a {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 4px 6px;
+    min-height: 52px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: color var(--transition);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bottom-nav a:hover,
+  .bottom-nav a.active {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .bottom-nav .bn-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+
+  /* button inside bottom-nav (logout) — reset button styles, match link style */
+  .bottom-nav button {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 4px 6px;
+    min-height: 52px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: color var(--transition);
+    -webkit-tap-highlight-color: transparent;
+    border-radius: 0;
+  }
+
+  .bottom-nav button:hover {
+    background: none;
+    color: var(--accent);
+  }
+
+  /* Push page content up so it doesn't hide behind the fixed bar */
+  .page-wrap {
+    padding-bottom: calc(52px + env(safe-area-inset-bottom) + 1rem);
+  }
+}
