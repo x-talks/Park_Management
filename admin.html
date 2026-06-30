@@ -773,14 +773,8 @@ async function renderSpots() {
         const val = parseFloat(rentInput.value);
         if (isNaN(val) || val < 0) { await modalAlert(t('admin.alert.invalidrent')); return; }
         if (val === (s.monthlyRent != null ? s.monthlyRent : 80)) return; // no change
-        const now = new Date();
-        const fromKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-        const history = [...(s.rentHistory || [])];
-        const updated = history.filter(h => h.from !== fromKey);
-        updated.push({ from: fromKey, rent: val });
-        updated.sort((a, b) => a.from.localeCompare(b.from));
         try {
-          await patchRow('data/spots.json', s.id, { monthlyRent: val, rentHistory: updated });
+          await patchRow('data/spots.json', s.id, { monthlyRent: val });
           refreshAll();
         } catch(e) { await modalAlert(e.message); }
       }
