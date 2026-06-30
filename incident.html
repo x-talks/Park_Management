@@ -193,6 +193,21 @@
 
 </div>
 
+<nav class="bottom-nav">
+  <a href="parking.html">
+    <span class="bn-icon">🗺</span>
+    <span data-i18n="nav.map">Map</span>
+  </a>
+  <a href="incident.html" class="active">
+    <span class="bn-icon">⚠️</span>
+    <span data-i18n="nav.incidents">Incidents</span>
+  </a>
+  <button id="bottom-logout-btn">
+    <span class="bn-icon">→</span>
+    <span data-i18n="nav.logout">Logout</span>
+  </button>
+</nav>
+
 <!-- Lightbox -->
 <div id="lightbox">
   <button id="lightbox-close" title="Close">×</button>
@@ -217,6 +232,7 @@ if (currentUser.role === 'admin' || currentUser.role === 'master') {
   document.getElementById('admin-link').style.display = 'inline';
 }
 document.getElementById('logout-link').addEventListener('click', e => { e.preventDefault(); logout(); });
+document.getElementById('bottom-logout-btn').addEventListener('click', () => logout());
 
 // ── Spot dropdown ──────────────────────────────────────────────────────────────
 async function loadSpots() {
