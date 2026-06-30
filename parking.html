@@ -41,11 +41,9 @@
         Open in Maps
       </a>
     </div>
-    <div style="overflow-x:auto">
       <svg id="parking-svg" viewBox="-60 0 920 760"
            style="width:100%;max-width:980px;height:auto;display:block">
       </svg>
-    </div>
 
     <!-- Legend -->
     <div class="map-legend">
@@ -76,6 +74,21 @@
 
 </div>
 
+<nav class="bottom-nav">
+  <a href="parking.html" class="active">
+    <span class="bn-icon">🗺</span>
+    <span data-i18n="nav.map">Map</span>
+  </a>
+  <a href="incident.html">
+    <span class="bn-icon">⚠️</span>
+    <span data-i18n="nav.incidents">Incidents</span>
+  </a>
+  <button id="bottom-logout-btn">
+    <span class="bn-icon">→</span>
+    <span data-i18n="nav.logout">Logout</span>
+  </button>
+</nav>
+
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
@@ -95,6 +108,7 @@ if (currentUser.role === 'admin' || currentUser.role === 'master') {
   document.getElementById('admin-link').style.display = 'inline';
 }
 document.getElementById('logout-link').addEventListener('click', e => { e.preventDefault(); logout(); });
+document.getElementById('bottom-logout-btn').addEventListener('click', () => logout());
 
 // ── Init & real-time refresh ──────────────────────────────────────────────────
 let _spots = [], _users = [], _payments = [], _pendingRegs = [];
