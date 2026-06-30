@@ -40,6 +40,43 @@ function _headers() {
   };
 }
 
+// ── Proactive refresh timer ───────────────────────────────────────────────────
+let _refreshTimer = null;
+
+function _cancelRefreshTimer() {
+  if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
+}
+
+function scheduleRefresh(accessToken) {
+  _cancelRefreshTimer();
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const expiresAt = payload.exp * 1000; // ms
+    const refreshAt = expiresAt - 60_000; // 60 s before expiry
+    const delay = refreshAt - Date.now();
+    if (delay <= 0) {
+      // Already expired or about to — refresh immediately
+      _tryRefresh().catch(() => {});
+      return;
+    }
+    _refreshTimer = setTimeout(async () => {
+      const ok = await _tryRefresh();
+      if (!ok) {
+        // Refresh token dead — show re-auth modal proactively
+        _handleAuthFailure();
+      }
+    }, delay);
+  } catch (_) {
+    // Malformed token — ignore, reactive refresh will handle it
+  }
+}
+
+// On page load: if a stored token exists, schedule refresh for it
+(function _initRefreshOnLoad() {
+  const token = localStorage.getItem('pm_access_token');
+  if (token) scheduleRefresh(token);
+})();
+
 // Attempt to get a fresh access token using the stored refresh token.
 // Returns true if successful, false if no refresh token or refresh failed.
 async function _tryRefresh() {
