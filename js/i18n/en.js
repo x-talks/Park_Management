@@ -26,7 +26,7 @@ const LANG_EN = {
   'map.legend.free':     'Free',
   'map.legend.occupied': 'Occupied',
   'map.legend.reserved': 'Reserved (external)',
-  'map.info.default':    'Click a spot to see details.',
+  'map.info.default':    'Tap a spot to see details.',
   'map.spot.free':       'Spot {0}: Free',
   'map.spot.occupied':   'Spot {0}: Occupied',
   'map.spot.reserved':   'Spot {0}: Reserved — not available',
