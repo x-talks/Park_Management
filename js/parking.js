@@ -194,7 +194,20 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     }
 
     if (currentUser) {
-      g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser, pendingSpotIds));
+      g.addEventListener('click', () => {
+        const panel = document.getElementById('info-panel');
+        const alreadySelected = svg.querySelector('.spot.selected') === g;
+        svg.querySelectorAll('.spot.selected').forEach(el => el.classList.remove('selected'));
+        if (alreadySelected) {
+          panel.innerHTML = '';
+          panel.classList.remove('has-content');
+          panel.setAttribute('data-i18n', 'map.info.default');
+          panel.textContent = typeof t === 'function' ? t('map.info.default') : 'Tap a spot to see details.';
+        } else {
+          g.classList.add('selected');
+          showSpotInfo(spotData, label, users, currentUser, pendingSpotIds);
+        }
+      });
     }
     return g;
   }
@@ -279,7 +292,20 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     }
 
     if (currentUser) {
-      g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser, pendingSpotIds));
+      g.addEventListener('click', () => {
+        const panel = document.getElementById('info-panel');
+        const alreadySelected = svg.querySelector('.spot.selected') === g;
+        svg.querySelectorAll('.spot.selected').forEach(el => el.classList.remove('selected'));
+        if (alreadySelected) {
+          panel.innerHTML = '';
+          panel.classList.remove('has-content');
+          panel.setAttribute('data-i18n', 'map.info.default');
+          panel.textContent = typeof t === 'function' ? t('map.info.default') : 'Tap a spot to see details.';
+        } else {
+          g.classList.add('selected');
+          showSpotInfo(spotData, label, users, currentUser, pendingSpotIds);
+        }
+      });
     }
     return g;
   }
@@ -346,7 +372,20 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     }
 
     if (currentUser) {
-      g.addEventListener('click', () => showSpotInfo(spotData, label, users, currentUser, pendingSpotIds));
+      g.addEventListener('click', () => {
+        const panel = document.getElementById('info-panel');
+        const alreadySelected = svg.querySelector('.spot.selected') === g;
+        svg.querySelectorAll('.spot.selected').forEach(el => el.classList.remove('selected'));
+        if (alreadySelected) {
+          panel.innerHTML = '';
+          panel.classList.remove('has-content');
+          panel.setAttribute('data-i18n', 'map.info.default');
+          panel.textContent = typeof t === 'function' ? t('map.info.default') : 'Tap a spot to see details.';
+        } else {
+          g.classList.add('selected');
+          showSpotInfo(spotData, label, users, currentUser, pendingSpotIds);
+        }
+      });
     }
     return g;
   }
@@ -376,6 +415,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
 function showSpotInfo(spotData, label, users, currentUser, pendingSpotIds) {
   const panel = document.getElementById('info-panel');
   panel.innerHTML = '';
+  panel.classList.add('has-content');
 
   if (spotData.reserved) {
     panel.textContent = `Spot ${label}: Reserved (external — not available)`;
