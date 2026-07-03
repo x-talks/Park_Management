@@ -63,8 +63,8 @@ jobs:
 
       - name: Dump production schema and apply to staging
         env:
-          PROD_DB_URL: postgresql://postgres:${{ secrets.PROD_SUPABASE_DB_PASSWORD }}@db.fnluagvzowbcuzlblfmr.supabase.co:5432/postgres
-          STAGING_DB_URL: postgresql://postgres:${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}@db.yuoqbjopaemikxiwvtup.supabase.co:5432/postgres
+          PROD_DB_URL: postgresql://postgres.fnluagvzowbcuzlblfmr:${{ secrets.PROD_SUPABASE_DB_PASSWORD }}@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
+          STAGING_DB_URL: postgresql://postgres.yuoqbjopaemikxiwvtup:${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
         run: |
           pg_dump "$PROD_DB_URL" --schema public --schema-only -f /tmp/schema.sql
           psql "$STAGING_DB_URL" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
