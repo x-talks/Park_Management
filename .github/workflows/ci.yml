@@ -66,9 +66,11 @@ jobs:
         run: npm install -g supabase
 
       - name: Dump production schema
+        env:
+          PGPASSWORD: ${{ secrets.PROD_SUPABASE_DB_PASSWORD }}
         run: |
           supabase db dump \
-            --project-id fnluagvzowbcuzlblfmr \
+            --db-url "postgresql://postgres.fnluagvzowbcuzlblfmr@aws-0-eu-central-1.pooler.supabase.com:5432/postgres" \
             --schema public \
             -f /tmp/schema.sql
 
