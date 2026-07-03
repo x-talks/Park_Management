@@ -20,7 +20,7 @@
 	"env": {
 		"staging": {
 			"vars": {
-				"SUPABASE_URL": "REPLACE_WITH_STAGING_SUPABASE_URL"
+				"SUPABASE_URL": "https://yuoqbjopaemikxiwvtup.supabase.co"
 			}
 		}
 	}
