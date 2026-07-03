@@ -70,7 +70,7 @@ jobs:
           PGPASSWORD: ${{ secrets.PROD_SUPABASE_DB_PASSWORD }}
         run: |
           supabase db dump \
-            --db-url "postgresql://postgres.fnluagvzowbcuzlblfmr@aws-0-eu-central-1.pooler.supabase.com:5432/postgres" \
+            --db-url "postgresql://postgres.fnluagvzowbcuzlblfmr:${{ secrets.PROD_SUPABASE_DB_PASSWORD }}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres" \
             --schema public \
             -f /tmp/schema.sql
 
@@ -78,7 +78,7 @@ jobs:
         env:
           PGPASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
         run: |
-          psql "postgresql://postgres.yuoqbjopaemikxiwvtup@aws-0-eu-central-1.pooler.supabase.com:5432/postgres" \
+          psql "postgresql://postgres.yuoqbjopaemikxiwvtup:${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres" \
             -f /tmp/schema.sql
 
       - name: Install Playwright browsers
