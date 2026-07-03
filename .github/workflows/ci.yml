@@ -47,7 +47,6 @@ jobs:
       STAGING_WORKER_URL:           ${{ secrets.STAGING_WORKER_URL }}
       STAGING_ADMIN_PASSWORD:       ${{ secrets.STAGING_ADMIN_PASSWORD }}
       STAGING_MASTER_PASSWORD:      ${{ secrets.STAGING_MASTER_PASSWORD }}
-      SUPABASE_ACCESS_TOKEN:        ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
     steps:
       - name: Checkout
@@ -62,24 +61,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Supabase CLI
-        run: npm install -g supabase
-
-      - name: Dump production schema
+      - name: Dump production schema and apply to staging
         env:
-          PGPASSWORD: ${{ secrets.PROD_SUPABASE_DB_PASSWORD }}
+          PROD_DB_URL: postgresql://postgres:${{ secrets.PROD_SUPABASE_DB_PASSWORD }}@db.fnluagvzowbcuzlblfmr.supabase.co:5432/postgres
+          STAGING_DB_URL: postgresql://postgres:${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}@db.yuoqbjopaemikxiwvtup.supabase.co:5432/postgres
         run: |
-          supabase db dump \
-            --db-url "postgresql://postgres.fnluagvzowbcuzlblfmr:${{ secrets.PROD_SUPABASE_DB_PASSWORD }}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres" \
-            --schema public \
-            -f /tmp/schema.sql
-
-      - name: Apply schema to staging
-        env:
-          PGPASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
-        run: |
-          psql "postgresql://postgres.yuoqbjopaemikxiwvtup:${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres" \
-            -f /tmp/schema.sql
+          pg_dump "$PROD_DB_URL" --schema public --schema-only -f /tmp/schema.sql
+          psql "$STAGING_DB_URL" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+          psql "$STAGING_DB_URL" -f /tmp/schema.sql
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
