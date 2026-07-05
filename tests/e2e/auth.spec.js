@@ -8,12 +8,6 @@ const RENTER_PASS = 'TestPass123!';
 
 test.describe('Login', () => {
   test('correct admin credentials → redirects to admin.html', async ({ page }) => {
-    page.on('console', msg => console.log('BROWSER:', msg.type(), msg.text()));
-    page.on('response', res => {
-      if (res.url().includes('/auth/login')) {
-        res.text().then(body => console.log('LOGIN RESPONSE', res.status(), body.slice(0, 500)));
-      }
-    });
     await page.goto('/');
     await page.locator('#username').fill(ADMIN_USER);
     await page.locator('#password').fill(ADMIN_PASS);
