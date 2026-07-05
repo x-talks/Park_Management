@@ -61,14 +61,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Dump production schema and apply to staging
-        env:
-          PROD_DB_URL: postgresql://postgres.fnluagvzowbcuzlblfmr:${{ secrets.PROD_SUPABASE_DB_PASSWORD }}@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
-          STAGING_DB_URL: postgresql://postgres.yuoqbjopaemikxiwvtup:${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
+      - name: Apply schema to staging
         run: |
-          pg_dump "$PROD_DB_URL" --schema public --schema-only -f /tmp/schema.sql
-          psql "$STAGING_DB_URL" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-          psql "$STAGING_DB_URL" -f /tmp/schema.sql
+          curl -sS --fail \
+            -X POST "https://api.supabase.com/v1/projects/yuoqbjopaemikxiwvtup/database/query" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $(jq -Rs . < db/schema.sql)}"
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
