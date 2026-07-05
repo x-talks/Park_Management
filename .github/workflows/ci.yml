@@ -72,8 +72,22 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Seed staging database
+        run: |
+          node tests/fixtures/staging-config.js
+          node tests/fixtures/seed.js
+
+      - name: Test worker login (shows exact response)
+        run: |
+          curl -sS -X POST "$STAGING_WORKER_URL/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"TEST-ADMIN\",\"password\":\"$STAGING_ADMIN_PASSWORD\"}"
+          echo ""
+
       - name: Run E2E tests
         run: npm run test:e2e
+        env:
+          SKIP_SEED: "1"
 
       - name: Upload Playwright report on failure
         if: failure()
