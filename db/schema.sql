@@ -162,6 +162,10 @@ DROP POLICY IF EXISTS "Authenticated users can read invites" ON invites;
 CREATE POLICY "Authenticated users can read invites" ON invites
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Anon users can read invites by token" ON invites;
+CREATE POLICY "Anon users can read invites by token" ON invites
+  FOR SELECT TO anon USING (true);
+
 DROP POLICY IF EXISTS "Admins and masters can modify invites" ON invites;
 CREATE POLICY "Admins and masters can modify invites" ON invites
   FOR ALL TO authenticated

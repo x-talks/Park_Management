@@ -63,18 +63,18 @@ test.describe('Logout', () => {
     await page.locator('#logout-link, [data-i18n="nav.logout"], button:has-text("Logout"), a:has-text("Logout")').first().click();
     await expect(page).toHaveURL(/index\.html|^http:\/\/localhost:3000\/?$/, { timeout: 10_000 });
     await page.goto('/admin.html');
-    await expect(page).toHaveURL(/index\.html/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/index\.html|^http:\/\/localhost:3000\/?$/, { timeout: 10_000 });
   });
 });
 
 test.describe('Auth guard', () => {
   test('navigating to parking.html without login → redirected to index.html', async ({ page }) => {
     await page.goto('/parking.html');
-    await expect(page).toHaveURL(/index\.html/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/index\.html|^http:\/\/localhost:3000\/?$/, { timeout: 10_000 });
   });
 
   test('navigating to admin.html without login → redirected to index.html', async ({ page }) => {
     await page.goto('/admin.html');
-    await expect(page).toHaveURL(/index\.html/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/index\.html|^http:\/\/localhost:3000\/?$/, { timeout: 10_000 });
   });
 });

@@ -17,6 +17,12 @@ export default defineConfig({
     trace: 'on-first-retry',
     video: 'off',
   },
+  webServer: {
+    command: 'npx serve . --listen 3000 --no-clipboard',
+    url: 'http://localhost:3000',
+    reuseExistingServer: false,
+    timeout: 30_000,
+  },
   projects: [
     {
       name: 'chromium',

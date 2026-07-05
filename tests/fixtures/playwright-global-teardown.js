@@ -13,13 +13,6 @@ export default async function globalTeardown() {
     console.warn('Teardown failed:', e.message);
   }
 
-  const pid = parseInt(process.env.SERVE_PID || '0', 10);
-  if (pid) {
-    try {
-      process.kill(-pid);
-    } catch (_) {}
-  }
-
   try {
     execSync('git checkout js/config.js', { cwd: root, stdio: 'ignore' });
   } catch (_) {}
