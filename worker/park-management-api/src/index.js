@@ -28,31 +28,44 @@ async function verifyJWT(request, env) {
   if (!auth?.startsWith('Bearer ')) throw new Error('Unauthorized');
   const token = auth.slice(7);
 
-  // Split JWT and verify signature manually (no external deps needed)
   const parts = token.split('.');
   if (parts.length !== 3) throw new Error('Invalid token');
 
-  const header   = JSON.parse(atob(parts[0].replace(/-/g,'+').replace(/_/g,'/')));
-  const payload  = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+  const b64 = s => s.replace(/-/g, '+').replace(/_/g, '/');
+  const header  = JSON.parse(atob(b64(parts[0])));
+  const payload = JSON.parse(atob(b64(parts[1])));
 
-  // Verify expiry
   if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
     throw new Error('Token expired');
   }
 
-  // Verify signature using HMAC-SHA256
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(env.SUPABASE_JWT_SECRET),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['verify']
-  );
   const sigInput = parts[0] + '.' + parts[1];
-  const sigBytes = Uint8Array.from(atob(parts[2].replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0));
-  const valid = await crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(sigInput));
-  if (!valid) throw new Error('Invalid token signature');
+  const sigBytes = Uint8Array.from(atob(b64(parts[2])), c => c.charCodeAt(0));
 
+  let valid = false;
+  if (header.alg === 'ES256' && env.SUPABASE_JWT_JWKS) {
+    // ECC P-256 verification using JWKS
+    const jwks = JSON.parse(env.SUPABASE_JWT_JWKS);
+    const jwk  = jwks.keys.find(k => k.kid === header.kid) || jwks.keys[0];
+    const key  = await crypto.subtle.importKey(
+      'jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']
+    );
+    valid = await crypto.subtle.verify(
+      { name: 'ECDSA', hash: 'SHA-256' }, key, sigBytes,
+      new TextEncoder().encode(sigInput)
+    );
+  } else {
+    // HS256 verification using shared secret
+    const key = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(env.SUPABASE_JWT_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']
+    );
+    valid = await crypto.subtle.verify(
+      'HMAC', key, sigBytes, new TextEncoder().encode(sigInput)
+    );
+  }
+
+  if (!valid) throw new Error('Invalid token signature');
   return payload;
 }
 
