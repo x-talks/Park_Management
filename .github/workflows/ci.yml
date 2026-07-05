@@ -63,14 +63,11 @@ jobs:
 
       - name: Apply schema to staging
         run: |
-          RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" \
+          curl -sS --fail-with-body \
             -X POST "https://api.supabase.com/v1/projects/yuoqbjopaemikxiwvtup/database/query" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d '{"query": "SELECT 1 as test"}')
-          echo "$RESPONSE"
-          STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
-          [ "$STATUS" = "200" ] || exit 1
+            -d "{\"query\": $(jq -Rs . < db/schema.sql)}"
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
