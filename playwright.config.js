@@ -18,7 +18,7 @@ export default defineConfig({
     video: 'off',
   },
   webServer: {
-    command: 'npx serve . --listen 3000 --no-clipboard',
+    command: 'npx serve . -l 3000 --no-port-switching',
     url: 'http://localhost:3000',
     reuseExistingServer: false,
     timeout: 30_000,
