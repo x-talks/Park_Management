@@ -4,6 +4,8 @@ import { loginAs } from './helpers.js';
 
 const RENTER_USER = 'HD-AA-001';
 const RENTER_PASS = 'TestPass123!';
+const ADMIN_USER  = 'TEST-ADMIN';
+const ADMIN_PASS  = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 
 test.beforeEach(async ({ page }) => {
   await loginAs(page, RENTER_USER, RENTER_PASS);
@@ -38,5 +40,51 @@ test.describe('Incidents page', () => {
 
     await page.locator('button[type="submit"], [data-i18n="inc.btn.submit"]').first().click();
     await expect(page.locator('.toast-success, .alert-success, .pm-toast-success').first()).toBeVisible({ timeout: 15_000 });
+  });
+});
+
+test.describe('Incidents — seeded data visibility (renter)', () => {
+  test('seeded incident HD-ZZ-000 is visible in log', async ({ page }) => {
+    await expect(
+      page.locator('#incident-log, .incident-log').locator('text=HD-ZZ-000')
+    ).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('seeded incident note text is visible', async ({ page }) => {
+    await expect(
+      page.locator('#incident-log, .incident-log').locator('text=Test incident for E2E')
+    ).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('renter does NOT see delete button on incident', async ({ page }) => {
+    const log = page.locator('#incident-log, .incident-log');
+    await expect(log.first()).toBeVisible({ timeout: 10_000 });
+    // No delete button should be present for renter
+    const deleteBtn = log.locator('button').filter({ hasText: /delete|remove|trash/i });
+    await expect(deleteBtn.first()).not.toBeVisible();
+  });
+});
+
+test.describe('Incidents — admin delete button visibility', () => {
+  test('admin sees delete button on seeded incident', async ({ browser }) => {
+    const adminCtx  = await browser.newContext();
+    const adminPage = await adminCtx.newPage();
+
+    await loginAs(adminPage, ADMIN_USER, ADMIN_PASS);
+    await adminPage.waitForURL(/admin\.html/, { timeout: 15_000 });
+    await adminPage.waitForLoadState('networkidle');
+
+    // Admin navigates to incident log (admin.html has incident section or separate page)
+    await adminPage.locator('a[href="incident.html"], a[href*="incident"]').first().click();
+    await adminPage.waitForURL(/incident/, { timeout: 10_000 });
+    await adminPage.waitForLoadState('networkidle');
+
+    const log = adminPage.locator('#incident-log, .incident-log');
+    await expect(log.first()).toBeVisible({ timeout: 10_000 });
+    // Admin should see at least one delete button
+    const deleteBtn = log.locator('button').filter({ hasText: /delete|remove|trash/i }).first();
+    await expect(deleteBtn).toBeVisible({ timeout: 10_000 });
+
+    await adminCtx.close();
   });
 });

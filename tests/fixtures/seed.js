@@ -208,6 +208,22 @@ async function seed() {
   if (invErr) throw new Error(`invites upsert: ${invErr.message}`);
   console.log('  ✓ invites');
 
+  // Incidents
+  const { error: incErr } = await supa.from('incidents').upsert([
+    {
+      id: 'inc-001',
+      spotId: 's1',
+      reportedByUserId: 'u-renter-a',
+      observedPlate: 'HD-ZZ-000',
+      note: 'Test incident for E2E',
+      imageUrl: null,
+      filePath: null,
+      reportedAt: new Date().toISOString(),
+    },
+  ]);
+  if (incErr) throw new Error(`incidents upsert: ${incErr.message}`);
+  console.log('  ✓ incidents');
+
   // Pending registration for spot s6
   const { error: prErr } = await supa.from('pending_registrations').upsert([
     {
