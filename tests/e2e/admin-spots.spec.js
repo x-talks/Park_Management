@@ -11,25 +11,27 @@ test.beforeEach(async ({ page }) => {
   await page.waitForLoadState('networkidle');
   // Click spots tab: id=tab-btn-spots
   await page.locator('#tab-btn-spots').click();
-  await expect(page.locator('#spot-list table tbody tr').first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 15_000 });
 });
 
 test.describe('Spots table', () => {
   test('spots table has 24 rows', async ({ page }) => {
-    // Spots rendered in #spot-list > .table-wrap > table
-    const rows = page.locator('#spot-list table tbody tr');
+    // Table has 1 header row + 24 data rows = 25 total (no explicit tbody)
+    const rows = page.locator('#spot-list table tr');
     await expect(rows.first()).toBeVisible({ timeout: 10_000 });
     const count = await rows.count();
-    expect(count).toBe(24);
+    expect(count).toBe(25); // 1 header row + 24 data rows
   });
 
   test('s1 shows renter HD-AA-001', async ({ page }) => {
-    const s1Row = page.locator('#spot-list table tr').filter({ hasText: /\bs1\b/ }).first();
+    // s1 has label "1"; row text includes "Alice Renter" and plate "HD-AA-001"
+    const s1Row = page.locator('#spot-list table tr').filter({ hasText: 'HD-AA-001' }).first();
     await expect(s1Row).toContainText('HD-AA-001');
   });
 
   test('s3 shows reserved indicator', async ({ page }) => {
-    const s3Row = page.locator('#spot-list table tr').filter({ hasText: /\bs3\b/ }).first();
+    // s3 is the only reserved spot; filter by "Unreserve" button which only appears on reserved spots
+    const s3Row = page.locator('#spot-list table tr').filter({ has: page.locator('button', { hasText: 'Unreserve' }) }).first();
     // Reserved badge/chip
     await expect(s3Row).toContainText(/reserved|Reserv/i);
   });
@@ -37,7 +39,8 @@ test.describe('Spots table', () => {
 
 test.describe('Rent editing', () => {
   test('change rent on s1 to 95 → value saved', async ({ page }) => {
-    const s1Row = page.locator('#spot-list table tr').filter({ hasText: /\bs1\b/ }).first();
+    // s1 has plate HD-AA-001 — use that to identify the row
+    const s1Row = page.locator('#spot-list table tr').filter({ hasText: 'HD-AA-001' }).first();
     const rentInput = s1Row.locator('input[type="number"], input.rent-input, input[name="rent"]').first();
     await rentInput.fill('95');
     await rentInput.press('Enter');

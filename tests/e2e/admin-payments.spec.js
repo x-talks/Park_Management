@@ -17,13 +17,13 @@ test.beforeEach(async ({ page }) => {
 test.describe('Payments table', () => {
   test('exactly 2 rows — one per assigned spot (s1 and s2)', async ({ page }) => {
     // Payments rendered in #payment-matrix
-    const rows = page.locator('#payment-matrix table tbody tr');
-    await expect(rows.first()).toBeVisible({ timeout: 10_000 });
-    await expect(rows).toHaveCount(2);
+    const rows = page.locator('#payment-matrix table tr');
+    await expect(rows.nth(1)).toBeVisible({ timeout: 10_000 });
+    await expect(rows).toHaveCount(3); // 1 header + 2 data rows
   });
 
   test('s1 row has a paid indicator (✓)', async ({ page }) => {
-    const s1Row = page.locator('#payment-matrix table tr').filter({ hasText: 's1' }).first();
+    const s1Row = page.locator('#payment-matrix table tr').filter({ hasText: 'Spot 1' }).first();
     await expect(s1Row).toContainText('✓');
   });
 

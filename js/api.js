@@ -360,11 +360,12 @@ async function patchRow(path, id, changes) {
 async function uploadIncidentImage(filePath, file) {
   // filePath e.g. "sA/2026-06-02T12-00-00_abc.jpg"
   const url = `${CONFIG.supabaseUrl}/storage/v1/object/incidents/${filePath}`;
+  const token = _accessToken() || CONFIG.supabaseKey;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       'apikey': CONFIG.supabaseKey,
-      'Authorization': 'Bearer ' + CONFIG.supabaseKey,
+      'Authorization': 'Bearer ' + token,
       'Content-Type': file.type || 'image/jpeg',
       'x-upsert': 'true'
     },

@@ -188,3 +188,22 @@ DROP POLICY IF EXISTS "Admins and masters can delete incidents" ON incidents;
 CREATE POLICY "Admins and masters can delete incidents" ON incidents
   FOR DELETE TO authenticated
   USING (is_admin_or_master());
+
+-- ── Storage ───────────────────────────────────────────────────────────────────
+
+-- Create incidents bucket if it doesn't exist (idempotent)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('incidents', 'incidents', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow authenticated users to upload to incidents bucket
+DROP POLICY IF EXISTS "Authenticated users can upload incident images" ON storage.objects;
+CREATE POLICY "Authenticated users can upload incident images" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'incidents');
+
+-- Allow public read of incident images
+DROP POLICY IF EXISTS "Public can read incident images" ON storage.objects;
+CREATE POLICY "Public can read incident images" ON storage.objects
+  FOR SELECT TO public
+  USING (bucket_id = 'incidents');
