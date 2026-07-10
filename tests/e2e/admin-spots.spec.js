@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForLoadState('networkidle');
   // Click spots tab: id=tab-btn-spots
   await page.locator('#tab-btn-spots').click();
-  await page.waitForTimeout(1000);
+  await expect(page.locator('#spot-list table tbody tr').first()).toBeVisible({ timeout: 15_000 });
 });
 
 test.describe('Spots table', () => {

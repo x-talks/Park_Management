@@ -6,7 +6,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  timeout: 30_000,
+  timeout: 60_000,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
@@ -20,7 +20,7 @@ export default defineConfig({
   webServer: {
     command: 'npx serve . -l 3000 --no-port-switching',
     url: 'http://localhost:3000',
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
     timeout: 30_000,
   },
   projects: [

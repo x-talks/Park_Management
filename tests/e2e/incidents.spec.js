@@ -37,6 +37,6 @@ test.describe('Incidents page', () => {
     });
 
     await page.locator('button[type="submit"], [data-i18n="inc.btn.submit"]').first().click();
-    await expect(page.locator('.toast-success, .alert-success, [data-i18n="inc.success"]').first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.toast-success, .alert-success, .pm-toast-success').first()).toBeVisible({ timeout: 15_000 });
   });
 });

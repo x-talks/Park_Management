@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForLoadState('networkidle');
   // Click payments tab: id=tab-btn-payments
   await page.locator('#tab-btn-payments').click();
-  await page.waitForTimeout(1500);
+  await expect(page.locator('#payment-year')).toBeVisible({ timeout: 15_000 });
 });
 
 test.describe('Payments table', () => {

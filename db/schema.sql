@@ -88,6 +88,21 @@ CREATE TABLE IF NOT EXISTS incidents (
   "reportedAt"        TIMESTAMPTZ NOT NULL
 );
 
+-- ── Helper function (avoids RLS recursion) ───────────────────────────────────
+
+CREATE OR REPLACE FUNCTION is_admin_or_master()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM users
+    WHERE users."authId" = auth.uid()
+    AND users.role IN ('admin', 'master')
+  )
+$$;
+
 -- ── RLS ───────────────────────────────────────────────────────────────────────
 
 ALTER TABLE spots ENABLE ROW LEVEL SECURITY;
@@ -95,6 +110,7 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE incidents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pending_registrations ENABLE ROW LEVEL SECURITY;
 
 -- spots
 DROP POLICY IF EXISTS "Authenticated users can read spots" ON spots;
@@ -104,13 +120,7 @@ CREATE POLICY "Authenticated users can read spots" ON spots
 DROP POLICY IF EXISTS "Admins and masters can modify spots" ON spots;
 CREATE POLICY "Admins and masters can modify spots" ON spots
   FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users."authId" = auth.uid()
-      AND users.role IN ('admin', 'master')
-    )
-  );
+  USING (is_admin_or_master());
 
 -- users
 DROP POLICY IF EXISTS "Users can read own row" ON users;
@@ -118,23 +128,13 @@ CREATE POLICY "Users can read own row" ON users
   FOR SELECT TO authenticated
   USING (
     "authId" = auth.uid()
-    OR EXISTS (
-      SELECT 1 FROM users u
-      WHERE u."authId" = auth.uid()
-      AND u.role IN ('admin', 'master')
-    )
+    OR is_admin_or_master()
   );
 
 DROP POLICY IF EXISTS "Admins and masters can modify users" ON users;
 CREATE POLICY "Admins and masters can modify users" ON users
   FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM users u
-      WHERE u."authId" = auth.uid()
-      AND u.role IN ('admin', 'master')
-    )
-  );
+  USING (is_admin_or_master());
 
 DROP POLICY IF EXISTS "Renters can update own pendingEdits" ON users;
 CREATE POLICY "Renters can update own pendingEdits" ON users
@@ -149,13 +149,7 @@ CREATE POLICY "Authenticated users can read payments" ON payments
 DROP POLICY IF EXISTS "Admins and masters can modify payments" ON payments;
 CREATE POLICY "Admins and masters can modify payments" ON payments
   FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users."authId" = auth.uid()
-      AND users.role IN ('admin', 'master')
-    )
-  );
+  USING (is_admin_or_master());
 
 -- invites
 DROP POLICY IF EXISTS "Authenticated users can read invites" ON invites;
@@ -169,26 +163,28 @@ CREATE POLICY "Anon users can read invites by token" ON invites
 DROP POLICY IF EXISTS "Admins and masters can modify invites" ON invites;
 CREATE POLICY "Admins and masters can modify invites" ON invites
   FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users."authId" = auth.uid()
-      AND users.role IN ('admin', 'master')
-    )
-  );
+  USING (is_admin_or_master());
+
+-- pending_registrations
+DROP POLICY IF EXISTS "Anon users can insert pending registrations" ON pending_registrations;
+CREATE POLICY "Anon users can insert pending registrations" ON pending_registrations
+  FOR INSERT TO anon WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins and masters can manage pending registrations" ON pending_registrations;
+CREATE POLICY "Admins and masters can manage pending registrations" ON pending_registrations
+  FOR ALL TO authenticated
+  USING (is_admin_or_master());
 
 -- incidents
 DROP POLICY IF EXISTS "Authenticated users can read incidents" ON incidents;
 CREATE POLICY "Authenticated users can read incidents" ON incidents
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert incidents" ON incidents;
+CREATE POLICY "Authenticated users can insert incidents" ON incidents
+  FOR INSERT TO authenticated WITH CHECK (true);
+
 DROP POLICY IF EXISTS "Admins and masters can delete incidents" ON incidents;
 CREATE POLICY "Admins and masters can delete incidents" ON incidents
   FOR DELETE TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users."authId" = auth.uid()
-      AND users.role IN ('admin', 'master')
-    )
-  );
+  USING (is_admin_or_master());
