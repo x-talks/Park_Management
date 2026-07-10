@@ -7,13 +7,13 @@ description: >
   this project. Do not edit manually — Claude rewrites this file when the
   stack changes.
 type: reference
-generated: 2026-07-11
+generated: 2026-07-10
 stack: Vanilla JS + Supabase + Cloudflare Workers
 ---
 
 # TDD-First Adapter — Park Management
 
-> Auto-generated 2026-07-11. Claude updates this file after features that
+> Auto-generated 2026-07-10. Claude updates this file after features that
 > introduce new patterns. Never edit manually.
 
 ---
@@ -111,7 +111,7 @@ import { loginAs } from './helpers.js';
 
 ## 4. Seed & Fixture Patterns
 
-### Current seed state (as of 2026-07-11)
+### Current seed state (as of 2026-07-10)
 
 **Auth users + app users:**
 | Username | Role | Password | App ID | Notes |
@@ -120,7 +120,7 @@ import { loginAs } from './helpers.js';
 | TEST-ADMIN | admin | `$STAGING_ADMIN_PASSWORD` | u-admin | Full admin access |
 | HD-AA-001 | renter | TestPass123! | u-renter-a | Assigned s1, payment this month |
 | HD-BB-002 | renter | TestPass123! | u-renter-b | Assigned s2, has termination date |
-| HD-CC-003 | renter | TestPass123! | u-renter-c | Unassigned |
+| HD-CC-003 | renter | TestPass123! | u-renter-c | Assigned s6, inactive (deactivated) |
 
 **Spots:**
 | ID | Label | State | Notes |
@@ -128,15 +128,26 @@ import { loginAs } from './helpers.js';
 | s1 | 1 | occupied | assignedUserId: u-renter-a |
 | s2 | 2 | occupied | assignedUserId: u-renter-b |
 | s3 | 3 | free | reserved: true |
+| s6 | 6 | occupied | assignedUserId: u-renter-c |
 | sA | A | free | owned: true |
 | sB | B | free | |
-| s4–s22 | 4–22 | free | |
+| s4–s22 (excl. s6) | 4–22 | free | |
 
-**Payments:** 3 records — s1 paid this month, s2 paid this month, s1 paid prev month
+**Payments:** 3 records — s1 commission (Jan this year), s1 current month, s2 prev month
 
-**Invites:** 3 tokens — one valid (spotId: s4), one expired, one used
+**Invites:**
+| ID | Token | SpotId | State | Notes |
+|----|-------|--------|-------|-------|
+| inv-valid | VALID-TOKEN-FOR-E2E | s4 | valid | Dave Invited |
+| inv-expired | EXPIRED-TOKEN-FOR-E2E | s5 | expired | Eve Expired |
+| inv-used | USED-TOKEN-FOR-E2E | s7 | used (u-renter-a) | Fred Used |
+| inv-valid-s7 | valid-token-s7 | s7 | valid | David Prospect, plate HD-GG-007, Audi A4 silver |
+| inv-expired-lc | expired-token | s9 | expired | for register.spec.js |
+| inv-used-lc | used-token | s10 | used (u-renter-a) | for register.spec.js |
 
-**Pending registrations:** 1 — plate HD-DD-004, spotId: s5
+**Pending registrations:** 1 — plate HD-DD-004, spotId: s6, token: VALID-TOKEN-FOR-E2E
+
+**Incidents:** 1 — inc-001, spotId: s1, reportedByUserId: u-renter-a, observedPlate: HD-ZZ-000, note: 'Test incident for E2E'
 
 ### Adding entities for a new feature
 
