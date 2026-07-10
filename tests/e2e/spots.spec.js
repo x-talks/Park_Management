@@ -43,3 +43,45 @@ test.describe('Info panel', () => {
     await expect(panel).toContainText('HD-AA-001');
   });
 });
+
+test.describe('Info panel content', () => {
+  test('clicking occupied spot shows renter plate', async ({ page }) => {
+    await loginAs(page, 'HD-AA-001', 'TestPass123!');
+    await page.waitForURL(/parking\.html/, { timeout: 15_000 });
+    await page.waitForLoadState('networkidle');
+    await page.locator('svg g[data-id="s2"]').click();
+    await expect(page.locator('#info-panel')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('#info-panel')).toContainText('HD-BB-002');
+  });
+
+  test('clicking free spot shows "Free" in info panel', async ({ page }) => {
+    await loginAs(page, 'HD-AA-001', 'TestPass123!');
+    await page.waitForURL(/parking\.html/, { timeout: 15_000 });
+    await page.waitForLoadState('networkidle');
+    await page.locator('svg g[data-id="s5"]').click();
+    await expect(page.locator('#info-panel')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('#info-panel')).toContainText(/free/i);
+  });
+});
+
+test.describe('Residents list', () => {
+  test('residents panel shows active renters after toggle', async ({ page }) => {
+    await loginAs(page, 'HD-AA-001', 'TestPass123!');
+    await page.waitForURL(/parking\.html/, { timeout: 15_000 });
+    await page.waitForLoadState('networkidle');
+    await page.locator('#residents-toggle').click();
+    await expect(page.locator('#residents-panel')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('#residents-panel')).toContainText('HD-AA-001');
+    await expect(page.locator('#residents-panel')).toContainText('HD-BB-002');
+  });
+});
+
+test.describe('My payments section', () => {
+  test('payments section shows current year', async ({ page }) => {
+    await loginAs(page, 'HD-AA-001', 'TestPass123!');
+    await page.waitForURL(/parking\.html/, { timeout: 15_000 });
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('#my-payments-section')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#my-payments-section')).toContainText(String(new Date().getFullYear()));
+  });
+});
