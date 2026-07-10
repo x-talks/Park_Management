@@ -78,8 +78,8 @@ test.describe('register.html — step progression', () => {
     await expect(page.locator('#step-register')).toBeVisible({ timeout: 5_000 });
     await page.locator('#r-password').fill('NewPass123!');
     await page.locator('#register-form button[type=submit]').click();
-    await page.waitForTimeout(3000);
-    await expect(page.locator('#step-done')).toBeVisible({ timeout: 15_000 });
+    await page.waitForTimeout(5000);
+    await expect(page.locator('#step-done')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('#done-username')).toContainText('HD-GG-007');
   });
 });

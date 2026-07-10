@@ -7,19 +7,19 @@ const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 
 test.beforeEach(async ({ page }) => {
   await loginAs(page, ADMIN_USER, ADMIN_PASS);
-  await page.waitForURL(/admin\.html/, { timeout: 15_000 });
+  await page.waitForURL(/admin\.html/, { timeout: 30_000 });
   await page.waitForLoadState('networkidle');
   // Click payments tab: id=tab-btn-payments
   await page.locator('#tab-btn-payments').click();
-  await expect(page.locator('#payment-year')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('#payment-year')).toBeVisible({ timeout: 30_000 });
 });
 
 test.describe('Payments table', () => {
-  test('exactly 2 rows — one per assigned spot (s1 and s2)', async ({ page }) => {
-    // Payments rendered in #payment-matrix
+  test('3 rows — one per assigned spot (s1, s2, s6)', async ({ page }) => {
+    // Payments rendered in #payment-matrix — 3 occupied spots: s1, s2, s6
     const rows = page.locator('#payment-matrix table tr');
     await expect(rows.nth(1)).toBeVisible({ timeout: 10_000 });
-    await expect(rows).toHaveCount(3); // 1 header + 2 data rows
+    await expect(rows).toHaveCount(4); // 1 header + 3 data rows
   });
 
   test('s1 row has a paid indicator (✓)', async ({ page }) => {

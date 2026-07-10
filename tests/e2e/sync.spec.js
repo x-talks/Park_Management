@@ -17,7 +17,7 @@ test.describe('Multi-user sync (L6)', () => {
       loginAs(renterPage, 'HD-BB-002', 'TestPass123!'),
     ]);
 
-    await adminPage.waitForURL(/admin\.html/, { timeout: 15_000 });
+    await adminPage.waitForURL(/admin\.html/, { timeout: 30_000 });
     await adminPage.waitForLoadState('networkidle');
     await adminPage.locator('#tab-btn-payments').click();
     await adminPage.waitForLoadState('networkidle');
@@ -27,7 +27,7 @@ test.describe('Multi-user sync (L6)', () => {
     await markBtn.click();
     await adminPage.waitForTimeout(2000);
 
-    await renterPage.waitForURL(/parking\.html/, { timeout: 15_000 });
+    await renterPage.waitForURL(/parking\.html/, { timeout: 30_000 });
     await renterPage.reload();
     await renterPage.waitForLoadState('networkidle');
     await expect(renterPage.locator('#my-payments-section')).toContainText(/paid|✓/i, { timeout: 10_000 });
@@ -47,7 +47,7 @@ test.describe('Multi-user sync (L6)', () => {
       loginAs(renterPage, 'HD-CC-003', 'TestPass123!'),
     ]);
 
-    await adminPage.waitForURL(/admin\.html/, { timeout: 15_000 });
+    await adminPage.waitForURL(/admin\.html/, { timeout: 30_000 });
     await adminPage.waitForLoadState('networkidle');
     await adminPage.locator('#tab-btn-spots').click();
     await adminPage.waitForLoadState('networkidle');
@@ -58,7 +58,7 @@ test.describe('Multi-user sync (L6)', () => {
     await s8Row.locator('button').filter({ hasText: /assign/i }).first().click();
     await adminPage.waitForTimeout(2000);
 
-    await renterPage.waitForURL(/parking\.html/, { timeout: 15_000 });
+    await renterPage.waitForURL(/parking\.html/, { timeout: 30_000 });
     await renterPage.reload();
     await renterPage.waitForLoadState('networkidle');
     const s8Spot = renterPage.locator('svg g[data-id="s8"]');

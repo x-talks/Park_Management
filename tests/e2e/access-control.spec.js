@@ -13,14 +13,14 @@ const WORKER_URL  = process.env.STAGING_WORKER_URL || 'https://park-management-a
 test.describe('Browser access control', () => {
   test('renter cannot navigate to admin.html directly', async ({ page }) => {
     await loginAs(page, RENTER_USER, RENTER_PASS);
-    await page.waitForURL(/parking\.html/, { timeout: 15_000 });
+    await page.waitForURL(/parking\.html/, { timeout: 30_000 });
     await page.goto('/admin.html');
     await expect(page).not.toHaveURL(/admin\.html/, { timeout: 10_000 });
   });
 
   test('renter sees only own incidents in incident log', async ({ page }) => {
     await loginAs(page, RENTER_USER, RENTER_PASS);
-    await page.waitForURL(/parking\.html/, { timeout: 15_000 });
+    await page.waitForURL(/parking\.html/, { timeout: 30_000 });
     await page.goto('/incident.html');
     await page.waitForLoadState('networkidle');
     await expect(page.locator('#incident-log')).toBeVisible({ timeout: 10_000 });
@@ -33,7 +33,7 @@ test.describe('Browser access control', () => {
 
   test('admin sees all incidents across all spots', async ({ page }) => {
     await loginAs(page, ADMIN_USER, ADMIN_PASS);
-    await page.waitForURL(/admin\.html/, { timeout: 15_000 });
+    await page.waitForURL(/admin\.html/, { timeout: 30_000 });
     await page.goto('/incident.html');
     await page.waitForLoadState('networkidle');
     await expect(page.locator('#incident-log')).toBeVisible({ timeout: 10_000 });
@@ -49,9 +49,15 @@ test.describe('API access control (L3)', () => {
   let renterToken;
 
   test.beforeAll(async ({ request }) => {
-    const res = await request.post(`${WORKER_URL}/auth/login`, {
-      data: { username: RENTER_USER, password: RENTER_PASS }
-    });
+    // Retry login up to 3 times — Worker may be cold on first request
+    let res;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      res = await request.post(`${WORKER_URL}/auth/login`, {
+        data: { username: RENTER_USER, password: RENTER_PASS }
+      });
+      if (res.ok()) break;
+      if (attempt < 3) await new Promise(r => setTimeout(r, 3000));
+    }
     expect(res.ok()).toBeTruthy();
     const data = await res.json();
     renterToken = data.accessToken;

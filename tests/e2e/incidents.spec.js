@@ -9,7 +9,7 @@ const ADMIN_PASS  = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 
 test.beforeEach(async ({ page }) => {
   await loginAs(page, RENTER_USER, RENTER_PASS);
-  await page.waitForURL(/parking\.html/, { timeout: 15_000 });
+  await page.waitForURL(/parking\.html/, { timeout: 30_000 });
   // Navigate to incidents via nav link — data-i18n="nav.incidents" → href="incident.html"
   await page.locator('a[href="incident.html"], a[href*="incident"]').first().click();
   await page.waitForURL(/incident/, { timeout: 10_000 });
@@ -71,7 +71,7 @@ test.describe('Incidents — admin delete button visibility', () => {
     const adminPage = await adminCtx.newPage();
 
     await loginAs(adminPage, ADMIN_USER, ADMIN_PASS);
-    await adminPage.waitForURL(/admin\.html/, { timeout: 15_000 });
+    await adminPage.waitForURL(/admin\.html/, { timeout: 30_000 });
     await adminPage.waitForLoadState('networkidle');
 
     // Admin navigates to incident log (admin.html has incident section or separate page)

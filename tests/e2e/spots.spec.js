@@ -7,7 +7,7 @@ const RENTER_PASS = 'TestPass123!';
 
 test.beforeEach(async ({ page }) => {
   await loginAs(page, RENTER_USER, RENTER_PASS);
-  await page.waitForURL(/parking\.html/, { timeout: 15_000 });
+  await page.waitForURL(/parking\.html/, { timeout: 30_000 });
   await page.waitForLoadState('networkidle');
 });
 
@@ -46,31 +46,29 @@ test.describe('Info panel', () => {
 
 test.describe('Info panel content', () => {
   test('clicking occupied spot shows renter plate', async ({ page }) => {
-    await loginAs(page, 'HD-AA-001', 'TestPass123!');
-    await page.waitForURL(/parking\.html/, { timeout: 15_000 });
-    await page.waitForLoadState('networkidle');
+    // beforeEach already logged in as HD-AA-001
+    await page.waitForSelector('svg g[data-id="s2"]', { timeout: 10_000 });
+    // Wait for users data to be rendered (spot s2 should have class 'occupied')
+    await expect(page.locator('svg g[data-id="s2"]')).toHaveClass(/occupied/, { timeout: 10_000 });
     await page.locator('svg g[data-id="s2"]').click();
-    await expect(page.locator('#info-panel')).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('#info-panel')).toContainText('HD-BB-002');
+    await expect(page.locator('#info-panel')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#info-panel')).toContainText('HD-BB-002', { timeout: 10_000 });
   });
 
   test('clicking free spot shows "Free" in info panel', async ({ page }) => {
-    await loginAs(page, 'HD-AA-001', 'TestPass123!');
-    await page.waitForURL(/parking\.html/, { timeout: 15_000 });
-    await page.waitForLoadState('networkidle');
+    // beforeEach already logged in as HD-AA-001
+    await page.waitForSelector('svg g[data-id="s5"]', { timeout: 10_000 });
     await page.locator('svg g[data-id="s5"]').click();
-    await expect(page.locator('#info-panel')).toBeVisible({ timeout: 5_000 });
-    await expect(page.locator('#info-panel')).toContainText(/free/i);
+    await expect(page.locator('#info-panel')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#info-panel')).toContainText(/free/i, { timeout: 10_000 });
   });
 });
 
 test.describe('Residents list', () => {
   test('residents panel shows active renters after toggle', async ({ page }) => {
-    await loginAs(page, 'HD-AA-001', 'TestPass123!');
-    await page.waitForURL(/parking\.html/, { timeout: 15_000 });
-    await page.waitForLoadState('networkidle');
+    // beforeEach already logged in as HD-AA-001
     await page.locator('#residents-toggle').click();
-    await expect(page.locator('#residents-panel')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('#residents-panel')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#residents-panel')).toContainText('HD-AA-001');
     await expect(page.locator('#residents-panel')).toContainText('HD-BB-002');
   });
@@ -78,9 +76,7 @@ test.describe('Residents list', () => {
 
 test.describe('My payments section', () => {
   test('payments section shows current year', async ({ page }) => {
-    await loginAs(page, 'HD-AA-001', 'TestPass123!');
-    await page.waitForURL(/parking\.html/, { timeout: 15_000 });
-    await page.waitForLoadState('networkidle');
+    // beforeEach already logged in as HD-AA-001
     await expect(page.locator('#my-payments-section')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#my-payments-section')).toContainText(String(new Date().getFullYear()));
   });

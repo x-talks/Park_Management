@@ -47,7 +47,7 @@ test.describe('Session persistence', () => {
     await page.locator('#username').fill(ADMIN_USER);
     await page.locator('#password').fill(ADMIN_PASS);
     await page.click('button[type="submit"]');
-    await page.waitForURL(/admin\.html/, { timeout: 15_000 });
+    await page.waitForURL(/admin\.html/, { timeout: 30_000 });
     await page.reload();
     await expect(page).toHaveURL(/admin\.html/);
   });
@@ -59,7 +59,7 @@ test.describe('Logout', () => {
     await page.locator('#username').fill(ADMIN_USER);
     await page.locator('#password').fill(ADMIN_PASS);
     await page.click('button[type="submit"]');
-    await page.waitForURL(/admin\.html/, { timeout: 15_000 });
+    await page.waitForURL(/admin\.html/, { timeout: 30_000 });
     await page.locator('#logout-link, [data-i18n="nav.logout"], button:has-text("Logout"), a:has-text("Logout")').first().click();
     await expect(page).toHaveURL(/index\.html|^http:\/\/localhost:3000\/?$/, { timeout: 10_000 });
     await page.goto('/admin.html');

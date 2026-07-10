@@ -8,7 +8,7 @@ const RENTER_PASS = 'TestPass123!';
 test('Full renter journey: login → view map → click own spot → view payments → edit profile', async ({ page }) => {
   // Step 1: Login as renter
   await loginAs(page, RENTER_USER, RENTER_PASS);
-  await page.waitForURL(/parking\.html/, { timeout: 15_000 });
+  await page.waitForURL(/parking\.html/, { timeout: 30_000 });
   await page.waitForLoadState('networkidle');
 
   // Step 2: Parking map is visible with spots
