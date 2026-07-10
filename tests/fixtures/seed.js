@@ -189,6 +189,20 @@ async function seed() {
       name: 'David', lastName: 'Prospect', phone: '+49300000007', address: 'Test Street 7',
       licensePlate: 'HD-GG-007', carModel: 'Audi A4', carColor: 'silver',
     },
+    // expired invite (lowercase token for register.spec.js)
+    {
+      id: 'inv-expired-lc', token: 'expired-token',
+      spotId: 's9', expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), usedBy: null,
+      name: 'Expired', lastName: 'User', phone: '+49000000001', address: 'Expired Street 1',
+      licensePlate: null, carModel: null, carColor: null,
+    },
+    // used invite (lowercase token for register.spec.js)
+    {
+      id: 'inv-used-lc', token: 'used-token',
+      spotId: 's10', expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), usedBy: 'u-renter-a',
+      name: 'Used', lastName: 'User', phone: '+49000000002', address: 'Used Street 1',
+      licensePlate: null, carModel: null, carColor: null,
+    },
   ];
   const { error: invErr } = await supa.from('invites').upsert(invites);
   if (invErr) throw new Error(`invites upsert: ${invErr.message}`);
