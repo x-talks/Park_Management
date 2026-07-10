@@ -84,6 +84,7 @@ async function seed() {
     if (id === 's1')  return { ...base, state: 'occupied', assignedUserId: 'u-renter-a' };
     if (id === 's2')  return { ...base, state: 'occupied', assignedUserId: 'u-renter-b' };
     if (id === 's3')  return { ...base, reserved: true };
+    if (id === 's6')  return { ...base, state: 'occupied', assignedUserId: 'u-renter-c' };
     if (id === 'sA')  return { ...base, owned: true };
     return base;
   });
@@ -128,7 +129,7 @@ async function seed() {
       id: 'u-renter-c', username: 'HD-CC-003', authId: renterCAuthId,
       name: 'Carol', lastName: 'Renter', role: 'renter', active: false,
       licensePlate: 'HD-CC-003', phone: '+49-123-003', carModel: 'Audi A3', carColor: 'black',
-      address: 'Teststr. 3', assignedSpots: [], pendingEdits: null,
+      address: 'Teststr. 3', assignedSpots: JSON.stringify(['s6']), pendingEdits: null,
       registeredAt: '2025-01-01', terminationDate: null, passwordHash: null, lastPassword: null,
     },
   ];
@@ -181,6 +182,12 @@ async function seed() {
       spotId: 's7', expiresAt: usedExpiry, usedBy: 'u-renter-a',
       name: 'Fred', lastName: 'Used', phone: '+49-000-007', address: 'Teststr. 7',
       licensePlate: null, carModel: null, carColor: null,
+    },
+    {
+      id: 'inv-valid-s7', token: 'valid-token-s7',
+      spotId: 's7', expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), usedBy: null,
+      name: 'David', lastName: 'Prospect', phone: '+49300000007', address: 'Test Street 7',
+      licensePlate: 'HD-GG-007', carModel: 'Audi A4', carColor: 'silver',
     },
   ];
   const { error: invErr } = await supa.from('invites').upsert(invites);
