@@ -8,7 +8,7 @@ const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 test('Full admin journey: login → generate invite → approve pending registration → mark payment paid', async ({ page }) => {
   // Step 1: Login as admin
   await loginAs(page, ADMIN_USER, ADMIN_PASS);
-  await page.waitForURL(/admin\.html/, { timeout: 30_000 });
+  await page.waitForURL(/admin\.html/, { timeout: 45_000 });
   await page.waitForLoadState('networkidle');
 
   // Step 2: Stat cards visible

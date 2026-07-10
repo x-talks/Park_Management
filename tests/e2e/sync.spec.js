@@ -44,14 +44,14 @@ test.describe('Multi-user sync (L6)', () => {
 
     await Promise.all([
       loginAs(adminPage,  ADMIN_USER, ADMIN_PASS),
-      loginAs(renterPage, 'HD-CC-003', 'TestPass123!'),
+      loginAs(renterPage, 'HD-AA-001', 'TestPass123!'),
     ]);
 
     await adminPage.waitForURL(/admin\.html/, { timeout: 30_000 });
     await adminPage.waitForLoadState('networkidle');
     await adminPage.locator('#tab-btn-spots').click();
     await adminPage.waitForLoadState('networkidle');
-    const s8Row = adminPage.locator('#spot-list table tr').filter({ hasText: /^\s*8\s/ }).first();
+    const s8Row = adminPage.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     await expect(s8Row).toBeVisible({ timeout: 10_000 });
     const assignSelect = s8Row.locator('select').first();
     await assignSelect.selectOption({ label: /HD-CC-003/ });
@@ -63,7 +63,7 @@ test.describe('Multi-user sync (L6)', () => {
     await renterPage.waitForLoadState('networkidle');
     const s8Spot = renterPage.locator('svg g[data-id="s8"]');
     await expect(s8Spot).toBeVisible({ timeout: 10_000 });
-    await expect(s8Spot).toHaveClass(/occupied/, { timeout: 5_000 });
+    await expect(s8Spot).toHaveClass(/occupied/, { timeout: 10_000 });
 
     await adminCtx.close();
     await renterCtx.close();

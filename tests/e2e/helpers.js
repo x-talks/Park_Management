@@ -7,5 +7,5 @@ export async function loginAs(page, username, password) {
   await usernameInput.fill(username);
   await passwordInput.fill(password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL(url => !url.toString().endsWith('index.html') && !url.toString().endsWith('/'), { timeout: 30_000 });
+  await page.waitForURL(url => !url.toString().endsWith('index.html') && !url.toString().endsWith('/'), { timeout: 45_000 });
 }

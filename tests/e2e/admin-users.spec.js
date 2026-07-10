@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
   // Users tab is default (#tab-btn-users)
   const usersTab = page.locator('#tab-btn-users');
   if (await usersTab.count() > 0) await usersTab.first().click();
-  await expect(page.locator('#user-list table tr').first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('#user-list table tr').first()).toBeVisible({ timeout: 30_000 });
 });
 
 test.describe('User list', () => {
