@@ -30,10 +30,12 @@ test.describe('Multi-user sync (L6)', () => {
     );
     await adminPage.locator('#tab-btn-payments').click();
     await expect(adminPage.locator('#payment-matrix table tr').nth(1)).toBeVisible({ timeout: 30_000 });
-    const s2Row = adminPage.locator('#payment-matrix table tr').filter({ hasText: 'Spot 2' }).first();
-    await expect(s2Row).toBeVisible({ timeout: 10_000 });
-    // iconBtn uses title="Mark paid", not textContent
-    const markBtn = s2Row.locator('button[title="Mark paid"]').first();
+    // Use Spot 6 (Carol) — seeded with no payments, so Mark paid buttons always available
+    // even after tests 18/20 consume both of Bob's (Spot 2) unpaid cells.
+    const s6Row = adminPage.locator('#payment-matrix table tr').filter({ hasText: 'Spot 6' }).first();
+    await expect(s6Row).toBeVisible({ timeout: 10_000 });
+    const markBtn = s6Row.locator('button[title="Mark paid"]').first();
+    await expect(markBtn).toBeVisible({ timeout: 10_000 });
     await markBtn.click();
     await adminPage.waitForTimeout(2000);
 

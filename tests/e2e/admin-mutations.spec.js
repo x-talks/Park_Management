@@ -218,11 +218,13 @@ test.describe('Spot reserve/unreserve', () => {
     await expect(s3RowAfter).not.toContainText(/reserved/i);
 
     // ── Restore state: re-reserve s3 so later tests (28, 66) work ──
+    // "Mark reserved" triggers modalConfirm — must click #pm-modal-confirm to proceed.
     try {
       const s3FreshRow = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
       const reReserveBtn = s3FreshRow.locator('button[title="Mark reserved"]').first();
       await expect(reReserveBtn).toBeVisible({ timeout: 10_000 });
       await reReserveBtn.click();
+      await page.locator('#pm-modal-confirm').click();
       // Wait until the DOM confirms s3 is reserved (not just a timeout)
       await expect(s3FreshRow).toContainText(/reserved/i, { timeout: 10_000 });
     } catch (e) {
