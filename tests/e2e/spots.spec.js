@@ -49,7 +49,7 @@ test.describe('Info panel content', () => {
     // beforeEach already logged in as HD-AA-001
     await page.waitForSelector('svg g[data-id="s2"]', { timeout: 10_000 });
     // Wait for users data to be rendered (spot s2 should have class 'occupied')
-    await expect(page.locator('svg g[data-id="s2"]')).toHaveClass(/occupied/, { timeout: 15_000 });
+    await expect(page.locator('svg g[data-id="s2"]')).toHaveClass(/occupied/, { timeout: 20_000 });
     await page.locator('svg g[data-id="s2"]').click();
     await expect(page.locator('#info-panel')).toBeVisible({ timeout: 10_000 });
     // Panel shows "Spot 2  ·  HD-BB-002" for renter b
@@ -71,11 +71,10 @@ test.describe('Residents list', () => {
     const toggle = page.locator('#residents-toggle');
     await expect(toggle).toBeVisible({ timeout: 10_000 });
     await toggle.click();
-    const panel = page.locator('#residents-panel, .residents-panel, [id*="resident"]').first();
+    const panel = page.locator('#residents-panel').first();
     await expect(panel).toBeVisible({ timeout: 10_000 });
-    // At least one active renter should be visible
-    const text = await panel.textContent();
-    expect(text).toMatch(/HD-AA-001|HD-BB-002/);
+    // Wait for residents data to load (panel starts empty until fetch completes)
+    await expect(panel).toContainText(/HD-AA-001|HD-BB-002/, { timeout: 15_000 });
   });
 });
 

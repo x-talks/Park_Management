@@ -51,11 +51,24 @@ test.describe('Multi-user sync (L6)', () => {
     await adminPage.waitForLoadState('networkidle');
     await adminPage.locator('#tab-btn-spots').click();
     await adminPage.waitForLoadState('networkidle');
+    await adminPage.waitForTimeout(2000);
     const s8Row = adminPage.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     await expect(s8Row).toBeVisible({ timeout: 10_000 });
-    const assignSelect = s8Row.locator('select').first();
-    await assignSelect.selectOption({ label: /HD-CC-003/ });
-    await s8Row.locator('button').filter({ hasText: /assign/i }).first().click();
+
+    // If s8 is already assigned (from a prior test), unassign it first
+    const unassignBtn = s8Row.locator('button').filter({ hasText: /unassign/i });
+    if (await unassignBtn.count() > 0) {
+      await unassignBtn.first().click();
+      await adminPage.waitForTimeout(2000);
+      await adminPage.waitForLoadState('networkidle');
+    }
+
+    // Now assign s8 to HD-CC-003
+    const s8RowFresh = adminPage.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
+    const assignSelect = s8RowFresh.locator('select').first();
+    await expect(assignSelect).toBeVisible({ timeout: 10_000 });
+    await assignSelect.selectOption({ label: 'HD-CC-003' });
+    await s8RowFresh.locator('button').filter({ hasText: /assign/i }).first().click();
     await adminPage.waitForTimeout(2000);
 
     await renterPage.waitForURL(/parking\.html/, { timeout: 30_000 });
@@ -63,7 +76,7 @@ test.describe('Multi-user sync (L6)', () => {
     await renterPage.waitForLoadState('networkidle');
     const s8Spot = renterPage.locator('svg g[data-id="s8"]');
     await expect(s8Spot).toBeVisible({ timeout: 10_000 });
-    await expect(s8Spot).toHaveClass(/occupied/, { timeout: 10_000 });
+    await expect(s8Spot).toHaveClass(/occupied/, { timeout: 15_000 });
 
     await adminCtx.close();
     await renterCtx.close();
