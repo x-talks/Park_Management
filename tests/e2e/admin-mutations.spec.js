@@ -164,7 +164,11 @@ test.describe('Spot assign/unassign', () => {
     await unassignBtn.click();
     await page.locator('#pm-modal-confirm').click();
     await page.waitForTimeout(2000);
-    await expect(page.locator('#spot-list table')).not.toContainText('HD-AA-001');
+    // Verify s1 is now free: the s1 row should no longer have an Unassign button
+    // (HD-AA-001 still appears in dropdown options for all free spots, so we cannot
+    // assert not.toContainText on the whole table — target s1 row specifically)
+    const s1RowAfter = page.locator('#spot-list table tr').filter({ hasText: /^1[^0-9]/ }).first();
+    await expect(s1RowAfter.locator('button[title="Unassign"]')).toHaveCount(0);
 
     // ── Restore state: re-assign s1 to Alice so later tests (23, 46, 47, 68, 71, 72) work ──
     // s1 is now free — find it by spot label "1"

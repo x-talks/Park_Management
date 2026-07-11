@@ -18,10 +18,14 @@ test.describe('Multi-user sync (L6)', () => {
     ]);
 
     await adminPage.waitForURL(/admin\.html/, { timeout: 30_000 });
-    // Use waitForFunction instead of networkidle — loadPendingRegistrations blocks networkidle in CI
+    // Wait for users tab to fully render (renderUsers completes) before switching tabs.
+    // waitForFunction on stat-cards fires too early (element exists before data loads).
     await adminPage.waitForFunction(
-      () => document.getElementById('stat-cards') !== null,
-      { timeout: 20_000 }
+      () => {
+        const ul = document.getElementById('user-list');
+        return ul && ul.querySelector('table tr');
+      },
+      { timeout: 30_000 }
     );
     await adminPage.locator('#tab-btn-payments').click();
     await expect(adminPage.locator('#payment-matrix table tr').nth(1)).toBeVisible({ timeout: 30_000 });

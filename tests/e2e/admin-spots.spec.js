@@ -31,10 +31,10 @@ test.describe('Spots table', () => {
   });
 
   test('s3 shows reserved indicator', async ({ page }) => {
-    // s3 is the only reserved spot; its row has "Reserved" chip
-    const reservedRow = page.locator('#spot-list table tr').filter({ hasText: /Reserved/i }).first();
-    await expect(reservedRow).toBeVisible({ timeout: 5000 });
-    await expect(reservedRow).toContainText(/reserved/i);
+    // Target s3 by its spot label "3", then verify it shows "Reserved"
+    const s3Row = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
+    await expect(s3Row).toBeVisible({ timeout: 10_000 });
+    await expect(s3Row).toContainText(/reserved/i);
   });
 });
 

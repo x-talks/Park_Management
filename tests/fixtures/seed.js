@@ -224,11 +224,11 @@ async function seed() {
   if (incErr) throw new Error(`incidents upsert: ${incErr.message}`);
   console.log('  ✓ incidents');
 
-  // Pending registration for spot s6
+  // Pending registration for spot s4 (matching invite inv-valid which also targets s4)
   const { error: prErr } = await supa.from('pending_registrations').upsert([
     {
       id: 'pr-001', token: 'VALID-TOKEN-FOR-E2E',
-      spotId: 's6', name: 'Dave', lastName: 'Pending',
+      spotId: 's4', name: 'Dave', lastName: 'Pending',
       phone: '+49-000-006', address: 'Teststr. 6',
       licensePlate: 'HD-DD-004', carModel: 'Toyota Yaris', carColor: 'white',
       passwordHash: 'TestPass123!',
