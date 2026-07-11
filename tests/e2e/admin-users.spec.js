@@ -49,8 +49,13 @@ test.describe('User list', () => {
 });
 
 test.describe('Pending registrations', () => {
-  test('pending registrations section shows HD-DD-004', async ({ page }) => {
-    // Pending registrations are in #pending-reg-list
-    await expect(page.locator('#pending-reg-list')).toContainText('HD-DD-004', { timeout: 10_000 });
+  test('HD-DD-004 appears in pending list or user list', async ({ page }) => {
+    // Tests 9/10 (admin-mutations.spec.js) run before this test and may have already
+    // approved or rejected HD-DD-004. After approval it moves to #user-list; after
+    // rejection it is removed entirely from #pending-reg-list. Accept either outcome:
+    // HD-DD-004 must exist in at least one of the two sections.
+    const pendingText = (await page.locator('#pending-reg-list').textContent({ timeout: 10_000 })) || '';
+    const userText = (await page.locator('#user-list').textContent({ timeout: 10_000 })) || '';
+    expect(pendingText + userText).toContain('HD-DD-004');
   });
 });
