@@ -18,9 +18,13 @@ test.describe('Multi-user sync (L6)', () => {
     ]);
 
     await adminPage.waitForURL(/admin\.html/, { timeout: 30_000 });
-    await adminPage.waitForLoadState('networkidle');
+    // Use waitForFunction instead of networkidle — loadPendingRegistrations blocks networkidle in CI
+    await adminPage.waitForFunction(
+      () => document.getElementById('stat-cards') !== null,
+      { timeout: 20_000 }
+    );
     await adminPage.locator('#tab-btn-payments').click();
-    await adminPage.waitForLoadState('networkidle');
+    await expect(adminPage.locator('#payment-matrix table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s2Row = adminPage.locator('#payment-matrix table tr').filter({ hasText: 'Spot 2' }).first();
     await expect(s2Row).toBeVisible({ timeout: 10_000 });
     const markBtn = s2Row.locator('button, .payment-cell-unpaid').first();
@@ -48,10 +52,10 @@ test.describe('Multi-user sync (L6)', () => {
     ]);
 
     await adminPage.waitForURL(/admin\.html/, { timeout: 30_000 });
-    await adminPage.waitForLoadState('networkidle');
+    // Use toBeVisible instead of networkidle — loadPendingRegistrations blocks networkidle in CI
+    await expect(adminPage.locator('#stat-cards')).toBeVisible({ timeout: 20_000 });
     await adminPage.locator('#tab-btn-spots').click();
-    await adminPage.waitForLoadState('networkidle');
-    await adminPage.waitForTimeout(2000);
+    await expect(adminPage.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s8Row = adminPage.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     await expect(s8Row).toBeVisible({ timeout: 10_000 });
 
@@ -60,7 +64,6 @@ test.describe('Multi-user sync (L6)', () => {
     if (await unassignBtn.count() > 0) {
       await unassignBtn.first().click();
       await adminPage.waitForTimeout(2000);
-      await adminPage.waitForLoadState('networkidle');
     }
 
     // Now assign s8 to HD-CC-003

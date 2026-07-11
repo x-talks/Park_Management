@@ -8,10 +8,13 @@ const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 test.beforeEach(async ({ page }) => {
   await loginAs(page, ADMIN_USER, ADMIN_PASS);
   await page.waitForURL(/admin\.html/, { timeout: 30_000 });
-  await page.waitForLoadState('networkidle');
+  // Do NOT use waitForLoadState('networkidle') — loadPendingRegistrations() blocks it in CI.
+  // Instead wait for stat-cards (lightweight, rendered synchronously) before clicking payments tab.
+  await expect(page.locator('#stat-cards')).toBeVisible({ timeout: 20_000 });
   await page.locator('#tab-btn-payments').click();
   await expect(page.locator('#payment-year')).toBeVisible({ timeout: 30_000 });
-  await page.waitForLoadState('networkidle');
+  // Wait for payment matrix to actually render rows (avoid networkidle due to pending renderUsers)
+  await expect(page.locator('#payment-matrix table tr').nth(1)).toBeVisible({ timeout: 30_000 });
 });
 
 test.describe('Mark paid / revert', () => {
@@ -29,19 +32,23 @@ test.describe('Mark paid / revert', () => {
     await expect(s1Row).toBeVisible({ timeout: 10_000 });
     // Ensure there is at least one paid cell on s1 (mark if not already paid)
     const paidCellBefore = s1Row.locator('.payment-cell-paid').first();
-    if (await paidCellBefore.count() === 0) {
-      // Mark a cell as paid first
-      await s1Row.locator('button, .payment-cell-unpaid').first().click();
+    const hasPaid = await paidCellBefore.count() > 0;
+    if (!hasPaid) {
+      // Mark current month as paid first
+      const unpaidBtn = s1Row.locator('button, .payment-cell-unpaid').first();
+      await expect(unpaidBtn).toBeVisible({ timeout: 5_000 });
+      await unpaidBtn.click();
       await page.waitForTimeout(2000);
     }
-    // Now revert the paid cell
+    // Find and click a paid cell to revert it
     const paidCell = s1Row.locator('.payment-cell-paid').first();
-    await expect(paidCell).toBeVisible({ timeout: 5_000 });
+    await expect(paidCell).toBeVisible({ timeout: 10_000 });
+    const paidCountBefore = await s1Row.locator('.payment-cell-paid').count();
     await paidCell.click();
     await page.waitForTimeout(2000);
-    // After revert, count of paid cells should have decreased (or be 0)
-    const paidCellsAfter = await s1Row.locator('.payment-cell-paid').count();
-    expect(paidCellsAfter).toBeLessThan(2); // We reverted at most 1 cell
+    // After revert, paid count should be less than before OR the cell is gone
+    const paidCountAfter = await s1Row.locator('.payment-cell-paid').count();
+    expect(paidCountAfter).toBeLessThan(paidCountBefore);
   });
 
   test('mark paid persists after page reload', async ({ page }) => {

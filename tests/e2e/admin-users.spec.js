@@ -8,12 +8,15 @@ const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 test.beforeEach(async ({ page }) => {
   await loginAs(page, ADMIN_USER, ADMIN_PASS);
   await page.waitForURL(/admin\.html/, { timeout: 30_000 });
-  await page.waitForLoadState('networkidle');
-  // Users tab is default (#tab-btn-users)
-  const usersTab = page.locator('#tab-btn-users');
-  if (await usersTab.count() > 0) await usersTab.first().click();
-  await page.waitForLoadState('networkidle');
-  await expect(page.locator('#user-list table tr').first()).toBeVisible({ timeout: 45_000 });
+  // Do NOT use waitForLoadState('networkidle') — renderUsers() calls loadPendingRegistrations()
+  // which is slow in CI and blocks networkidle. Use waitForFunction instead.
+  await page.waitForFunction(
+    () => {
+      const ul = document.getElementById('user-list');
+      return ul && ul.querySelector('table tr');
+    },
+    { timeout: 45_000 }
+  );
 });
 
 test.describe('User list', () => {

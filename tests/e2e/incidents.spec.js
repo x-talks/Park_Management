@@ -72,7 +72,8 @@ test.describe('Incidents — admin delete button visibility', () => {
 
     await loginAs(adminPage, ADMIN_USER, ADMIN_PASS);
     await adminPage.waitForURL(/admin\.html/, { timeout: 30_000 });
-    await adminPage.waitForLoadState('networkidle');
+    // Use toBeVisible instead of networkidle — loadPendingRegistrations blocks networkidle in CI
+    await expect(adminPage.locator('#stat-cards')).toBeVisible({ timeout: 20_000 });
 
     // Admin navigates to incident log (admin.html has incident section or separate page)
     await adminPage.locator('a[href="incident.html"], a[href*="incident"]').first().click();

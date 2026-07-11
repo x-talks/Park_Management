@@ -9,7 +9,12 @@ test('Full admin journey: login → generate invite → approve pending registra
   // Step 1: Login as admin
   await loginAs(page, ADMIN_USER, ADMIN_PASS);
   await page.waitForURL(/admin\.html/, { timeout: 45_000 });
-  await page.waitForLoadState('networkidle');
+  // Wait for users tab to populate (renderUsers) without networkidle — loadPendingRegistrations
+  // keeps connections open in CI and blocks networkidle indefinitely
+  await page.waitForFunction(
+    () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
+    { timeout: 45_000 }
+  );
 
   // Step 2: Stat cards visible
   await expect(page.locator('#stat-cards')).toBeVisible({ timeout: 10_000 });

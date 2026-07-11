@@ -8,7 +8,8 @@ const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 test.beforeEach(async ({ page }) => {
   await loginAs(page, ADMIN_USER, ADMIN_PASS);
   await page.waitForURL(/admin\.html/, { timeout: 30_000 });
-  await page.waitForLoadState('networkidle');
+  // Do NOT use waitForLoadState('networkidle') — loadPendingRegistrations() blocks it in CI.
+  await expect(page.locator('#stat-cards')).toBeVisible({ timeout: 20_000 });
   // Click spots tab: id=tab-btn-spots
   await page.locator('#tab-btn-spots').click();
   await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 15_000 });

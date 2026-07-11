@@ -8,16 +8,20 @@ const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 test.beforeEach(async ({ page }) => {
   await loginAs(page, ADMIN_USER, ADMIN_PASS);
   await page.waitForURL(/admin\.html/, { timeout: 30_000 });
-  await page.waitForLoadState('networkidle');
+  // Do NOT use waitForLoadState('networkidle') here — renderUsers() calls
+  // loadPendingRegistrations() which is slow in CI and keeps connections open,
+  // blocking networkidle indefinitely. Each test waits for its own content.
 });
 
 // ── Pending registration ───────────────────────────────────────────────────────
 
 test.describe('Pending registration', () => {
   test('approve pending registration HD-DD-004 → user appears in user list', async ({ page }) => {
-    await page.locator('#tab-btn-users').click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Ensure users tab data is loaded (may already be from page init)
+    await page.waitForFunction(
+      () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
+      { timeout: 30_000 }
+    );
     const pendingRow = page.locator('#pending-reg-list tr, #pending-reg-list .pending-row')
       .filter({ hasText: 'HD-DD-004' }).first();
     // If already approved (e.g. by acceptance-admin test), skip
@@ -30,9 +34,11 @@ test.describe('Pending registration', () => {
   });
 
   test('reject pending registration → row removed from pending list', async ({ page }) => {
-    await page.locator('#tab-btn-users').click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Ensure users tab data is loaded (may already be from page init)
+    await page.waitForFunction(
+      () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
+      { timeout: 30_000 }
+    );
     // If the pending row is already gone (approved by previous test), this test is a no-op
     const rowCount = await page.locator('#pending-reg-list tr, #pending-reg-list .pending-row')
       .filter({ hasText: 'HD-DD-004' }).count();
@@ -50,9 +56,11 @@ test.describe('Pending registration', () => {
 
 test.describe('User activate/deactivate', () => {
   test('deactivate renter HD-CC-003 → row shows inactive state', async ({ page }) => {
-    await page.locator('#tab-btn-users').click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for user-list to be populated (avoids re-triggering renderUsers)
+    await page.waitForFunction(
+      () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
+      { timeout: 30_000 }
+    );
     const row = page.locator('#user-list table tr').filter({ hasText: 'HD-CC-003' }).first();
     await expect(row).toBeVisible({ timeout: 10_000 });
     // If already inactive (seed sets active: false), activate first, then deactivate
@@ -71,9 +79,11 @@ test.describe('User activate/deactivate', () => {
   });
 
   test('activate renter HD-CC-003 → row shows active state', async ({ page }) => {
-    await page.locator('#tab-btn-users').click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for user-list to be populated (avoids re-triggering renderUsers)
+    await page.waitForFunction(
+      () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
+      { timeout: 30_000 }
+    );
     const row = page.locator('#user-list table tr').filter({ hasText: 'HD-CC-003' }).first();
     await expect(row).toBeVisible({ timeout: 10_000 });
     // If already active, test passes without action
@@ -96,9 +106,11 @@ test.describe('User activate/deactivate', () => {
 
 test.describe('Generate invite', () => {
   test('fill invite form → invite URL is displayed', async ({ page }) => {
-    await page.locator('#tab-btn-users').click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for users tab to be populated before using invite form
+    await page.waitForFunction(
+      () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
+      { timeout: 30_000 }
+    );
     await page.locator('#cu-name').fill('Test');
     await page.locator('#cu-lastname').fill('Invitee');
     await page.locator('#cu-phone').fill('+49300000099');
@@ -120,8 +132,8 @@ test.describe('Generate invite', () => {
 test.describe('Spot assign/unassign', () => {
   test('assign free spot s8 to renter HD-CC-003 → spot shows occupied', async ({ page }) => {
     await page.locator('#tab-btn-spots').click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    // Wait for spot table to load without networkidle (renderUsers keeps connections open)
+    await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s8Row = page.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     await expect(s8Row).toBeVisible({ timeout: 10_000 });
     const assignSelect = s8Row.locator('select').first();
@@ -134,8 +146,7 @@ test.describe('Spot assign/unassign', () => {
 
   test('unassign s1 → spot becomes free', async ({ page }) => {
     await page.locator('#tab-btn-spots').click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s1Row = page.locator('#spot-list table tr').filter({ hasText: 'HD-AA-001' }).first();
     await expect(s1Row).toBeVisible({ timeout: 10_000 });
     const unassignBtn = s1Row.locator('button').filter({ hasText: /unassign/i }).first();
@@ -150,8 +161,7 @@ test.describe('Spot assign/unassign', () => {
 test.describe('Spot reserve/unreserve', () => {
   test('reserve free spot s4 → spot shows Reserved', async ({ page }) => {
     await page.locator('#tab-btn-spots').click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s4Row = page.locator('#spot-list table tr').filter({ hasText: /^4[^0-9]/ }).first();
     await expect(s4Row).toBeVisible({ timeout: 10_000 });
     const reserveBtn = s4Row.locator('button').filter({ hasText: /reserve/i }).first();
@@ -162,8 +172,7 @@ test.describe('Spot reserve/unreserve', () => {
 
   test('unreserve s3 → spot no longer shows Reserved', async ({ page }) => {
     await page.locator('#tab-btn-spots').click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s3Row = page.locator('#spot-list table tr').filter({ hasText: /Reserved/i }).first();
     await expect(s3Row).toBeVisible({ timeout: 10_000 });
     const unreserveBtn = s3Row.locator('button').filter({ hasText: /unreserve/i }).first();
