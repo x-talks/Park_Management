@@ -129,7 +129,7 @@ async function seed() {
       id: 'u-renter-c', username: 'HD-CC-003', authId: renterCAuthId,
       name: 'Carol', lastName: 'Renter', role: 'renter', active: false,
       licensePlate: 'HD-CC-003', phone: '+49-123-003', carModel: 'Audi A3', carColor: 'black',
-      address: 'Teststr. 3', assignedSpots: JSON.stringify(['s6']), pendingEdits: null,
+      address: 'Teststr. 3', assignedSpots: ['s6'], pendingEdits: null,
       registeredAt: '2025-01-01', terminationDate: null, passwordHash: null, lastPassword: null,
     },
   ];

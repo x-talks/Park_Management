@@ -130,18 +130,27 @@ test.describe('Generate invite', () => {
 // ── Spot assignment ────────────────────────────────────────────────────────────
 
 test.describe('Spot assign/unassign', () => {
-  test('assign free spot s8 to renter HD-CC-003 → spot shows occupied', async ({ page }) => {
+  test('assign free spot s8 to renter HD-BB-002 → spot shows occupied', async ({ page }) => {
     await page.locator('#tab-btn-spots').click();
     // Wait for spot table to load without networkidle (renderUsers keeps connections open)
     await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s8Row = page.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     await expect(s8Row).toBeVisible({ timeout: 10_000 });
-    const assignSelect = s8Row.locator('select').first();
-    await assignSelect.selectOption({ label: 'HD-CC-003' });
-    const assignBtn = s8Row.locator('button').filter({ hasText: /assign/i }).first();
+    // If s8 is already occupied, unassign first
+    const s8Unassign = s8Row.locator('button').filter({ hasText: /unassign/i });
+    if (await s8Unassign.count() > 0) {
+      await s8Unassign.first().click();
+      await page.waitForTimeout(2000);
+    }
+    // Bob (HD-BB-002) is an active renter — shown as "Bob (HD-BB-002)" in dropdown
+    const s8RowFresh = page.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
+    const assignSelect = s8RowFresh.locator('select').first();
+    await expect(assignSelect).toBeVisible({ timeout: 10_000 });
+    await assignSelect.selectOption({ label: 'Bob (HD-BB-002)' });
+    const assignBtn = s8RowFresh.locator('button').filter({ hasText: /assign/i }).first();
     await assignBtn.click();
     await page.waitForTimeout(2000);
-    await expect(page.locator('#spot-list table tr').filter({ hasText: 'HD-CC-003' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#spot-list table tr').filter({ hasText: 'HD-BB-002' })).toBeVisible({ timeout: 10_000 });
   });
 
   test('unassign s1 → spot becomes free', async ({ page }) => {

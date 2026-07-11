@@ -21,7 +21,7 @@ test.describe('Mark paid / revert', () => {
   test('mark s2 current month as paid → cell shows ✓', async ({ page }) => {
     const s2Row = page.locator('#payment-matrix table tr').filter({ hasText: 'Spot 2' }).first();
     await expect(s2Row).toBeVisible({ timeout: 10_000 });
-    const markBtn = s2Row.locator('button, .payment-cell-unpaid').first();
+    const markBtn = s2Row.locator('button').filter({ hasText: /mark paid/i }).first();
     await markBtn.click();
     await page.waitForTimeout(2000);
     await expect(s2Row).toContainText('✓');
@@ -31,22 +31,21 @@ test.describe('Mark paid / revert', () => {
     const s1Row = page.locator('#payment-matrix table tr').filter({ hasText: 'Spot 1' }).first();
     await expect(s1Row).toBeVisible({ timeout: 10_000 });
     // Ensure there is at least one paid cell on s1 (mark if not already paid)
-    const paidCellBefore = s1Row.locator('.payment-cell-paid').first();
-    const hasPaid = await paidCellBefore.count() > 0;
+    const hasPaid = await s1Row.locator('.payment-cell-paid').count() > 0;
     if (!hasPaid) {
       // Mark current month as paid first
-      const unpaidBtn = s1Row.locator('button, .payment-cell-unpaid').first();
+      const unpaidBtn = s1Row.locator('button').filter({ hasText: /mark paid/i }).first();
       await expect(unpaidBtn).toBeVisible({ timeout: 5_000 });
       await unpaidBtn.click();
       await page.waitForTimeout(2000);
     }
-    // Find and click a paid cell to revert it
-    const paidCell = s1Row.locator('.payment-cell-paid').first();
-    await expect(paidCell).toBeVisible({ timeout: 10_000 });
+    // Find and click the Revert button inside a paid cell
+    const revertBtn = s1Row.locator('.payment-cell-paid button').filter({ hasText: /revert/i }).first();
+    await expect(revertBtn).toBeVisible({ timeout: 10_000 });
     const paidCountBefore = await s1Row.locator('.payment-cell-paid').count();
-    await paidCell.click();
+    await revertBtn.click();
     await page.waitForTimeout(2000);
-    // After revert, paid count should be less than before OR the cell is gone
+    // After revert, paid count should be less than before
     const paidCountAfter = await s1Row.locator('.payment-cell-paid').count();
     expect(paidCountAfter).toBeLessThan(paidCountBefore);
   });
@@ -54,13 +53,14 @@ test.describe('Mark paid / revert', () => {
   test('mark paid persists after page reload', async ({ page }) => {
     const s2Row = page.locator('#payment-matrix table tr').filter({ hasText: 'Spot 2' }).first();
     await expect(s2Row).toBeVisible({ timeout: 10_000 });
-    const markBtn = s2Row.locator('button, .payment-cell-unpaid').first();
+    const markBtn = s2Row.locator('button').filter({ hasText: /mark paid/i }).first();
     await markBtn.click();
     await page.waitForTimeout(2000);
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    // After reload: wait for stat-cards then navigate to payments tab
+    await expect(page.locator('#stat-cards')).toBeVisible({ timeout: 20_000 });
     await page.locator('#tab-btn-payments').click();
-    await page.waitForLoadState('networkidle');
+    await expect(page.locator('#payment-matrix table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s2RowAfter = page.locator('#payment-matrix table tr').filter({ hasText: 'Spot 2' }).first();
     await expect(s2RowAfter).toContainText('✓', { timeout: 10_000 });
   });

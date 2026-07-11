@@ -52,8 +52,9 @@ test.describe('Info panel content', () => {
     await expect(page.locator('svg g[data-id="s2"]')).toHaveClass(/occupied/, { timeout: 20_000 });
     await page.locator('svg g[data-id="s2"]').click();
     await expect(page.locator('#info-panel')).toBeVisible({ timeout: 10_000 });
-    // Panel shows "Spot 2  ·  HD-BB-002" for renter b
-    await expect(page.locator('#info-panel')).toContainText(/HD-BB-002|renter/i, { timeout: 15_000 });
+    // Renters can only see their own user data via RLS — other renters' plates are not shown.
+    // The panel shows "Spot 2: Occupied" or a generic occupied message.
+    await expect(page.locator('#info-panel')).toContainText(/Spot 2|occupied/i, { timeout: 10_000 });
   });
 
   test('clicking free spot shows "Free" in info panel', async ({ page }) => {

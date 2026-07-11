@@ -40,7 +40,7 @@ test.describe('Multi-user sync (L6)', () => {
     await renterCtx.close();
   });
 
-  test('admin assigns spot s8 to HD-CC-003 → renter sees occupied s8 on map after reload', async ({ browser }) => {
+  test('admin assigns spot s8 to HD-BB-002 → renter sees occupied s8 on map after reload', async ({ browser }) => {
     const adminCtx  = await browser.newContext();
     const renterCtx = await browser.newContext();
     const adminPage  = await adminCtx.newPage();
@@ -66,11 +66,11 @@ test.describe('Multi-user sync (L6)', () => {
       await adminPage.waitForTimeout(2000);
     }
 
-    // Now assign s8 to HD-CC-003
+    // Now assign s8 to HD-BB-002 (Bob — active renter, shown as "Bob (HD-BB-002)" in dropdown)
     const s8RowFresh = adminPage.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     const assignSelect = s8RowFresh.locator('select').first();
     await expect(assignSelect).toBeVisible({ timeout: 10_000 });
-    await assignSelect.selectOption({ label: 'HD-CC-003' });
+    await assignSelect.selectOption({ label: 'Bob (HD-BB-002)' });
     await s8RowFresh.locator('button').filter({ hasText: /assign/i }).first().click();
     await adminPage.waitForTimeout(2000);
 
