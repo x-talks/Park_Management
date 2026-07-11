@@ -21,7 +21,8 @@ test.describe('Mark paid / revert', () => {
   test('mark s2 current month as paid → cell shows ✓', async ({ page }) => {
     const s2Row = page.locator('#payment-matrix table tr').filter({ hasText: 'Spot 2' }).first();
     await expect(s2Row).toBeVisible({ timeout: 10_000 });
-    const markBtn = s2Row.locator('button').filter({ hasText: /mark paid/i }).first();
+    // iconBtn uses title="Mark paid", not textContent
+    const markBtn = s2Row.locator('button[title="Mark paid"]').first();
     await markBtn.click();
     await page.waitForTimeout(2000);
     await expect(s2Row).toContainText('✓');
@@ -34,16 +35,19 @@ test.describe('Mark paid / revert', () => {
     const hasPaid = await s1Row.locator('.payment-cell-paid').count() > 0;
     if (!hasPaid) {
       // Mark current month as paid first
-      const unpaidBtn = s1Row.locator('button').filter({ hasText: /mark paid/i }).first();
+      const unpaidBtn = s1Row.locator('button[title="Mark paid"]').first();
       await expect(unpaidBtn).toBeVisible({ timeout: 5_000 });
       await unpaidBtn.click();
       await page.waitForTimeout(2000);
     }
-    // Find and click the Revert button inside a paid cell
-    const revertBtn = s1Row.locator('.payment-cell-paid button').filter({ hasText: /revert/i }).first();
+    // Find and click the Revert button inside a paid cell (iconBtn title="Revert")
+    // Revert triggers modalConfirm
+    const revertBtn = s1Row.locator('.payment-cell-paid button[title="Revert"]').first();
     await expect(revertBtn).toBeVisible({ timeout: 10_000 });
     const paidCountBefore = await s1Row.locator('.payment-cell-paid').count();
     await revertBtn.click();
+    // Confirm the modal dialog
+    await page.locator('#pm-modal-confirm').click();
     await page.waitForTimeout(2000);
     // After revert, paid count should be less than before
     const paidCountAfter = await s1Row.locator('.payment-cell-paid').count();
@@ -53,7 +57,8 @@ test.describe('Mark paid / revert', () => {
   test('mark paid persists after page reload', async ({ page }) => {
     const s2Row = page.locator('#payment-matrix table tr').filter({ hasText: 'Spot 2' }).first();
     await expect(s2Row).toBeVisible({ timeout: 10_000 });
-    const markBtn = s2Row.locator('button').filter({ hasText: /mark paid/i }).first();
+    // iconBtn uses title="Mark paid"
+    const markBtn = s2Row.locator('button[title="Mark paid"]').first();
     await markBtn.click();
     await page.waitForTimeout(2000);
     await page.reload();

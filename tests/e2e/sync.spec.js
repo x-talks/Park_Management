@@ -27,7 +27,8 @@ test.describe('Multi-user sync (L6)', () => {
     await expect(adminPage.locator('#payment-matrix table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s2Row = adminPage.locator('#payment-matrix table tr').filter({ hasText: 'Spot 2' }).first();
     await expect(s2Row).toBeVisible({ timeout: 10_000 });
-    const markBtn = s2Row.locator('button, .payment-cell-unpaid').first();
+    // iconBtn uses title="Mark paid", not textContent
+    const markBtn = s2Row.locator('button[title="Mark paid"]').first();
     await markBtn.click();
     await adminPage.waitForTimeout(2000);
 
@@ -59,10 +60,11 @@ test.describe('Multi-user sync (L6)', () => {
     const s8Row = adminPage.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     await expect(s8Row).toBeVisible({ timeout: 10_000 });
 
-    // If s8 is already assigned (from a prior test), unassign it first
-    const unassignBtn = s8Row.locator('button').filter({ hasText: /unassign/i });
+    // If s8 is already assigned (from a prior test), unassign it first (Unassign triggers modalConfirm)
+    const unassignBtn = s8Row.locator('button[title="Unassign"]');
     if (await unassignBtn.count() > 0) {
       await unassignBtn.first().click();
+      await adminPage.locator('#pm-modal-confirm').click();
       await adminPage.waitForTimeout(2000);
     }
 
@@ -71,7 +73,8 @@ test.describe('Multi-user sync (L6)', () => {
     const assignSelect = s8RowFresh.locator('select').first();
     await expect(assignSelect).toBeVisible({ timeout: 10_000 });
     await assignSelect.selectOption({ label: 'Bob (HD-BB-002)' });
-    await s8RowFresh.locator('button').filter({ hasText: /assign/i }).first().click();
+    // iconBtn uses title="Assign"
+    await s8RowFresh.locator('button[title="Assign"]').first().click();
     await adminPage.waitForTimeout(2000);
 
     await renterPage.waitForURL(/parking\.html/, { timeout: 30_000 });
