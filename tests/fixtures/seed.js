@@ -224,11 +224,20 @@ async function seed() {
   if (incErr) throw new Error(`incidents upsert: ${incErr.message}`);
   console.log('  ✓ incidents');
 
-  // Pending registration for spot s4 (matching invite inv-valid which also targets s4)
+  // Pending registration — uses its own dedicated invite (inv-dd-004 / PENDING-REG-TOKEN)
+  // targeting s10, which is free and untouched by all other tests.
+  // inv-valid (VALID-TOKEN-FOR-E2E / s4) is preserved for invite.spec.js tests 50-54.
+  await supa.from('invites').upsert([{
+    id: 'inv-dd-004', token: 'PENDING-REG-TOKEN',
+    spotId: 's10', expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    usedBy: null, name: 'Dave', lastName: 'Pending',
+    phone: '+49-000-006', address: 'Teststr. 6',
+    licensePlate: null, carModel: null, carColor: null,
+  }]);
   const { error: prErr } = await supa.from('pending_registrations').upsert([
     {
-      id: 'pr-001', token: 'VALID-TOKEN-FOR-E2E',
-      spotId: 's4', name: 'Dave', lastName: 'Pending',
+      id: 'pr-001', token: 'PENDING-REG-TOKEN',
+      spotId: 's10', name: 'Dave', lastName: 'Pending',
       phone: '+49-000-006', address: 'Teststr. 6',
       licensePlate: 'HD-DD-004', carModel: 'Toyota Yaris', carColor: 'white',
       passwordHash: 'TestPass123!',

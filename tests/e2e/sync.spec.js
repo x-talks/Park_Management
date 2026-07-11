@@ -7,6 +7,7 @@ const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 
 test.describe('Multi-user sync (L6)', () => {
   test('admin marks s2 paid → renter HD-BB-002 sees updated payment status after reload', async ({ browser }) => {
+    test.setTimeout(120_000); // payment matrix load + two-browser sync can exceed 60s default
     const adminCtx  = await browser.newContext();
     const renterCtx = await browser.newContext();
     const adminPage  = await adminCtx.newPage();

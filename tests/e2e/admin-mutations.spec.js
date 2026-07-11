@@ -190,12 +190,12 @@ test.describe('Spot assign/unassign', () => {
 // ── Spot reserve/unreserve ─────────────────────────────────────────────────────
 
 test.describe('Spot reserve/unreserve', () => {
-  test('reserve free spot s4 → spot shows Reserved', async ({ page }) => {
+  test('reserve free spot s5 → spot shows Reserved', async ({ page }) => {
     await page.locator('#tab-btn-spots').click();
     await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 30_000 });
-    const s4Row = page.locator('#spot-list table tr').filter({ hasText: /^4[^0-9]/ }).first();
-    await expect(s4Row).toBeVisible({ timeout: 10_000 });
-    const reserveBtn = s4Row.locator('button[title="Mark reserved"]').first();
+    const s5Row = page.locator('#spot-list table tr').filter({ hasText: /^5[^0-9]/ }).first();
+    await expect(s5Row).toBeVisible({ timeout: 10_000 });
+    const reserveBtn = s5Row.locator('button[title="Mark reserved"]').first();
     await reserveBtn.click();
     await page.waitForTimeout(2000);
     await expect(page.locator('#spot-list table tr').filter({ hasText: /reserved/i }).first()).toBeVisible({ timeout: 10_000 });
@@ -218,15 +218,14 @@ test.describe('Spot reserve/unreserve', () => {
     await expect(s3RowAfter).not.toContainText(/reserved/i);
 
     // ── Restore state: re-reserve s3 so later tests (28, 66) work ──
-    // setSpotReserved(false) does NOT trigger modalConfirm, so no modal needed for re-reserve.
     try {
       const s3FreshRow = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
       const reReserveBtn = s3FreshRow.locator('button[title="Mark reserved"]').first();
       await expect(reReserveBtn).toBeVisible({ timeout: 10_000 });
       await reReserveBtn.click();
-      await page.waitForTimeout(2000);
+      // Wait until the DOM confirms s3 is reserved (not just a timeout)
+      await expect(s3FreshRow).toContainText(/reserved/i, { timeout: 10_000 });
     } catch (e) {
-      // Restoration is best-effort cleanup; log but do not fail the test
       console.warn('State restore for s3 failed:', e.message);
     }
   });

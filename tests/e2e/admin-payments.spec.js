@@ -17,10 +17,16 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('Payments table', () => {
   test('3 rows — one per assigned spot (s1, s2, s6)', async ({ page }) => {
-    // Payments rendered in #payment-matrix — 3 occupied spots: s1, s2, s6
+    // Payments rendered in #payment-matrix — at least 3 occupied spots: s1, s2, s6
+    // (a pending reg approval in admin-mutations may add a 4th spot)
     const rows = page.locator('#payment-matrix table tr');
     await expect(rows.nth(1)).toBeVisible({ timeout: 10_000 });
-    await expect(rows).toHaveCount(4); // 1 header + 3 data rows
+    const count = await rows.count();
+    expect(count).toBeGreaterThanOrEqual(4); // 1 header + at least 3 data rows
+    // Verify the 3 seeded spots are present (use exact cell text to avoid "Spot 1" matching "Spot 10")
+    await expect(page.locator('#payment-matrix td').filter({ hasText: /^Spot 1$/ })).toHaveCount(1);
+    await expect(page.locator('#payment-matrix td').filter({ hasText: /^Spot 2$/ })).toHaveCount(1);
+    await expect(page.locator('#payment-matrix td').filter({ hasText: /^Spot 6$/ })).toHaveCount(1);
   });
 
   test('s1 row has a paid indicator (✓)', async ({ page }) => {
