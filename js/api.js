@@ -12,6 +12,31 @@
 //   data/invites.json  → invites
 //   data/payments.json → payments
 
+// ── Resilient fetch ─────────────────────────────────────────────────────────
+// Wraps fetch with an AbortController timeout and one retry on transport
+// failure/timeout. Does NOT retry on HTTP error responses (4xx/5xx are returned
+// to the caller as-is). Fixes indefinite hangs when the Worker is cold.
+async function fetchWithTimeout(url, options = {}, { timeoutMs = 10_000, retries = 1 } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (e) {
+      clearTimeout(timer);
+      lastErr = e;
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 500));
+        continue;
+      }
+    }
+  }
+  throw new Error('Network request failed or timed out: ' + (lastErr && lastErr.message ? lastErr.message : 'unknown'));
+}
+
 function _table(path) {
   const map = {
     'data/users.json':            'users',
@@ -77,13 +102,11 @@ function scheduleRefresh(accessToken) {
   if (token) scheduleRefresh(token);
 })();
 
-// Attempt to get a fresh access token using the stored refresh token.
-// Returns true if successful, false if no refresh token or refresh failed.
 async function _tryRefresh() {
   const refreshToken = localStorage.getItem('pm_refresh_token');
   if (!refreshToken) return false;
   try {
-    const res = await fetch(`${CONFIG.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+    const res = await fetchWithTimeout(`${CONFIG.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
       method: 'POST',
       headers: {
         'apikey': CONFIG.supabaseKey,
@@ -206,7 +229,7 @@ function _handleAuthFailure() {
 
 // Send a request to the Cloudflare Worker (requires valid JWT)
 async function workerRequest(method, path, body) {
-  const _doRequest = () => fetch(CONFIG.workerUrl + path, {
+  const _doRequest = () => fetchWithTimeout(CONFIG.workerUrl + path, {
     method,
     headers: {
       'Authorization': 'Bearer ' + (_accessToken() || ''),
