@@ -1074,6 +1074,12 @@ tr:hover td { background: var(--bg-card-hover); }
     display: none;
   }
 
+  /* Map card — remove horizontal padding so map fills full width */
+  .card:has(#parking-svg) {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
   /* Show bottom nav */
   .bottom-nav {
     display: flex;
@@ -1149,7 +1155,7 @@ tr:hover td { background: var(--bg-card-hover); }
 
   /* Push page content up so it doesn't hide behind the fixed bar */
   .page-wrap {
-    padding-bottom: calc(52px + env(safe-area-inset-bottom) + 1rem);
+    padding-bottom: calc(52px + 48px + env(safe-area-inset-bottom) + 1rem);
   }
 }
 
