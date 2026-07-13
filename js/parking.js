@@ -205,17 +205,13 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
 
     if (currentUser) {
       g.addEventListener('click', () => {
-        const panel = document.getElementById('info-panel');
         const alreadySelected = svg.querySelector('.spot.selected') === g;
         svg.querySelectorAll('.spot.selected').forEach(el => el.classList.remove('selected'));
         if (alreadySelected) {
-          panel.innerHTML = '';
-          panel.classList.remove('has-content');
-          panel.setAttribute('data-i18n', 'map.info.default');
-          panel.textContent = typeof t === 'function' ? t('map.info.default') : 'Tap a spot to see details.';
+          closeBottomSheet();
         } else {
           g.classList.add('selected');
-          showSpotInfo(spotData, label, users, currentUser, pendingSpotIds);
+          openBottomSheet(spotData, label, users, currentUser);
         }
       });
     }
@@ -315,17 +311,13 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
 
     if (currentUser) {
       g.addEventListener('click', () => {
-        const panel = document.getElementById('info-panel');
         const alreadySelected = svg.querySelector('.spot.selected') === g;
         svg.querySelectorAll('.spot.selected').forEach(el => el.classList.remove('selected'));
         if (alreadySelected) {
-          panel.innerHTML = '';
-          panel.classList.remove('has-content');
-          panel.setAttribute('data-i18n', 'map.info.default');
-          panel.textContent = typeof t === 'function' ? t('map.info.default') : 'Tap a spot to see details.';
+          closeBottomSheet();
         } else {
           g.classList.add('selected');
-          showSpotInfo(spotData, label, users, currentUser, pendingSpotIds);
+          openBottomSheet(spotData, label, users, currentUser);
         }
       });
     }
@@ -406,17 +398,13 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
 
     if (currentUser) {
       g.addEventListener('click', () => {
-        const panel = document.getElementById('info-panel');
         const alreadySelected = svg.querySelector('.spot.selected') === g;
         svg.querySelectorAll('.spot.selected').forEach(el => el.classList.remove('selected'));
         if (alreadySelected) {
-          panel.innerHTML = '';
-          panel.classList.remove('has-content');
-          panel.setAttribute('data-i18n', 'map.info.default');
-          panel.textContent = typeof t === 'function' ? t('map.info.default') : 'Tap a spot to see details.';
+          closeBottomSheet();
         } else {
           g.classList.add('selected');
-          showSpotInfo(spotData, label, users, currentUser, pendingSpotIds);
+          openBottomSheet(spotData, label, users, currentUser);
         }
       });
     }
@@ -486,6 +474,125 @@ function showSpotInfo(spotData, label, users, currentUser, pendingSpotIds) {
       panel.appendChild(document.createTextNode(line));
     }
   });
+}
+
+function openBottomSheet(spotData, label, users, currentUser) {
+  const sheet = document.getElementById('spot-sheet');
+  const backdrop = document.getElementById('sheet-backdrop');
+  const content = document.getElementById('sheet-content');
+  if (!sheet || !content) return;
+
+  // Keep #info-panel silently updated for E2E compat
+  const panel = document.getElementById('info-panel');
+  if (panel) { panel.innerHTML = ''; panel.classList.add('has-content'); }
+
+  const renter = spotData.assignedUserId
+    ? users.find(u => u.id === spotData.assignedUserId)
+    : null;
+
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'master';
+  const isMySpot = renter && renter.id === currentUser.id;
+
+  // Status
+  let statusClass = 'free', statusText = 'Free';
+  if (spotData.reserved) { statusClass = 'reserved'; statusText = 'Reserved'; }
+  else if (spotData.state === 'occupied') { statusClass = 'occupied'; statusText = 'Occupied'; }
+
+  // Title line
+  const titleEl = document.createElement('div');
+  titleEl.className = 'sheet-title';
+  titleEl.innerHTML = `Spot ${label}` +
+    (isMySpot ? ' <span style="font-size:0.75rem;color:var(--accent)">★ Your spot</span>' : '') +
+    `<span class="sheet-status ${statusClass}">${statusText}</span>`;
+
+  // Meta line
+  const metaEl = document.createElement('div');
+  metaEl.className = 'sheet-meta';
+  if (renter) {
+    const name = isAdmin
+      ? `${renter.name || ''} ${renter.lastName || ''}`.trim() || renter.username
+      : (isMySpot ? 'Assigned to you' : 'Occupied');
+    const plate = (renter.licensePlate || renter.username || '').toUpperCase();
+    metaEl.textContent = `${name} · ${plate}`;
+  } else if (spotData.reserved) {
+    metaEl.textContent = 'External reservation — not available';
+  } else {
+    metaEl.textContent = 'No one assigned';
+  }
+
+  // Actions
+  const actionsEl = document.createElement('div');
+  actionsEl.className = 'sheet-actions';
+
+  // Reserve — shown to resident if spot is free and they have no assignment yet
+  const hasOwnSpot = typeof _users !== 'undefined' && _users
+    ? (_users.find(u => u.id === currentUser.id)?.assignedSpots?.length > 0)
+    : false;
+  if (!isAdmin && spotData.state === 'free' && !spotData.reserved && !hasOwnSpot) {
+    const btn = document.createElement('button');
+    btn.className = 'sheet-btn primary';
+    btn.textContent = 'Reserve';
+    btn.onclick = () => { closeBottomSheet(); toast('Reservation flow coming soon', 'info'); };
+    actionsEl.appendChild(btn);
+  }
+
+  // Pay — shown if user is assigned to this spot
+  if (isMySpot || isAdmin) {
+    const btn = document.createElement('button');
+    btn.className = 'sheet-btn secondary';
+    btn.textContent = 'Pay';
+    btn.onclick = () => { closeBottomSheet(); document.getElementById('my-payments-section')?.scrollIntoView({ behavior: 'smooth' }); };
+    actionsEl.appendChild(btn);
+  }
+
+  // Report incident — always shown
+  const reportBtn = document.createElement('button');
+  reportBtn.className = 'sheet-btn warn';
+  reportBtn.textContent = '⚠ Report';
+  reportBtn.onclick = () => { closeBottomSheet(); window.location.href = `incident.html?spot=${spotData.id}`; };
+  actionsEl.appendChild(reportBtn);
+
+  // Admin-only: Release
+  if (isAdmin && spotData.state === 'occupied' && spotData.assignedUserId) {
+    const btn = document.createElement('button');
+    btn.className = 'sheet-btn danger';
+    btn.textContent = 'Release';
+    btn.onclick = async () => {
+      try {
+        await unassignSpot(spotData.id);
+        toast('Spot released', 'success');
+        closeBottomSheet();
+        refresh();
+      } catch (err) { toast(err.message, 'error'); }
+    };
+    actionsEl.appendChild(btn);
+  }
+
+  // Admin-only: Assign
+  if (isAdmin && !spotData.assignedUserId && !spotData.reserved) {
+    const btn = document.createElement('button');
+    btn.className = 'sheet-btn admin';
+    btn.textContent = 'Assign';
+    btn.onclick = () => { closeBottomSheet(); typeof showAssignModal === 'function' && showAssignModal(spotData.id); };
+    actionsEl.appendChild(btn);
+  }
+
+  content.innerHTML = '';
+  content.appendChild(titleEl);
+  content.appendChild(metaEl);
+  content.appendChild(actionsEl);
+
+  sheet.classList.add('open');
+  if (backdrop) backdrop.classList.add('open');
+}
+
+function closeBottomSheet() {
+  const sheet = document.getElementById('spot-sheet');
+  const backdrop = document.getElementById('sheet-backdrop');
+  if (sheet) sheet.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
+  // Deselect any selected spot
+  document.querySelectorAll('#parking-svg .spot.selected').forEach(el => el.classList.remove('selected'));
 }
 
 async function initParking(highlightSpotId) {
