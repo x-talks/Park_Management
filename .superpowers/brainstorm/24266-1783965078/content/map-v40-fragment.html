@@ -1,0 +1,278 @@
+<h2>Parking Map — v40 · uniform span=67, cumulative upshift</h2>
+<p class="subtitle">All spots parallel (span=67 fixed). Each spot shifts up by rank×2px from anchor 11/1. S20/10 = 20px higher. v38 is fallback.</p>
+
+<div style="max-width:420px;margin:0 auto;background:#161b22;border:1px solid #30363d;border-radius:16px;padding:20px">
+
+  <svg viewBox="-60 -20 380 540" width="100%" style="display:block;border-radius:10px;background:#0a0e14;font-family:monospace">
+    <defs>
+      <linearGradient id="gFree" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#15803d"/></linearGradient>
+      <linearGradient id="gFreeS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#052e16"/><stop offset="100%" stop-color="#041a0c"/></linearGradient>
+      <linearGradient id="gOcc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>
+      <linearGradient id="gOccS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3b0a0a"/><stop offset="100%" stop-color="#250707"/></linearGradient>
+      <linearGradient id="gRes" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9ca3af"/><stop offset="100%" stop-color="#4b5563"/></linearGradient>
+      <linearGradient id="gResS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1f2937"/><stop offset="100%" stop-color="#111827"/></linearGradient>
+      <linearGradient id="gMine" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c4b5fd"/><stop offset="100%" stop-color="#4f46e5"/></linearGradient>
+      <linearGradient id="gMineS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2e1065"/><stop offset="100%" stop-color="#1e0a47"/></linearGradient>
+      <linearGradient id="gPend" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#b45309"/></linearGradient>
+      <linearGradient id="gPendS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#451a03"/><stop offset="100%" stop-color="#2d1102"/></linearGradient>
+      <linearGradient id="gLane" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#131c2e"/><stop offset="50%" stop-color="#0f172a"/><stop offset="100%" stop-color="#131c2e"/></linearGradient>
+      <filter id="myGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="5" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- ═══ DENSE GRID ═══ -->
+    <line x1="0"   y1="0" x2="0"   y2="510" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+    <line x1="25"  y1="0" x2="25"  y2="510" stroke="rgba(255,200,100,0.20)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="50"  y1="0" x2="50"  y2="510" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <line x1="75"  y1="0" x2="75"  y2="510" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="100" y1="0" x2="100" y2="510" stroke="rgba(96,165,250,0.25)"  stroke-width="0.75"/>
+    <line x1="125" y1="0" x2="125" y2="510" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="150" y1="0" x2="150" y2="510" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+    <line x1="175" y1="0" x2="175" y2="510" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="200" y1="0" x2="200" y2="510" stroke="rgba(96,165,250,0.25)"  stroke-width="0.75"/>
+    <line x1="225" y1="0" x2="225" y2="510" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="250" y1="0" x2="250" y2="510" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <line x1="275" y1="0" x2="275" y2="510" stroke="rgba(255,200,100,0.20)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="300" y1="0" x2="300" y2="510" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+
+    <line x1="0" y1="0"   x2="300" y2="0"   stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+    <line x1="0" y1="25"  x2="300" y2="25"  stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="0" y1="50"  x2="300" y2="50"  stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <line x1="0" y1="75"  x2="300" y2="75"  stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="0" y1="100" x2="300" y2="100" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <line x1="0" y1="125" x2="300" y2="125" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="0" y1="150" x2="300" y2="150" stroke="rgba(74,222,128,0.45)"  stroke-width="1"/>
+    <line x1="0" y1="175" x2="300" y2="175" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="0" y1="200" x2="300" y2="200" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <line x1="0" y1="225" x2="300" y2="225" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="0" y1="250" x2="300" y2="250" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <line x1="0" y1="275" x2="300" y2="275" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="0" y1="300" x2="300" y2="300" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <line x1="0" y1="325" x2="300" y2="325" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="0" y1="350" x2="300" y2="350" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <line x1="0" y1="375" x2="300" y2="375" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="0" y1="400" x2="300" y2="400" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <line x1="0" y1="423" x2="300" y2="423" stroke="rgba(251,191,36,0.55)"  stroke-width="1.5"/>
+    <line x1="0" y1="450" x2="300" y2="450" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+    <line x1="0" y1="475" x2="300" y2="475" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2,3"/>
+    <line x1="0" y1="500" x2="300" y2="500" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+
+    <!-- X labels -->
+    <text x="0"   y="-7" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="6">-150</text>
+    <text x="25"  y="-7" text-anchor="middle" fill="rgba(255,200,100,0.8)"  font-size="6.5" font-weight="bold">-125</text>
+    <text x="50"  y="-7" text-anchor="middle" fill="rgba(255,255,255,0.5)"  font-size="6">-100</text>
+    <text x="75"  y="-7" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="6">-75</text>
+    <text x="100" y="-7" text-anchor="middle" fill="rgba(96,165,250,0.9)"   font-size="6.5" font-weight="bold">-50</text>
+    <text x="125" y="-7" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="6">-25</text>
+    <text x="150" y="-10" text-anchor="middle" fill="rgba(255,255,255,1)"   font-size="8" font-weight="bold">0</text>
+    <text x="175" y="-7" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="6">+25</text>
+    <text x="200" y="-7" text-anchor="middle" fill="rgba(96,165,250,0.9)"   font-size="6.5" font-weight="bold">+50</text>
+    <text x="225" y="-7" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="6">+75</text>
+    <text x="250" y="-7" text-anchor="middle" fill="rgba(255,255,255,0.5)"  font-size="6">+100</text>
+    <text x="275" y="-7" text-anchor="middle" fill="rgba(255,200,100,0.8)"  font-size="6.5" font-weight="bold">+125</text>
+    <text x="300" y="-7" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="6">+150</text>
+
+    <!-- Y labels -->
+    <text x="-5" y="4"   text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">0</text>
+    <text x="-5" y="29"  text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">25</text>
+    <text x="-5" y="54"  text-anchor="end" fill="rgba(255,255,255,0.4)"  font-size="6">50</text>
+    <text x="-5" y="79"  text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">75</text>
+    <text x="-5" y="104" text-anchor="end" fill="rgba(255,255,255,0.4)"  font-size="6">100</text>
+    <text x="-5" y="129" text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">125</text>
+    <text x="-5" y="154" text-anchor="end" fill="rgba(74,222,128,0.95)"  font-size="6.5" font-weight="bold">150</text>
+    <text x="-5" y="179" text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">175</text>
+    <text x="-5" y="204" text-anchor="end" fill="rgba(255,255,255,0.4)"  font-size="6">200</text>
+    <text x="-5" y="229" text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">225</text>
+    <text x="-5" y="254" text-anchor="end" fill="rgba(255,255,255,0.4)"  font-size="6">250</text>
+    <text x="-5" y="279" text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">275</text>
+    <text x="-5" y="304" text-anchor="end" fill="rgba(255,255,255,0.4)"  font-size="6">300</text>
+    <text x="-5" y="329" text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">325</text>
+    <text x="-5" y="354" text-anchor="end" fill="rgba(255,255,255,0.4)"  font-size="6">350</text>
+    <text x="-5" y="379" text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">375</text>
+    <text x="-5" y="404" text-anchor="end" fill="rgba(255,255,255,0.4)"  font-size="6">400</text>
+    <text x="-5" y="427" text-anchor="end" fill="rgba(251,191,36,0.95)"  font-size="6.5" font-weight="bold">423</text>
+    <text x="-5" y="454" text-anchor="end" fill="rgba(255,255,255,0.4)"  font-size="6">450</text>
+    <text x="-5" y="479" text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">475</text>
+    <text x="-5" y="504" text-anchor="end" fill="rgba(255,255,255,0.3)"  font-size="6">500</text>
+
+    <!-- ═══ CARD + LANE ═══ -->
+    <rect x="8" y="22" width="284" height="480" rx="12" fill="#0d1117" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+    <rect x="100" y="30" width="100" height="460" rx="5" fill="url(#gLane)" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    <line x1="150" y1="50" x2="150" y2="483" stroke="rgba(255,255,255,0.11)" stroke-width="1.5" stroke-dasharray="13,9"/>
+    <text x="150" y="37" text-anchor="middle" fill="rgba(255,255,255,0.28)" font-size="6.5" font-weight="700" letter-spacing="2" font-family="system-ui">ENTRANCE</text>
+    <polygon points="144,44 156,44 150,56" fill="rgba(255,255,255,0.35)"/>
+
+    <!-- ═══ LEFT SPOTS 20..11 ═══ -->
+    <!-- span=67 fixed (parallel). shift = rank×2 upward. rank 1=spot11, rank 10=spot20 -->
+    <!-- y0_eff = y0 - shift. TL(25,y0_eff) TR(95,y0_eff-67) BR(95,y0_eff-40) BL(25,y0_eff+27) shadow+5, text y=y0_eff-20 -->
+
+    <!-- 20 y0=150 shift=20 y0_eff=130: TL=130 TR=63 BR=90 BL=157 · text y=110 -->
+    <polygon points="25,135 95,68 95,95 25,162" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="25,130 95,63 95,90 25,157" fill="url(#gFree)"/>
+    <text x="60" y="110" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">20</text>
+
+    <!-- 19 y0=184 shift=18 y0_eff=166: TL=166 TR=99 BR=126 BL=193 · text y=146 -->
+    <polygon points="25,171 95,104 95,131 25,198" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="25,166 95,99 95,126 25,193" fill="url(#gFree)"/>
+    <text x="60" y="146" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">19</text>
+
+    <!-- 18 y0=218 shift=16 y0_eff=202: TL=202 TR=135 BR=162 BL=229 · text y=182 -->
+    <polygon points="25,207 95,140 95,167 25,234" fill="url(#gOccS)" opacity="0.85"/>
+    <polygon points="25,202 95,135 95,162 25,229" fill="url(#gOcc)"/>
+    <text x="60" y="182" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">18</text>
+
+    <!-- 17 y0=252 shift=14 y0_eff=238: TL=238 TR=171 BR=198 BL=265 · text y=218 -->
+    <polygon points="25,243 95,176 95,203 25,270" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="25,238 95,171 95,198 25,265" fill="url(#gFree)"/>
+    <text x="60" y="218" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">17</text>
+
+    <!-- 16 y0=286 shift=12 y0_eff=274: TL=274 TR=207 BR=234 BL=301 · text y=254 -->
+    <polygon points="25,279 95,212 95,239 25,306" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="25,274 95,207 95,234 25,301" fill="url(#gFree)"/>
+    <text x="60" y="254" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">16</text>
+
+    <!-- 15 y0=320 shift=10 y0_eff=310: TL=310 TR=243 BR=270 BL=337 · text y=290 -->
+    <polygon points="25,315 95,248 95,275 25,342" fill="url(#gResS)" opacity="0.85"/>
+    <polygon points="25,310 95,243 95,270 25,337" fill="url(#gRes)"/>
+    <text x="60" y="290" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">15</text>
+
+    <!-- 14 y0=354 shift=8 y0_eff=346: TL=346 TR=279 BR=306 BL=373 · text y=326 -->
+    <polygon points="25,351 95,284 95,311 25,378" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="25,346 95,279 95,306 25,373" fill="url(#gFree)"/>
+    <text x="60" y="326" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">14</text>
+
+    <!-- 13 y0=388 shift=6 y0_eff=382: TL=382 TR=315 BR=342 BL=409 · text y=362 -->
+    <polygon points="25,387 95,320 95,347 25,414" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="25,382 95,315 95,342 25,409" fill="url(#gFree)"/>
+    <text x="60" y="362" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">13</text>
+
+    <!-- 12 y0=422 shift=4 y0_eff=418: TL=418 TR=351 BR=378 BL=445 · text y=398 -->
+    <polygon points="25,423 95,356 95,383 25,450" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="25,418 95,351 95,378 25,445" fill="url(#gFree)"/>
+    <text x="60" y="398" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">12</text>
+
+    <!-- 11 y0=456 shift=2 y0_eff=454: TL=454 TR=387 BR=414 BL=481 · text y=434 -->
+    <polygon points="25,459 95,392 95,419 25,486" fill="url(#gPendS)" opacity="0.85"/>
+    <polygon points="25,454 95,387 95,414 25,481" fill="url(#gPend)"/>
+    <text x="60" y="434" text-anchor="middle" dominant-baseline="middle" fill="#000" font-size="9" font-weight="800" font-family="system-ui">11</text>
+
+    <!-- ═══ RIGHT SPOTS 10..1 ═══ -->
+
+    <!-- 10 y0=150 shift=20 y0_eff=130: TL=63 BL=90 BR=157 TR=130 · text y=110 -->
+    <polygon points="205,68 275,135 275,162 205,95" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="205,63 275,130 275,157 205,90" fill="url(#gFree)"/>
+    <text x="240" y="110" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">10</text>
+
+    <!-- 9 y0=184 shift=18 y0_eff=166: TL=99 BL=126 BR=193 TR=166 · text y=146 -->
+    <polygon points="205,104 275,171 275,198 205,131" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="205,99 275,166 275,193 205,126" fill="url(#gFree)"/>
+    <text x="240" y="146" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">9</text>
+
+    <!-- 8 y0=218 shift=16 y0_eff=202: TL=135 BL=162 BR=229 TR=202 · text y=182 -->
+    <polygon points="205,140 275,207 275,234 205,167" fill="url(#gOccS)" opacity="0.85"/>
+    <polygon points="205,135 275,202 275,229 205,162" fill="url(#gFree)"/>
+    <text x="240" y="182" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">8</text>
+
+    <!-- 7 y0=252 shift=14 y0_eff=238: TL=171 BL=198 BR=265 TR=238 · text y=218 -->
+    <polygon points="205,176 275,243 275,270 205,203" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="205,171 275,238 275,265 205,198" fill="url(#gFree)"/>
+    <text x="240" y="218" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">7</text>
+
+    <!-- 6 y0=286 shift=12 y0_eff=274: TL=207 BL=234 BR=301 TR=274 · text y=254 -->
+    <polygon points="205,212 275,279 275,306 205,239" fill="url(#gOccS)" opacity="0.85"/>
+    <polygon points="205,207 275,274 275,301 205,234" fill="url(#gOcc)"/>
+    <text x="240" y="254" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">6</text>
+
+    <!-- 5 y0=320 shift=10 y0_eff=310: TL=243 BL=270 BR=337 TR=310 · text y=290 -->
+    <polygon points="205,248 275,315 275,342 205,275" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="205,243 275,310 275,337 205,270" fill="url(#gFree)"/>
+    <text x="240" y="290" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">5</text>
+
+    <!-- 4 y0=354 shift=8 y0_eff=346: TL=279 BL=306 BR=373 TR=346 · text y=326 -->
+    <polygon points="205,284 275,351 275,378 205,311" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="205,279 275,346 275,373 205,306" fill="url(#gFree)"/>
+    <text x="240" y="326" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">4</text>
+
+    <!-- 3 y0=388 shift=6 y0_eff=382: TL=315 BL=342 BR=409 TR=382 · text y=362 -->
+    <polygon points="205,320 275,387 275,414 205,347" fill="url(#gResS)" opacity="0.85"/>
+    <polygon points="205,315 275,382 275,409 205,342" fill="url(#gRes)"/>
+    <text x="240" y="362" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">3</text>
+
+    <!-- 2 y0=422 shift=4 y0_eff=418: TL=351 BL=378 BR=445 TR=418 · text y=398 -->
+    <polygon points="205,356 275,423 275,450 205,383" fill="url(#gOccS)" opacity="0.85"/>
+    <polygon points="205,351 275,418 275,445 205,378" fill="url(#gOcc)"/>
+    <text x="240" y="398" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">2</text>
+
+    <!-- 1 y0=456 shift=2 y0_eff=454: TL=387 BL=414 BR=481 TR=454 · text y=434 -->
+    <polygon points="205,392 275,459 275,486 205,419" fill="url(#gMineS)" opacity="0.9"/>
+    <polygon points="205,387 275,454 275,481 205,414" fill="url(#gMine)" filter="url(#myGlow)"/>
+    <text x="240" y="434" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">1 ✦</text>
+
+    <!-- 22, 21 -->
+    <rect x="107" y="428" width="36" height="67" rx="2" fill="url(#gFreeS)" opacity="0.85"/>
+    <rect x="107" y="423" width="36" height="67" rx="3" fill="url(#gFree)"/>
+    <text x="125" y="456" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">22</text>
+    <rect x="157" y="428" width="36" height="67" rx="2" fill="url(#gFreeS)" opacity="0.85"/>
+    <rect x="157" y="423" width="36" height="67" rx="3" fill="url(#gFree)"/>
+    <text x="175" y="456" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">21</text>
+
+    <!-- Triangles B and A -->
+    <polygon points="95,428 25,495 95,495" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="95,423 25,490 95,490" fill="url(#gFree)"/>
+    <text x="63" y="463" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">B</text>
+    <polygon points="205,428 275,495 205,495" fill="url(#gFreeS)" opacity="0.85"/>
+    <polygon points="205,423 275,490 205,490" fill="url(#gFree)"/>
+    <text x="237" y="463" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">A</text>
+
+    <!-- ═══ EDGE POINT LABELS ═══ -->
+    <circle cx="25"  cy="130" r="2.5" fill="#4ade80"/>
+    <text x="16" y="128" text-anchor="end" fill="#4ade80" font-size="5.5" font-weight="bold">S20·TL</text>
+    <circle cx="100" cy="63"  r="2.5" fill="#4ade80"/>
+    <text x="103" y="61" fill="#4ade80" font-size="5.5" font-weight="bold">S20·TR</text>
+    <circle cx="275" cy="130" r="2.5" fill="#4ade80"/>
+    <text x="278" y="128" fill="#4ade80" font-size="5.5" font-weight="bold">S10·TR</text>
+    <circle cx="200" cy="63"  r="2.5" fill="#4ade80"/>
+    <text x="192" y="61" text-anchor="end" fill="#4ade80" font-size="5.5" font-weight="bold">S10·TL</text>
+
+    <circle cx="25"  cy="454" r="2.5" fill="#fb923c"/>
+    <text x="16" y="452" text-anchor="end" fill="#fb923c" font-size="5.5" font-weight="bold">S11·TL</text>
+    <circle cx="100" cy="387" r="2.5" fill="#fb923c"/>
+    <text x="103" y="385" fill="#fb923c" font-size="5.5" font-weight="bold">S11·TR</text>
+    <circle cx="100" cy="414" r="2.5" fill="#fb923c"/>
+    <text x="103" y="412" fill="#fb923c" font-size="5.5" font-weight="bold">S11·BR</text>
+    <circle cx="25"  cy="481" r="2.5" fill="#fb923c"/>
+    <text x="16" y="486" text-anchor="end" fill="#fb923c" font-size="5.5" font-weight="bold">S11·BL</text>
+
+    <circle cx="275" cy="454" r="2.5" fill="#fb923c"/>
+    <text x="278" y="452" fill="#fb923c" font-size="5.5" font-weight="bold">S1·TR</text>
+    <circle cx="200" cy="387" r="2.5" fill="#fb923c"/>
+    <text x="192" y="385" text-anchor="end" fill="#fb923c" font-size="5.5" font-weight="bold">S1·TL</text>
+    <circle cx="200" cy="414" r="2.5" fill="#fb923c"/>
+    <text x="192" y="412" text-anchor="end" fill="#fb923c" font-size="5.5" font-weight="bold">S1·BL</text>
+    <circle cx="275" cy="481" r="2.5" fill="#fb923c"/>
+    <text x="278" y="486" fill="#fb923c" font-size="5.5" font-weight="bold">S1·BR</text>
+
+    <circle cx="100" cy="423" r="2.5" fill="#22d3ee"/>
+    <text x="103" y="421" fill="#22d3ee" font-size="5.5" font-weight="bold">B·TIP</text>
+    <circle cx="25"  cy="490" r="2.5" fill="#22d3ee"/>
+    <text x="16" y="494" text-anchor="end" fill="#22d3ee" font-size="5.5" font-weight="bold">B·BL</text>
+    <circle cx="100" cy="490" r="2.5" fill="#22d3ee"/>
+    <text x="103" y="494" fill="#22d3ee" font-size="5.5" font-weight="bold">B·BR</text>
+    <circle cx="200" cy="423" r="2.5" fill="#22d3ee"/>
+    <text x="192" y="421" text-anchor="end" fill="#22d3ee" font-size="5.5" font-weight="bold">A·TIP</text>
+    <circle cx="275" cy="490" r="2.5" fill="#22d3ee"/>
+    <text x="278" y="494" fill="#22d3ee" font-size="5.5" font-weight="bold">A·BR</text>
+    <circle cx="200" cy="490" r="2.5" fill="#22d3ee"/>
+    <text x="192" y="494" text-anchor="end" fill="#22d3ee" font-size="5.5" font-weight="bold">A·BL</text>
+
+  </svg>
+
+  <div style="margin-top:10px;padding:8px 12px;background:#0d1117;border-radius:8px;font-size:10px;color:#8b949e;font-family:monospace;line-height:1.6">
+    <strong style="color:#e6edf3">v40 parameters:</strong> span=67 (uniform, all parallel) · wall=27 · step=34<br/>
+    shift = rank×2 (rank 1=spot11/1 → shift=2, rank 10=spot20/10 → shift=20)<br/>
+    S20·TR and S10·TL: y=63 (20px higher than v38 y=83) · margins shrink ~2px per step toward top<br/>
+    <span style="color:#4ade80">Fallback: v38-fragment.html ✓</span>
+  </div>
+</div>
