@@ -1244,7 +1244,7 @@ tr:hover td { background: var(--bg-card-hover); }
 .sheet-handle {
   width: 40px;
   height: 4px;
-  background: var(--border);
+  background: var(--text-muted);
   border-radius: 2px;
   margin: 10px auto 12px;
   cursor: pointer;
@@ -1279,7 +1279,7 @@ tr:hover td { background: var(--bg-card-hover); }
 }
 .sheet-status.free     { background: var(--green-bg);  color: var(--green); }
 .sheet-status.occupied { background: var(--red-bg);    color: var(--red); }
-.sheet-status.reserved { background: var(--border);    color: var(--text-muted); }
+.sheet-status.reserved { background: rgba(156, 163, 175, 0.15); color: var(--text-secondary); }
 .sheet-status.pending  { background: var(--amber-bg);  color: var(--amber); }
 
 .sheet-actions {
@@ -1307,4 +1307,4 @@ tr:hover td { background: var(--bg-card-hover); }
 .sheet-btn.secondary { background: var(--blue-bg); color: var(--blue); }
 .sheet-btn.warn     { background: var(--amber-bg); color: var(--amber); }
 .sheet-btn.danger   { background: var(--green-bg); color: var(--green); }
-.sheet-btn.admin    { background: #ede9fe;          color: #4f46e5; }
+.sheet-btn.admin    { background: rgba(99, 102, 241, 0.15); color: var(--accent); }
