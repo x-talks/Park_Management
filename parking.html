@@ -322,57 +322,6 @@ function getRentForMonth(spot, year, month) {
   return spot.monthlyRent || 80;
 }
 
-// ── Residents ─────────────────────────────────────────────────────────────────
-const residentsToggle = document.getElementById('residents-toggle');
-if (residentsToggle) residentsToggle.addEventListener('click', () => {
-  const panel = document.getElementById('residents-panel');
-  const open = panel.style.display !== 'none';
-  panel.style.display = open ? 'none' : 'block';
-  residentsToggle.classList.toggle('open', !open);
-  if (!open) renderResidents();
-});
-
-function renderResidents() {
-  const panel = document.getElementById('residents-panel');
-  panel.innerHTML = '';
-
-  const renters = _users.filter(u => u.active && u.role === 'renter' && u.assignedSpots && u.assignedSpots.length > 0);
-
-  if (!renters.length) {
-    panel.textContent = t('residents.empty');
-    return;
-  }
-
-  const wrap = document.createElement('div');
-  wrap.className = 'table-wrap';
-  const table = document.createElement('table');
-  const head = document.createElement('tr');
-  ['residents.col.spot','residents.col.name','residents.col.plate','residents.col.model','residents.col.color','residents.col.phone'].forEach(k => {
-    const th = document.createElement('th'); th.textContent = t(k); head.appendChild(th);
-  });
-  table.appendChild(head);
-
-  renters.forEach(u => {
-    u.assignedSpots.forEach(sid => {
-      const spot = _spots.find(s => s.id === sid);
-      const tr = document.createElement('tr');
-      [
-        spot ? `Spot ${spot.label}` : '—',
-        `${u.name || ''} ${u.lastName || ''}`.trim() || '—',
-        u.licensePlate || u.username || '—',
-        u.carModel || '—',
-        u.carColor || '—',
-        u.phone || '—'
-      ].forEach(text => {
-        const td = document.createElement('td'); td.textContent = text; tr.appendChild(td);
-      });
-      table.appendChild(tr);
-    });
-  });
-  wrap.appendChild(table);
-  panel.appendChild(wrap);
-}
-
 // ── Profile edit ──────────────────────────────────────────────────────────────
 function renderProfile() {
   const section = document.getElementById('profile-edit-section');
