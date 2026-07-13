@@ -20,6 +20,11 @@
         <feGaussianBlur stdDeviation="5" result="blur"/>
         <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
+      <filter id="round" x="-5%" y="-5%" width="110%" height="110%">
+        <feMorphology in="SourceGraphic" operator="erode" radius="2" result="eroded"/>
+        <feMorphology in="eroded" operator="dilate" radius="2" result="rounded"/>
+        <feComposite in="rounded" in2="SourceGraphic" operator="in"/>
+      </filter>
     </defs>
 
     <!-- ═══ DENSE GRID ═══ -->
@@ -110,121 +115,123 @@
 
     <!-- 20 y0=150 shift=20 y0_eff=130: TL=130 TR=63 BR=90 BL=157 · text y=110 -->
     <polygon points="25,135 95,68 95,95 25,162" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="25,130 95,63 95,90 25,157" fill="url(#gFree)"/>
+    <polygon points="25,130 95,63 95,90 25,157" fill="url(#gFree)" filter="url(#round)"/>
     <text x="60" y="110" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">20</text>
 
     <!-- 19 y0=184 shift=18 y0_eff=166: TL=166 TR=99 BR=126 BL=193 · text y=146 -->
     <polygon points="25,171 95,104 95,131 25,198" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="25,166 95,99 95,126 25,193" fill="url(#gFree)"/>
+    <polygon points="25,166 95,99 95,126 25,193" fill="url(#gFree)" filter="url(#round)"/>
     <text x="60" y="146" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">19</text>
 
     <!-- 18 y0=218 shift=16 y0_eff=202: TL=202 TR=135 BR=162 BL=229 · text y=182 -->
     <polygon points="25,207 95,140 95,167 25,234" fill="url(#gOccS)" opacity="0.85"/>
-    <polygon points="25,202 95,135 95,162 25,229" fill="url(#gOcc)"/>
+    <polygon points="25,202 95,135 95,162 25,229" fill="url(#gOcc)" filter="url(#round)"/>
     <text x="60" y="182" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">18</text>
 
     <!-- 17 y0=252 shift=14 y0_eff=238: TL=238 TR=171 BR=198 BL=265 · text y=218 -->
     <polygon points="25,243 95,176 95,203 25,270" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="25,238 95,171 95,198 25,265" fill="url(#gFree)"/>
+    <polygon points="25,238 95,171 95,198 25,265" fill="url(#gFree)" filter="url(#round)"/>
     <text x="60" y="218" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">17</text>
 
     <!-- 16 y0=286 shift=12 y0_eff=274: TL=274 TR=207 BR=234 BL=301 · text y=254 -->
     <polygon points="25,279 95,212 95,239 25,306" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="25,274 95,207 95,234 25,301" fill="url(#gFree)"/>
+    <polygon points="25,274 95,207 95,234 25,301" fill="url(#gFree)" filter="url(#round)"/>
     <text x="60" y="254" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">16</text>
 
     <!-- 15 y0=320 shift=10 y0_eff=310: TL=310 TR=243 BR=270 BL=337 · text y=290 -->
     <polygon points="25,315 95,248 95,275 25,342" fill="url(#gResS)" opacity="0.85"/>
-    <polygon points="25,310 95,243 95,270 25,337" fill="url(#gRes)"/>
+    <polygon points="25,310 95,243 95,270 25,337" fill="url(#gRes)" filter="url(#round)"/>
     <text x="60" y="290" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">15</text>
 
     <!-- 14 y0=354 shift=8 y0_eff=346: TL=346 TR=279 BR=306 BL=373 · text y=326 -->
     <polygon points="25,351 95,284 95,311 25,378" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="25,346 95,279 95,306 25,373" fill="url(#gFree)"/>
+    <polygon points="25,346 95,279 95,306 25,373" fill="url(#gFree)" filter="url(#round)"/>
     <text x="60" y="326" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">14</text>
 
     <!-- 13 y0=388 shift=6 y0_eff=382: TL=382 TR=315 BR=342 BL=409 · text y=362 -->
     <polygon points="25,387 95,320 95,347 25,414" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="25,382 95,315 95,342 25,409" fill="url(#gFree)"/>
+    <polygon points="25,382 95,315 95,342 25,409" fill="url(#gFree)" filter="url(#round)"/>
     <text x="60" y="362" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">13</text>
 
     <!-- 12 y0=422 shift=4 y0_eff=418: TL=418 TR=351 BR=378 BL=445 · text y=398 -->
     <polygon points="25,423 95,356 95,383 25,450" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="25,418 95,351 95,378 25,445" fill="url(#gFree)"/>
+    <polygon points="25,418 95,351 95,378 25,445" fill="url(#gFree)" filter="url(#round)"/>
     <text x="60" y="398" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">12</text>
 
     <!-- 11 y0=456 shift=2 y0_eff=454: TL=454 TR=387 BR=414 BL=481 · text y=434 -->
     <polygon points="25,459 95,392 95,419 25,486" fill="url(#gPendS)" opacity="0.85"/>
-    <polygon points="25,454 95,387 95,414 25,481" fill="url(#gPend)"/>
+    <polygon points="25,454 95,387 95,414 25,481" fill="url(#gPend)" filter="url(#round)"/>
     <text x="60" y="434" text-anchor="middle" dominant-baseline="middle" fill="#000" font-size="9" font-weight="800" font-family="system-ui">11</text>
 
     <!-- ═══ RIGHT SPOTS 10..1 ═══ -->
 
     <!-- 10 y0=150 shift=20 y0_eff=130: TL=63 BL=90 BR=157 TR=130 · text y=110 -->
     <polygon points="205,68 275,135 275,162 205,95" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="205,63 275,130 275,157 205,90" fill="url(#gFree)"/>
+    <polygon points="205,63 275,130 275,157 205,90" fill="url(#gFree)" filter="url(#round)"/>
     <text x="240" y="110" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">10</text>
 
     <!-- 9 y0=184 shift=18 y0_eff=166: TL=99 BL=126 BR=193 TR=166 · text y=146 -->
     <polygon points="205,104 275,171 275,198 205,131" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="205,99 275,166 275,193 205,126" fill="url(#gFree)"/>
+    <polygon points="205,99 275,166 275,193 205,126" fill="url(#gFree)" filter="url(#round)"/>
     <text x="240" y="146" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">9</text>
 
     <!-- 8 y0=218 shift=16 y0_eff=202: TL=135 BL=162 BR=229 TR=202 · text y=182 -->
     <polygon points="205,140 275,207 275,234 205,167" fill="url(#gOccS)" opacity="0.85"/>
-    <polygon points="205,135 275,202 275,229 205,162" fill="url(#gFree)"/>
+    <polygon points="205,135 275,202 275,229 205,162" fill="url(#gFree)" filter="url(#round)"/>
     <text x="240" y="182" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">8</text>
 
     <!-- 7 y0=252 shift=14 y0_eff=238: TL=171 BL=198 BR=265 TR=238 · text y=218 -->
     <polygon points="205,176 275,243 275,270 205,203" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="205,171 275,238 275,265 205,198" fill="url(#gFree)"/>
+    <polygon points="205,171 275,238 275,265 205,198" fill="url(#gFree)" filter="url(#round)"/>
     <text x="240" y="218" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">7</text>
 
     <!-- 6 y0=286 shift=12 y0_eff=274: TL=207 BL=234 BR=301 TR=274 · text y=254 -->
     <polygon points="205,212 275,279 275,306 205,239" fill="url(#gOccS)" opacity="0.85"/>
-    <polygon points="205,207 275,274 275,301 205,234" fill="url(#gOcc)"/>
+    <polygon points="205,207 275,274 275,301 205,234" fill="url(#gOcc)" filter="url(#round)"/>
     <text x="240" y="254" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">6</text>
 
     <!-- 5 y0=320 shift=10 y0_eff=310: TL=243 BL=270 BR=337 TR=310 · text y=290 -->
     <polygon points="205,248 275,315 275,342 205,275" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="205,243 275,310 275,337 205,270" fill="url(#gFree)"/>
+    <polygon points="205,243 275,310 275,337 205,270" fill="url(#gFree)" filter="url(#round)"/>
     <text x="240" y="290" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">5</text>
 
     <!-- 4 y0=354 shift=8 y0_eff=346: TL=279 BL=306 BR=373 TR=346 · text y=326 -->
     <polygon points="205,284 275,351 275,378 205,311" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="205,279 275,346 275,373 205,306" fill="url(#gFree)"/>
+    <polygon points="205,279 275,346 275,373 205,306" fill="url(#gFree)" filter="url(#round)"/>
     <text x="240" y="326" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">4</text>
 
     <!-- 3 y0=388 shift=6 y0_eff=382: TL=315 BL=342 BR=409 TR=382 · text y=362 -->
     <polygon points="205,320 275,387 275,414 205,347" fill="url(#gResS)" opacity="0.85"/>
-    <polygon points="205,315 275,382 275,409 205,342" fill="url(#gRes)"/>
+    <polygon points="205,315 275,382 275,409 205,342" fill="url(#gRes)" filter="url(#round)"/>
     <text x="240" y="362" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">3</text>
 
     <!-- 2 y0=422 shift=4 y0_eff=418: TL=351 BL=378 BR=445 TR=418 · text y=398 -->
     <polygon points="205,356 275,423 275,450 205,383" fill="url(#gOccS)" opacity="0.85"/>
-    <polygon points="205,351 275,418 275,445 205,378" fill="url(#gOcc)"/>
+    <polygon points="205,351 275,418 275,445 205,378" fill="url(#gOcc)" filter="url(#round)"/>
     <text x="240" y="398" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">2</text>
 
     <!-- 1 y0=456 shift=2 y0_eff=454: TL=387 BL=414 BR=481 TR=454 · text y=434 -->
     <polygon points="205,392 275,459 275,486 205,419" fill="url(#gMineS)" opacity="0.9"/>
-    <polygon points="205,387 275,454 275,481 205,414" fill="url(#gMine)" filter="url(#myGlow)"/>
+    <g filter="url(#myGlow)">
+      <polygon points="205,387 275,454 275,481 205,414" fill="url(#gMine)" filter="url(#round)"/>
+    </g>
     <text x="240" y="434" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="9" font-weight="800" font-family="system-ui">1 ✦</text>
 
     <!-- 22, 21 -->
     <rect x="107" y="428" width="36" height="67" rx="2" fill="url(#gFreeS)" opacity="0.85"/>
-    <rect x="107" y="423" width="36" height="67" rx="3" fill="url(#gFree)"/>
+    <rect x="107" y="423" width="36" height="67" rx="3" fill="url(#gFree)" filter="url(#round)"/>
     <text x="125" y="456" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">22</text>
     <rect x="157" y="428" width="36" height="67" rx="2" fill="url(#gFreeS)" opacity="0.85"/>
-    <rect x="157" y="423" width="36" height="67" rx="3" fill="url(#gFree)"/>
+    <rect x="157" y="423" width="36" height="67" rx="3" fill="url(#gFree)" filter="url(#round)"/>
     <text x="175" y="456" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">21</text>
 
     <!-- Triangles B and A -->
     <polygon points="95,428 25,495 95,495" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="95,423 25,490 95,490" fill="url(#gFree)"/>
-    <text x="63" y="463" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">B</text>
+    <polygon points="95,423 25,490 95,490" fill="url(#gFree)" filter="url(#round)"/>
+    <text x="72" y="468" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">B</text>
     <polygon points="205,428 275,495 205,495" fill="url(#gFreeS)" opacity="0.85"/>
-    <polygon points="205,423 275,490 205,490" fill="url(#gFree)"/>
-    <text x="237" y="463" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">A</text>
+    <polygon points="205,423 275,490 205,490" fill="url(#gFree)" filter="url(#round)"/>
+    <text x="228" y="468" text-anchor="middle" dominant-baseline="middle" fill="#052e16" font-size="9" font-weight="800" font-family="system-ui">A</text>
 
     <!-- ═══ EDGE POINT LABELS ═══ -->
     <circle cx="25"  cy="130" r="2.5" fill="#4ade80"/>
