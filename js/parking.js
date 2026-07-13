@@ -211,7 +211,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
           closeBottomSheet();
         } else {
           g.classList.add('selected');
-          openBottomSheet(spotData, label, users, currentUser);
+          openBottomSheet(spotData, label, users, currentUser, pendingSpotIds);
         }
       });
     }
@@ -317,7 +317,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
           closeBottomSheet();
         } else {
           g.classList.add('selected');
-          openBottomSheet(spotData, label, users, currentUser);
+          openBottomSheet(spotData, label, users, currentUser, pendingSpotIds);
         }
       });
     }
@@ -404,7 +404,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
           closeBottomSheet();
         } else {
           g.classList.add('selected');
-          openBottomSheet(spotData, label, users, currentUser);
+          openBottomSheet(spotData, label, users, currentUser, pendingSpotIds);
         }
       });
     }
@@ -476,7 +476,7 @@ function showSpotInfo(spotData, label, users, currentUser, pendingSpotIds) {
   });
 }
 
-function openBottomSheet(spotData, label, users, currentUser) {
+function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
   const sheet = document.getElementById('spot-sheet');
   const backdrop = document.getElementById('sheet-backdrop');
   const content = document.getElementById('sheet-content');
@@ -496,6 +496,7 @@ function openBottomSheet(spotData, label, users, currentUser) {
   // Status
   let statusClass = 'free', statusText = 'Free';
   if (spotData.reserved) { statusClass = 'reserved'; statusText = 'Reserved'; }
+  else if (pendingSpotIds && pendingSpotIds.has(spotData.id)) { statusClass = 'pending'; statusText = 'Pending'; }
   else if (spotData.state === 'occupied') { statusClass = 'occupied'; statusText = 'Occupied'; }
 
   // Title line
@@ -537,7 +538,7 @@ function openBottomSheet(spotData, label, users, currentUser) {
   }
 
   // Pay — shown if user is assigned to this spot
-  if (isMySpot || isAdmin) {
+  if (isMySpot) {
     const btn = document.createElement('button');
     btn.className = 'sheet-btn secondary';
     btn.textContent = 'Pay';
