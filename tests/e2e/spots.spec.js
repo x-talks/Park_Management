@@ -28,54 +28,36 @@ test.describe('Map rendering', () => {
   });
 });
 
-test.describe('Info panel', () => {
-  test('clicking a free spot (s5) expands the info panel', async ({ page }) => {
+test.describe('Bottom sheet', () => {
+  test('clicking a free spot (s5) opens the bottom sheet', async ({ page }) => {
     await page.waitForSelector('svg g[data-id="s5"]', { timeout: 10_000 });
     await page.locator('svg g[data-id="s5"]').first().click();
-    await expect(page.locator('#info-panel').first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('#spot-sheet')).toHaveClass(/open/, { timeout: 5_000 });
   });
 
-  test('info panel for own spot (s1) contains renter plate', async ({ page }) => {
+  test('bottom sheet for own spot (s1) contains renter plate', async ({ page }) => {
     await page.waitForSelector('svg g[data-id="s1"]', { timeout: 10_000 });
     await page.locator('svg g[data-id="s1"]').first().click();
-    const panel = page.locator('#info-panel').first();
-    await expect(panel).toBeVisible({ timeout: 5_000 });
-    await expect(panel).toContainText('HD-AA-001');
+    const sheet = page.locator('#sheet-content');
+    await expect(page.locator('#spot-sheet')).toHaveClass(/open/, { timeout: 5_000 });
+    await expect(sheet).toContainText('HD-AA-001');
   });
 });
 
-test.describe('Info panel content', () => {
-  test('clicking occupied spot shows renter plate', async ({ page }) => {
-    // beforeEach already logged in as HD-AA-001
+test.describe('Bottom sheet content', () => {
+  test('clicking occupied spot shows occupied status in sheet', async ({ page }) => {
     await page.waitForSelector('svg g[data-id="s2"]', { timeout: 10_000 });
-    // Wait for users data to be rendered (spot s2 should have class 'occupied')
     await expect(page.locator('svg g[data-id="s2"]')).toHaveClass(/occupied/, { timeout: 20_000 });
     await page.locator('svg g[data-id="s2"]').click();
-    await expect(page.locator('#info-panel')).toBeVisible({ timeout: 10_000 });
-    // Renters can only see their own user data via RLS — other renters' plates are not shown.
-    // The panel shows "Spot 2: Occupied" or a generic occupied message.
-    await expect(page.locator('#info-panel')).toContainText(/Spot 2|occupied/i, { timeout: 10_000 });
+    await expect(page.locator('#spot-sheet')).toHaveClass(/open/, { timeout: 10_000 });
+    await expect(page.locator('#sheet-content')).toContainText(/Spot 2|occupied/i, { timeout: 10_000 });
   });
 
-  test('clicking free spot shows "Free" in info panel', async ({ page }) => {
-    // beforeEach already logged in as HD-AA-001
+  test('clicking free spot shows "Free" status in sheet', async ({ page }) => {
     await page.waitForSelector('svg g[data-id="s5"]', { timeout: 10_000 });
     await page.locator('svg g[data-id="s5"]').click();
-    await expect(page.locator('#info-panel')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('#info-panel')).toContainText(/free/i, { timeout: 10_000 });
-  });
-});
-
-test.describe('Residents list', () => {
-  test('residents panel shows active renters after toggle', async ({ page }) => {
-    // beforeEach already logged in as HD-AA-001
-    const toggle = page.locator('#residents-toggle');
-    await expect(toggle).toBeVisible({ timeout: 10_000 });
-    await toggle.click();
-    const panel = page.locator('#residents-panel').first();
-    await expect(panel).toBeVisible({ timeout: 10_000 });
-    // Wait for residents data to load (panel starts empty until fetch completes)
-    await expect(panel).toContainText(/HD-AA-001|HD-BB-002/, { timeout: 15_000 });
+    await expect(page.locator('#spot-sheet')).toHaveClass(/open/, { timeout: 10_000 });
+    await expect(page.locator('#sheet-content')).toContainText(/free/i, { timeout: 10_000 });
   });
 });
 

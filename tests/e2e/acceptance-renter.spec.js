@@ -16,21 +16,19 @@ test('Full renter journey: login → view map → click own spot → view paymen
   const spotCount = await page.locator('svg g[data-id]').count();
   expect(spotCount).toBeGreaterThanOrEqual(24);
 
-  // Step 3: Click own spot (s1) → info panel shows own data
+  // Step 3: Click own spot (s1) → bottom sheet shows own data
   await page.locator('svg g[data-id="s1"]').click();
-  await expect(page.locator('#info-panel')).toBeVisible({ timeout: 5_000 });
-  await expect(page.locator('#info-panel')).toContainText('HD-AA-001');
+  await expect(page.locator('#spot-sheet')).toHaveClass(/open/, { timeout: 5_000 });
+  await expect(page.locator('#sheet-content')).toContainText('HD-AA-001');
 
   // Step 4: My payments section is visible
   await expect(page.locator('#my-payments-section')).toBeVisible({ timeout: 10_000 });
   const currentYear = String(new Date().getFullYear());
   await expect(page.locator('#my-payments-section')).toContainText(currentYear);
 
-  // Step 5: Residents list — toggle and verify it opens
-  const residentsToggle = page.locator('#residents-toggle');
-  await expect(residentsToggle).toBeVisible({ timeout: 5_000 });
-  await residentsToggle.click();
-  await expect(page.locator('#residents-panel')).toBeVisible({ timeout: 5_000 });
+  // Step 5: Bottom nav Profile tab navigates to profile section
+  await page.locator('.bottom-nav a[href*="profile"]').click();
+  await expect(page.locator('#profile-edit-section')).toBeVisible({ timeout: 10_000 });
 
   // Step 6: Profile edit section is visible, phone field is editable
   await expect(page.locator('#profile-edit-section')).toBeVisible({ timeout: 10_000 });
