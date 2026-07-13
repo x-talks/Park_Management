@@ -5,6 +5,7 @@ const LANG_EN = {
   'nav.admin':     'Admin',
   'nav.incidents': 'Incidents',
   'nav.logout':    'Logout',
+  'nav.profile':   'Profile',
 
   // ── App name ─────────────────────────────────────────────────────────────
   'app.name':      'Park Management',

@@ -5,6 +5,7 @@ const LANG_TR = {
   'nav.admin':     'Yönetici',
   'nav.incidents': 'Olaylar',
   'nav.logout':    'Çıkış',
+  'nav.profile':   'Profil',
 
   'app.name':  'Park Yönetimi',
   'app.admin': 'Yönetici Paneli',

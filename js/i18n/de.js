@@ -5,6 +5,7 @@ const LANG_DE = {
   'nav.admin':     'Admin',
   'nav.incidents': 'Vorfälle',
   'nav.logout':    'Abmelden',
+  'nav.profile':   'Profil',
 
   'app.name':  'Parkverwaltung',
   'app.admin': 'Admin-Bereich',
