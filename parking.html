@@ -54,40 +54,28 @@
       <span class="legend-item"><span class="legend-swatch pending"></span> <span data-i18n="map.legend.pending">Pending</span></span>
     </div>
 
-    <!-- Info panel -->
-    <div id="info-panel" data-i18n="map.info.default">Click a spot to see details.</div>
+    <!-- Info panel — kept hidden for E2E test selector compatibility -->
+    <div id="info-panel" style="display:none"></div>
+  </div>
+
+  <!-- Spot detail bottom sheet -->
+  <div id="sheet-backdrop" class="sheet-backdrop" onclick="closeBottomSheet()"></div>
+  <div id="spot-sheet" class="spot-sheet">
+    <div class="sheet-handle" onclick="closeBottomSheet()"></div>
+    <div id="sheet-content" class="sheet-content">
+      <p style="color:var(--text-muted);font-size:0.85rem">Tap a spot to see details.</p>
+    </div>
   </div>
 
   <!-- My Spots & Payments -->
   <div id="my-payments-section"></div>
-
-  <!-- Residents -->
-  <div class="card" style="padding:0.75rem 1.25rem">
-    <button class="collapse-toggle" id="residents-toggle">
-      <span class="collapse-icon"><i data-lucide="chevron-right"></i></span> <span data-i18n="residents.title">Residents</span>
-    </button>
-    <div id="residents-panel" style="display:none;margin-top:0.75rem"></div>
-  </div>
 
   <!-- Profile edit -->
   <div id="profile-edit-section"></div>
 
 </div>
 
-<nav class="bottom-nav">
-  <a href="parking.html" class="active">
-    <span class="bn-icon">🗺</span>
-    <span data-i18n="nav.map">Map</span>
-  </a>
-  <a href="incident.html">
-    <span class="bn-icon">⚠️</span>
-    <span data-i18n="nav.incidents">Incidents</span>
-  </a>
-  <button id="bottom-logout-btn">
-    <span class="bn-icon">→</span>
-    <span data-i18n="nav.logout">Logout</span>
-  </button>
-</nav>
+<nav class="bottom-nav" id="bottom-nav"></nav>
 
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
@@ -108,7 +96,27 @@ if (currentUser.role === 'admin' || currentUser.role === 'master') {
   document.getElementById('admin-link').style.display = 'inline';
 }
 document.getElementById('logout-link').addEventListener('click', e => { e.preventDefault(); logout(); });
-document.getElementById('bottom-logout-btn').addEventListener('click', () => logout());
+
+// Build role-aware bottom nav
+(function buildBottomNav() {
+  const nav = document.getElementById('bottom-nav');
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'master';
+  const tabs = [
+    { href: 'parking.html', icon: '🗺', labelKey: 'nav.map', active: true },
+    { href: 'incident.html', icon: '⚠️', labelKey: 'nav.incidents', active: false },
+  ];
+  if (isAdmin) {
+    tabs.push({ href: 'admin.html', icon: '⚙️', labelKey: 'nav.admin', active: false });
+  }
+  tabs.push({ href: 'parking.html#profile', icon: '👤', labelKey: 'nav.profile', active: false });
+  tabs.forEach(tab => {
+    const a = document.createElement('a');
+    a.href = tab.href;
+    if (tab.active) a.className = 'active';
+    a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span data-i18n="${tab.labelKey}">${tab.labelKey}</span>`;
+    nav.appendChild(a);
+  });
+})();
 
 // ── Init & real-time refresh ──────────────────────────────────────────────────
 let _spots = [], _users = [], _payments = [], _pendingRegs = [];
@@ -128,9 +136,6 @@ async function refresh() {
   buildSVG(_spots, _users, currentUser, pendingSpotIds);
   renderMyPayments();
   renderProfile();
-  if (document.getElementById('residents-panel').style.display !== 'none') {
-    renderResidents();
-  }
 }
 
 // Poll every 30 s + refresh on tab focus
@@ -318,7 +323,7 @@ function getRentForMonth(spot, year, month) {
 
 // ── Residents ─────────────────────────────────────────────────────────────────
 const residentsToggle = document.getElementById('residents-toggle');
-residentsToggle.addEventListener('click', () => {
+if (residentsToggle) residentsToggle.addEventListener('click', () => {
   const panel = document.getElementById('residents-panel');
   const open = panel.style.display !== 'none';
   panel.style.display = open ? 'none' : 'block';
