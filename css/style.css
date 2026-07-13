@@ -1208,3 +1208,103 @@ tr:hover td { background: var(--bg-card-hover); }
 #reauth-submit {
   width: 100%;
 }
+
+/* ── Bottom sheet ──────────────────────────────────────────────────────────── */
+.sheet-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 290;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.sheet-backdrop.open { display: block; }
+
+.spot-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: var(--bg-card);
+  border-radius: 16px 16px 0 0;
+  border-top: 1px solid var(--border);
+  padding: 0 1rem calc(env(safe-area-inset-bottom) + 1rem);
+  transform: translateY(calc(100% - 48px));
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.spot-sheet.open {
+  transform: translateY(0);
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 10px auto 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sheet-content {
+  padding-bottom: 0.5rem;
+}
+
+.sheet-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.sheet-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.sheet-status {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+.sheet-status.free     { background: var(--green-bg);  color: var(--green); }
+.sheet-status.occupied { background: var(--red-bg);    color: var(--red); }
+.sheet-status.reserved { background: var(--border);    color: var(--text-muted); }
+.sheet-status.pending  { background: var(--amber-bg);  color: var(--amber); }
+
+.sheet-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.sheet-btn {
+  flex: 1;
+  min-width: 72px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sheet-btn:active { opacity: 0.75; }
+
+.sheet-btn.primary  { background: var(--accent);  color: var(--accent-text); }
+.sheet-btn.secondary { background: var(--blue-bg); color: var(--blue); }
+.sheet-btn.warn     { background: var(--amber-bg); color: var(--amber); }
+.sheet-btn.danger   { background: var(--green-bg); color: var(--green); }
+.sheet-btn.admin    { background: #ede9fe;          color: #4f46e5; }
