@@ -72,9 +72,7 @@
   <div id="my-payments-section"></div>
 
   <!-- Profile edit -->
-  <div id="profile-edit-section">
-    <div id="profile"></div>
-  </div>
+  <div id="profile-edit-section"></div>
 
 </div>
 
@@ -120,13 +118,6 @@ document.getElementById('logout-link').addEventListener('click', e => { e.preven
     nav.appendChild(a);
   });
 })();
-
-// Scroll to profile section if URL has #profile
-if (window.location.hash === '#profile') {
-  setTimeout(() => {
-    document.getElementById('profile')?.scrollIntoView({ behavior: 'smooth' });
-  }, 500); // wait for renderProfile() to finish
-}
 
 // ── Init & real-time refresh ──────────────────────────────────────────────────
 let _spots = [], _users = [], _payments = [], _pendingRegs = [];
@@ -386,6 +377,17 @@ function renderResidents() {
 function renderProfile() {
   const section = document.getElementById('profile-edit-section');
   section.innerHTML = '';
+
+  // Add anchor for Profile tab scroll target
+  const profileAnchor = document.createElement('div');
+  profileAnchor.id = 'profile';
+  section.appendChild(profileAnchor);
+
+  // Scroll to profile if navigated via #profile hash
+  if (window.location.hash === '#profile') {
+    setTimeout(() => profileAnchor.scrollIntoView({ behavior: 'smooth' }), 50);
+  }
+
   const me = _users.find(u => u.id === currentUser.id);
   if (!me || me.role !== 'renter') return;
 
