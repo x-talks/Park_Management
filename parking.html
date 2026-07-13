@@ -332,9 +332,12 @@ function renderProfile() {
   profileAnchor.id = 'profile';
   section.appendChild(profileAnchor);
 
-  // Scroll to profile if navigated via #profile hash
+  // Scroll to profile if navigated via #profile hash (clear hash after so repeat polls don't re-scroll)
   if (window.location.hash === '#profile') {
-    setTimeout(() => profileAnchor.scrollIntoView({ behavior: 'smooth' }), 50);
+    setTimeout(() => {
+      profileAnchor.scrollIntoView({ behavior: 'smooth' });
+      history.replaceState(null, '', location.pathname);
+    }, 50);
   }
 
   const me = _users.find(u => u.id === currentUser.id);

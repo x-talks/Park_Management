@@ -529,7 +529,7 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
   const hasOwnSpot = typeof _users !== 'undefined' && _users
     ? (_users.find(u => u.id === currentUser.id)?.assignedSpots?.length > 0)
     : false;
-  if (!isAdmin && spotData.state === 'free' && !spotData.reserved && !hasOwnSpot) {
+  if (!isAdmin && spotData.state === 'free' && !spotData.reserved && !hasOwnSpot && !(pendingSpotIds && pendingSpotIds.has(spotData.id))) {
     const btn = document.createElement('button');
     btn.className = 'sheet-btn primary';
     btn.textContent = 'Reserve';
