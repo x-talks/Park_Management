@@ -1,6 +1,6 @@
 // tests/e2e/spots.spec.js
-import { test, expect } from '@playwright/test';
-import { loginAs } from './helpers.js';
+import { test, expect } from './fixtures.js';
+import { loginAs, waitForAppReady } from './helpers.js';
 
 const RENTER_USER = 'HD-AA-001';
 const RENTER_PASS = 'TestPass123!';
@@ -8,7 +8,7 @@ const RENTER_PASS = 'TestPass123!';
 test.beforeEach(async ({ page }) => {
   await loginAs(page, RENTER_USER, RENTER_PASS);
   await page.waitForURL(/parking\.html/, { timeout: 30_000 });
-  await page.waitForLoadState('networkidle');
+  await waitForAppReady(page, 'renter');
 });
 
 test.describe('Map rendering', () => {
