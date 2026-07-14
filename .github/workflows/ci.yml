@@ -77,12 +77,19 @@ jobs:
           node tests/fixtures/staging-config.js
           node tests/fixtures/seed.js
 
-      - name: Test worker login (shows exact response)
+      - name: Warm up worker and assert login works (fail fast)
         run: |
-          curl -sS -X POST "$STAGING_WORKER_URL/auth/login" \
-            -H "Content-Type: application/json" \
-            -d "{\"username\":\"TEST-ADMIN\",\"password\":\"$STAGING_ADMIN_PASSWORD\"}"
-          echo ""
+          for attempt in 1 2 3; do
+            echo "Warm-up attempt $attempt..."
+            RESPONSE=$(curl -sS -m 15 -X POST "$STAGING_WORKER_URL/auth/login" \
+              -H "Content-Type: application/json" \
+              -d "{\"username\":\"TEST-ADMIN\",\"password\":\"$STAGING_ADMIN_PASSWORD\"}" || true)
+            echo "$RESPONSE" | grep -q '"accessToken"' && { echo "Worker login OK"; exit 0; }
+            echo "No accessToken yet; response was: $RESPONSE"
+            sleep 3
+          done
+          echo "Worker login failed after 3 attempts — failing fast instead of running the full suite."
+          exit 1
 
       - name: Run E2E tests
         run: npm run test:e2e
