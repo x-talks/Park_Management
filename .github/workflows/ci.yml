@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/react-migration]
   pull_request:
-    branches: [main]
+    branches: [main, feat/react-migration]
 
 jobs:
   unit-tests:
