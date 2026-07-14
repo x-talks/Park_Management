@@ -1,6 +1,6 @@
 // tests/e2e/acceptance-admin.spec.js
-import { test, expect } from '@playwright/test';
-import { loginAs } from './helpers.js';
+import { test, expect } from './fixtures.js';
+import { loginAs, waitForAppReady } from './helpers.js';
 
 const ADMIN_USER = 'TEST-ADMIN';
 const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
@@ -8,13 +8,8 @@ const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 test('Full admin journey: login → generate invite → approve pending registration → mark payment paid', async ({ page }) => {
   // Step 1: Login as admin
   await loginAs(page, ADMIN_USER, ADMIN_PASS);
-  await page.waitForURL(/admin\.html/, { timeout: 45_000 });
-  // Wait for users tab to populate (renderUsers) without networkidle — loadPendingRegistrations
-  // keeps connections open in CI and blocks networkidle indefinitely
-  await page.waitForFunction(
-    () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
-    { timeout: 45_000 }
-  );
+  await page.waitForURL(/admin\.html/, { timeout: 30_000 });
+  await waitForAppReady(page, 'admin');
 
   // Step 2: Stat cards visible
   await expect(page.locator('#stat-cards')).toBeVisible({ timeout: 10_000 });
@@ -51,7 +46,10 @@ test('Full admin journey: login → generate invite → approve pending registra
   }
 
   // Step 5: Navigate to payments, verify s1 shows paid
-  await page.locator('#tab-btn-payments').click();
+  const paymentsTab = page.locator('#tab-btn-payments');
+  await paymentsTab.scrollIntoViewIfNeeded();
+  await expect(paymentsTab).toBeEnabled({ timeout: 10_000 });
+  await paymentsTab.click();
   await expect(page.locator('#payment-matrix table tr').nth(1)).toBeVisible({ timeout: 30_000 });
   const s1Row = page.locator('#payment-matrix table tr').filter({ hasText: 'Spot 1' }).first();
   await expect(s1Row).toBeVisible({ timeout: 10_000 });
