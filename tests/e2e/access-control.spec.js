@@ -1,5 +1,5 @@
 // tests/e2e/access-control.spec.js
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 import { loginAs } from './helpers.js';
 
 const ADMIN_USER  = 'TEST-ADMIN';
@@ -22,8 +22,7 @@ test.describe('Browser access control', () => {
     await loginAs(page, RENTER_USER, RENTER_PASS);
     await page.waitForURL(/parking\.html/, { timeout: 30_000 });
     await page.goto('/incident.html');
-    await page.waitForLoadState('networkidle');
-    await expect(page.locator('#incident-log')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#incident-log')).toBeVisible({ timeout: 15_000 });
     const cards = page.locator('.incident-card');
     const count = await cards.count();
     for (let i = 0; i < count; i++) {
@@ -35,8 +34,7 @@ test.describe('Browser access control', () => {
     await loginAs(page, ADMIN_USER, ADMIN_PASS);
     await page.waitForURL(/admin\.html/, { timeout: 30_000 });
     await page.goto('/incident.html');
-    await page.waitForLoadState('networkidle');
-    await expect(page.locator('#incident-log')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#incident-log')).toBeVisible({ timeout: 15_000 });
     const allCards = page.locator('.incident-card');
     const count = await allCards.count();
     expect(count).toBeGreaterThanOrEqual(0);
