@@ -22,6 +22,10 @@ test('Full renter journey: login → view map → click own spot → view paymen
   await expect(page.locator('#spot-sheet')).toHaveClass(/open/, { timeout: 5_000 });
   await expect(page.locator('#sheet-content')).toContainText('HD-AA-001');
 
+  // Close the bottom sheet before navigating (it overlays the bottom nav).
+  await page.locator('#sheet-backdrop').click();
+  await expect(page.locator('#spot-sheet')).not.toHaveClass(/open/, { timeout: 5_000 });
+
   // Step 4: My payments section is visible
   await expect(page.locator('#my-payments-section')).toBeVisible({ timeout: 10_000 });
   const currentYear = String(new Date().getFullYear());
