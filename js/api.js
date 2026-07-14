@@ -196,7 +196,7 @@ function _handleAuthFailure() {
       submitBtn.disabled = true;
       errEl.style.display = 'none';
       try {
-        const res = await fetch(`${CONFIG.workerUrl}/auth/login`, {
+        const res = await fetchWithTimeout(`${CONFIG.workerUrl}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: username ? username.trim().toUpperCase() : '', password }),
