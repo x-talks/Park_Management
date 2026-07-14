@@ -41,7 +41,6 @@ test.describe('Multi-user sync (L6)', () => {
 
     await renterPage.waitForURL(/parking\.html/, { timeout: 30_000 });
     await renterPage.reload();
-    await renterPage.waitForLoadState('networkidle');
     await expect(renterPage.locator('#my-payments-section')).toContainText(/paid|✓/i, { timeout: 10_000 });
 
     await adminCtx.close();
@@ -86,7 +85,6 @@ test.describe('Multi-user sync (L6)', () => {
 
     await renterPage.waitForURL(/parking\.html/, { timeout: 30_000 });
     await renterPage.reload();
-    await renterPage.waitForLoadState('networkidle');
     const s8Spot = renterPage.locator('svg g[data-id="s8"]');
     await expect(s8Spot).toBeVisible({ timeout: 10_000 });
     await expect(s8Spot).toHaveClass(/occupied/, { timeout: 15_000 });

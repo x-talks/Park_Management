@@ -13,7 +13,6 @@ test.beforeEach(async ({ page }) => {
   // Navigate to incidents via nav link — data-i18n="nav.incidents" → href="incident.html"
   await page.locator('a[href="incident.html"], a[href*="incident"]').first().click();
   await page.waitForURL(/incident/, { timeout: 10_000 });
-  await page.waitForLoadState('networkidle');
 });
 
 test.describe('Incidents page', () => {
@@ -78,7 +77,6 @@ test.describe('Incidents — admin delete button visibility', () => {
     // Admin navigates to incident log (admin.html has incident section or separate page)
     await adminPage.locator('a[href="incident.html"], a[href*="incident"]').first().click();
     await adminPage.waitForURL(/incident/, { timeout: 10_000 });
-    await adminPage.waitForLoadState('networkidle');
 
     const log = adminPage.locator('#incident-log, .incident-log');
     await expect(log.first()).toBeVisible({ timeout: 10_000 });

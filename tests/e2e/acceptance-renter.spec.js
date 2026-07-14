@@ -9,7 +9,6 @@ test('Full renter journey: login → view map → click own spot → view paymen
   // Step 1: Login as renter
   await loginAs(page, RENTER_USER, RENTER_PASS);
   await page.waitForURL(/parking\.html/, { timeout: 30_000 });
-  await page.waitForLoadState('networkidle');
 
   // Step 2: Parking map is visible with spots
   await expect(page.locator('#parking-svg')).toBeVisible({ timeout: 10_000 });
