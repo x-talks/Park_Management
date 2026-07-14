@@ -1,28 +1,12 @@
 // js/parking.js
-// Renders the SVG parking layout.
-// Spot states: free (green), occupied (red), reserved (grey).
-// Occupied/reserved spots with a renter show license plate inside the spot rect.
-// No car color indicators.
+// Renders the SVG parking layout using the v40 map design:
+// dark background, gradient fills, double-polygon depth (shadow + face),
+// rounded corners via morphology filter, and a glow filter on the current
+// user's own spots. Spot states: free (green), occupied (red),
+// reserved (grey), pending (amber), mine (indigo + glow).
 
 const LEFT_SPOTS  = ['20','19','18','17','16','15','14','13','12','11'];
 const RIGHT_SPOTS = ['10','9','8','7','6','5','4','3','2','1'];
-
-const CANVAS_W = 800;
-const CANVAS_H = 760;
-const SPOT_W   = 76;
-const SPOT_H   = 32;
-
-const LANE_LEFT   = 320;
-const LANE_RIGHT  = 480;
-const LANE_TOP    = 30;
-const LANE_BOTTOM = 600;
-
-const ARROW_TIP_Y = LANE_TOP + 32;
-const START_Y     = ARROW_TIP_Y + 22;
-const STEP_Y      = 50;
-const ANGLE       = 45;
-const SIDE_MARGIN = 36;
-const BOTTOM_ROW_Y = LANE_BOTTOM + 50;
 
 function spotId(label) {
   return label === 'A' ? 'sA' : label === 'B' ? 'sB' : `s${label}`;
@@ -39,174 +23,168 @@ function spotStateClass(spotData, pendingSpotIds) {
   return spotData.state === 'occupied' ? 'occupied' : 'free';
 }
 
+// ── v40 map design ──
+// Static <defs> (gradients + filters) injected on every render since the SVG
+// is cleared and rebuilt each time buildSVG runs.
+const V40_STATUS_GRADIENT = {
+  free:     { face: 'gFree', shadow: 'gFreeS' },
+  occupied: { face: 'gOcc',  shadow: 'gOccS'  },
+  reserved: { face: 'gRes',  shadow: 'gResS'  },
+  pending:  { face: 'gPend', shadow: 'gPendS' },
+  mine:     { face: 'gMine', shadow: 'gMineS' },
+};
+
+// Text fill per status: green (free) spots use dark green, pending uses black,
+// occupied/reserved/mine use white.
+function v40TextFill(kind) {
+  if (kind === 'free') return '#052e16';
+  if (kind === 'pending') return '#000';
+  return '#fff';
+}
+
+const V40_DEFS = `
+  <linearGradient id="gFree" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#15803d"/></linearGradient>
+  <linearGradient id="gFreeS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#052e16"/><stop offset="100%" stop-color="#041a0c"/></linearGradient>
+  <linearGradient id="gOcc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>
+  <linearGradient id="gOccS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3b0a0a"/><stop offset="100%" stop-color="#250707"/></linearGradient>
+  <linearGradient id="gRes" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9ca3af"/><stop offset="100%" stop-color="#4b5563"/></linearGradient>
+  <linearGradient id="gResS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1f2937"/><stop offset="100%" stop-color="#111827"/></linearGradient>
+  <linearGradient id="gMine" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c4b5fd"/><stop offset="100%" stop-color="#4f46e5"/></linearGradient>
+  <linearGradient id="gMineS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2e1065"/><stop offset="100%" stop-color="#1e0a47"/></linearGradient>
+  <linearGradient id="gPend" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#b45309"/></linearGradient>
+  <linearGradient id="gPendS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#451a03"/><stop offset="100%" stop-color="#2d1102"/></linearGradient>
+  <linearGradient id="gLane" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#131c2e"/><stop offset="50%" stop-color="#0f172a"/><stop offset="100%" stop-color="#131c2e"/></linearGradient>
+  <filter id="myGlow" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="5" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="round" x="-5%" y="-5%" width="110%" height="110%">
+    <feMorphology in="SourceGraphic" operator="erode" radius="2" result="eroded"/>
+    <feMorphology in="eroded" operator="dilate" radius="2" result="rounded"/>
+    <feComposite in="rounded" in2="SourceGraphic" operator="in"/>
+  </filter>`;
+
 function buildSVG(spots, users, currentUser, pendingSpotIds) {
   pendingSpotIds = pendingSpotIds || new Set();
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.getElementById('parking-svg');
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
-  const bxLeft   = LANE_LEFT  - SPOT_W - SIDE_MARGIN - 60;
-  const bxRight  = LANE_RIGHT + SPOT_W + SIDE_MARGIN + 60;
-  const byTop    = LANE_TOP - 10;
-  const byBottom = BOTTOM_ROW_Y + SPOT_H + 30;
+  const el = (name, attrs) => {
+    const node = document.createElementNS(svgNS, name);
+    for (const k in attrs) node.setAttribute(k, attrs[k]);
+    return node;
+  };
 
-  // Outer boundary — rounded corners, theme-aware
-  const boundary = document.createElementNS(svgNS, 'rect');
-  boundary.setAttribute('x', bxLeft); boundary.setAttribute('y', byTop);
-  boundary.setAttribute('width', bxRight - bxLeft);
-  boundary.setAttribute('height', byBottom - byTop);
-  boundary.setAttribute('rx', '10');
-  boundary.setAttribute('style', 'fill:var(--svg-boundary);stroke:var(--svg-boundary-stroke);stroke-width:2');
-  svg.appendChild(boundary);
+  // Determine which spots belong to the current user ("mine").
+  const myRecord = currentUser
+    ? (users || []).find(u => u.id === currentUser.id)
+    : null;
+  const mineSpotIds = new Set(
+    (myRecord && Array.isArray(myRecord.assignedSpots)) ? myRecord.assignedSpots : []
+  );
 
-  // Driving lane
-  const lane = document.createElementNS(svgNS, 'rect');
-  lane.setAttribute('x', LANE_LEFT); lane.setAttribute('y', LANE_TOP);
-  lane.setAttribute('width', LANE_RIGHT - LANE_LEFT);
-  lane.setAttribute('height', LANE_BOTTOM - LANE_TOP);
-  lane.setAttribute('style', 'fill:var(--svg-lane);stroke:var(--svg-lane-stroke);stroke-width:1');
-  svg.appendChild(lane);
+  // ── <defs>: gradients + filters (rebuilt each render) ──
+  const defs = el('defs', {});
+  defs.innerHTML = V40_DEFS;
+  svg.appendChild(defs);
 
-  // Center dashed line down the driving lane
-  const ax = (LANE_LEFT + LANE_RIGHT) / 2;
-  const dashLen = 18, dashGap = 12;
-  for (let y = LANE_TOP + 36; y < LANE_BOTTOM - 10; y += dashLen + dashGap) {
-    const dash = document.createElementNS(svgNS, 'line');
-    dash.setAttribute('x1', ax); dash.setAttribute('y1', y);
-    dash.setAttribute('x2', ax); dash.setAttribute('y2', Math.min(y + dashLen, LANE_BOTTOM - 10));
-    dash.setAttribute('style', 'stroke:var(--svg-arrow);stroke-width:2;opacity:0.4');
-    svg.appendChild(dash);
+  // ── dm background grid ──
+  const gridLine = (x1, y1, x2, y2, stroke, dash) => {
+    const attrs = { x1, y1, x2, y2, stroke, 'stroke-width': '0.5' };
+    if (dash) attrs['stroke-dasharray'] = dash;
+    return el('line', attrs);
+  };
+  const gridG = el('g', { 'pointer-events': 'none' });
+  // Vertical (X) grid lines every 5dm: SVGx = 8 + n*10.14285
+  const gxStep = 10.142857;
+  for (let n = 0; n <= 28; n++) {
+    const x = +(8 + n * gxStep).toFixed(2);
+    let stroke, dash;
+    if (n === 0 || n === 28) { stroke = 'rgba(255,255,255,0.08)'; }
+    else if (Math.abs(x - 150) < 0.5) { continue; } // center handled separately
+    else if (n % 2 === 0) { stroke = 'rgba(255,255,255,0.06)'; }
+    else { stroke = 'rgba(255,255,255,0.04)'; dash = '2,3'; }
+    gridG.appendChild(gridLine(x, 22, x, 492, stroke, dash));
+  }
+  // Center X line (highlighted)
+  gridG.appendChild(el('line', { x1: 150, y1: 22, x2: 150, y2: 492, stroke: 'rgba(255,255,255,0.35)', 'stroke-width': '1' }));
+  // Horizontal (Y) grid lines every 5dm: SVGy = 22 + n*5.34222
+  const gyStep = 5.342222;
+  for (let n = 0; n <= 88; n++) {
+    const y = +(22 + n * gyStep).toFixed(2);
+    let stroke, dash;
+    if (n === 0 || n === 88) { stroke = 'rgba(255,255,255,0.08)'; }
+    else if (n % 2 === 0) { stroke = 'rgba(255,255,255,0.06)'; }
+    else { stroke = 'rgba(255,255,255,0.04)'; dash = '2,3'; }
+    gridG.appendChild(gridLine(8, y, 292, y, stroke, dash));
+  }
+  svg.appendChild(gridG);
+
+  // ── Card + driving lane ──
+  svg.appendChild(el('rect', { x: 8, y: 22, width: 284, height: 480, rx: 12, fill: '#0d1117', stroke: 'rgba(255,255,255,0.07)', 'stroke-width': '1.5' }));
+  svg.appendChild(el('rect', { x: 105, y: 30, width: 90, height: 462, rx: 5, fill: 'url(#gLane)', stroke: 'rgba(255,255,255,0.04)', 'stroke-width': '1' }));
+  svg.appendChild(el('line', { x1: 150, y1: 50, x2: 150, y2: 483, stroke: 'rgba(255,255,255,0.11)', 'stroke-width': '1.5', 'stroke-dasharray': '13,9' }));
+
+  const entrance = el('text', { x: 150, y: 37, 'text-anchor': 'middle', fill: 'rgba(255,255,255,0.28)', 'font-size': '6.5', 'font-weight': '700', 'letter-spacing': '2', 'font-family': 'system-ui' });
+  entrance.textContent = 'ENTRANCE';
+  svg.appendChild(entrance);
+  svg.appendChild(el('polygon', { points: '144,44 156,44 150,56', fill: 'rgba(255,255,255,0.35)' }));
+
+  // ── Spot factory: double polygon (shadow + face), optional glow, number ──
+  function classifyStatus(spotData) {
+    if (mineSpotIds.has(spotData.id)) return 'mine';
+    return spotStateClass(spotData, pendingSpotIds); // free | occupied | reserved | pending
   }
 
-  // Entrance label (above arrow)
-  const entranceText = document.createElementNS(svgNS, 'text');
-  entranceText.setAttribute('x', ax);
-  entranceText.setAttribute('y', byTop + 14);
-  entranceText.setAttribute('text-anchor', 'middle');
-  entranceText.setAttribute('dominant-baseline', 'middle');
-  entranceText.setAttribute('font-family', 'inherit');
-  entranceText.setAttribute('font-size', '10');
-  entranceText.setAttribute('font-weight', '700');
-  entranceText.setAttribute('letter-spacing', '1.5');
-  entranceText.setAttribute('style', 'fill:var(--svg-text)');
-  entranceText.textContent = 'ENTRANCE';
-  svg.appendChild(entranceText);
-
-  // Entry arrow
-  const arrow = document.createElementNS(svgNS, 'polygon');
-  arrow.setAttribute('points',
-    `${ax - 10},${LANE_TOP + 8} ${ax + 10},${LANE_TOP + 8} ${ax},${LANE_TOP + 26}`);
-  arrow.setAttribute('style', 'fill:var(--svg-arrow)');
-  svg.appendChild(arrow);
-
-  // ── Diagonal spot factory ──
-  // Spot number: centred inside the rect (inherits rotation).
-  // License plate: placed OUTSIDE the rect on the wall side (back edge),
-  //   counter-rotated so it reads horizontally, in a dark pill for contrast.
-  function makeSpot(label, cx, cy, angle, side) {
+  // Build a spot group from precomputed geometry.
+  //   facePts / shadowPts: polygon point strings (null => use rect coords)
+  //   rect: {x,y,w,h} for the perpendicular bottom-row spots
+  //   textX / textY: number label position
+  function makeSpotGroup(label, geom) {
     const spotData = getSpotData(spots, label);
-    const renter = spotData.assignedUserId
-      ? users.find(u => u.id === spotData.assignedUserId)
-      : null;
+    const kind = classifyStatus(spotData);
+    const grad = V40_STATUS_GRADIENT[kind] || V40_STATUS_GRADIENT.free;
+    const isMine = kind === 'mine';
 
-    const stateClass = spotStateClass(spotData, pendingSpotIds);
+    const g = el('g', { 'data-id': spotData.id, class: `spot spot-group ${kind}`, style: 'cursor:pointer' });
 
-    const g = document.createElementNS(svgNS, 'g');
-    g.setAttribute('class', `spot ${stateClass}`);
-    g.setAttribute('data-id', spotData.id);
-    g.setAttribute('transform', `rotate(${angle}, ${cx}, ${cy})`);
-
-    // Spot rectangle
-    const rect = document.createElementNS(svgNS, 'rect');
-    rect.setAttribute('x', cx - SPOT_W / 2);
-    rect.setAttribute('y', cy - SPOT_H / 2);
-    rect.setAttribute('width', SPOT_W);
-    rect.setAttribute('height', SPOT_H);
-    rect.setAttribute('rx', '4');
-    g.appendChild(rect);
-
-    // Enlarged transparent hit target for mobile tapping
-    const hitRect = document.createElementNS(svgNS, 'rect');
-    hitRect.setAttribute('x', cx - (SPOT_W + 40) / 2);
-    hitRect.setAttribute('y', cy - (SPOT_H + 30) / 2);
-    hitRect.setAttribute('width', SPOT_W + 40);
-    hitRect.setAttribute('height', SPOT_H + 30);
-    hitRect.setAttribute('fill', 'transparent');
-    hitRect.setAttribute('style', 'cursor:pointer');
-    g.appendChild(hitRect);
-
-    // Owned indicator — small dot in top-right corner of the rect
-    if (spotData.owned) {
-      const dot = document.createElementNS(svgNS, 'circle');
-      dot.setAttribute('cx', cx + SPOT_W / 2 - 5);
-      dot.setAttribute('cy', cy - SPOT_H / 2 + 5);
-      dot.setAttribute('r', '3.5');
-      dot.setAttribute('fill', 'rgba(255,255,255,0.9)');
-      dot.setAttribute('pointer-events', 'none');
-      g.appendChild(dot);
+    // Shadow (offset +5 down)
+    if (geom.rect) {
+      const r = geom.rect;
+      g.appendChild(el('rect', { x: r.x, y: r.y + 5, width: r.w, height: r.h, rx: 2, fill: `url(#${grad.shadow})`, opacity: 0.85 }));
+    } else {
+      g.appendChild(el('polygon', { points: geom.shadowPts, fill: `url(#${grad.shadow})`, opacity: isMine ? 0.9 : 0.85 }));
     }
 
-    // Spot number label — centered inside rect
-    const numText = document.createElementNS(svgNS, 'text');
-    numText.setAttribute('class', 'spot-label');
-    numText.setAttribute('x', cx);
-    numText.setAttribute('y', renter ? cy - 4 : cy);
-    numText.textContent = label;
-    g.appendChild(numText);
-
-    // License plate — outside the rect, on the wall (back) side.
-    // Back edge: left spots → left side (cx - SPOT_W/2), right spots → right side (cx + SPOT_W/2).
-    // We counter-rotate the plate group so text reads horizontally.
-    if (renter) {
-      const plate = (renter.licensePlate || renter.username || '').toUpperCase();
-      if (plate) {
-        const backEdgeX = side === 'left'
-          ? cx - SPOT_W / 2   // wall side for left spots
-          : cx + SPOT_W / 2;  // wall side for right spots
-        const plateAnchor = side === 'left' ? 'end' : 'start';
-        const plateOffsetX = side === 'left' ? -4 : 4;
-
-        // Counter-rotate group so pill + text are always horizontal
-        const plateG = document.createElementNS(svgNS, 'g');
-        plateG.setAttribute('transform', `rotate(${-angle}, ${backEdgeX}, ${cy})`);
-        plateG.setAttribute('pointer-events', 'none');
-
-        // Dark pill background
-        const PILL_H = 12, PILL_PAD = 4;
-        const approxW = plate.length * 5.5 + PILL_PAD * 2;
-        const pillX = plateAnchor === 'end'
-          ? backEdgeX + plateOffsetX - approxW
-          : backEdgeX + plateOffsetX;
-        const pill = document.createElementNS(svgNS, 'rect');
-        pill.setAttribute('x', pillX);
-        pill.setAttribute('y', cy - PILL_H / 2);
-        pill.setAttribute('width', approxW);
-        pill.setAttribute('height', PILL_H);
-        pill.setAttribute('rx', '3');
-        pill.setAttribute('fill', 'rgba(0,0,0,0.85)');
-        plateG.appendChild(pill);
-
-        const pt = document.createElementNS(svgNS, 'text');
-        pt.setAttribute('x', backEdgeX + plateOffsetX);
-        pt.setAttribute('y', cy + 0.5);
-        pt.setAttribute('text-anchor', plateAnchor);
-        pt.setAttribute('dominant-baseline', 'middle');
-        pt.setAttribute('font-family', 'inherit');
-        pt.setAttribute('font-size', '8');
-        pt.setAttribute('font-weight', '800');
-        pt.setAttribute('fill', '#fff');
-        pt.setAttribute('letter-spacing', '0.5');
-        pt.textContent = plate;
-        plateG.appendChild(pt);
-
-        g.appendChild(plateG);
-      }
+    // Face (with round filter), wrapped in glow group if mine
+    let faceParent = g;
+    if (isMine) {
+      const glow = el('g', { filter: 'url(#myGlow)' });
+      g.appendChild(glow);
+      faceParent = glow;
     }
+    if (geom.rect) {
+      const r = geom.rect;
+      faceParent.appendChild(el('rect', { x: r.x, y: r.y, width: r.w, height: r.h, rx: 3, fill: `url(#${grad.face})`, filter: 'url(#round)' }));
+    } else {
+      faceParent.appendChild(el('polygon', { points: geom.facePts, fill: `url(#${grad.face})`, filter: 'url(#round)' }));
+    }
+
+    // Spot number
+    const num = el('text', {
+      x: geom.textX, y: geom.textY,
+      'text-anchor': 'middle', 'dominant-baseline': 'middle',
+      fill: v40TextFill(kind), 'font-size': '9', 'font-weight': '800', 'font-family': 'system-ui',
+      'pointer-events': 'none',
+    });
+    num.textContent = label;
+    g.appendChild(num);
 
     if (currentUser) {
       g.addEventListener('click', () => {
         const alreadySelected = svg.querySelector('.spot.selected') === g;
-        svg.querySelectorAll('.spot.selected').forEach(el => el.classList.remove('selected'));
+        svg.querySelectorAll('.spot.selected').forEach(x => x.classList.remove('selected'));
         if (alreadySelected) {
           closeBottomSheet();
         } else {
@@ -218,219 +196,51 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     return g;
   }
 
-  // Left diagonal row
+  // ── Angled lane spots ──
+  // rank 1 = bottom (spot 11 / spot 1), rank 10 = top (spot 20 / spot 10).
+  // y0 = 456 - (rank-1)*34, shift = rank*2, y0_eff = y0 - shift.
+  function laneGeom(rank, side) {
+    const y0 = 456 - (rank - 1) * 34;
+    const shift = rank * 2;
+    const y = y0 - shift; // y0_eff
+    if (side === 'left') {
+      // TL(25,y) TR(95,y-67) BR(95,y-40) BL(25,y+27)
+      const facePts = `25,${y} 95,${y - 67} 95,${y - 40} 25,${y + 27}`;
+      const shadowPts = `25,${y + 5} 95,${y - 67 + 5} 95,${y - 40 + 5} 25,${y + 27 + 5}`;
+      return { facePts, shadowPts, textX: 60, textY: y - 20 };
+    }
+    // right (mirror): TL(205,y-67) TR(275,y) BR(275,y+27) BL(205,y-40)
+    const facePts = `205,${y - 67} 275,${y} 275,${y + 27} 205,${y - 40}`;
+    const shadowPts = `205,${y - 67 + 5} 275,${y + 5} 275,${y + 27 + 5} 205,${y - 40 + 5}`;
+    return { facePts, shadowPts, textX: 240, textY: y - 20 };
+  }
+
+  // Left lane: spots 20..11 (top to bottom). rank 10 = spot20, rank 1 = spot11.
   LEFT_SPOTS.forEach((label, i) => {
-    const cy = START_Y + i * STEP_Y;
-    const cx = LANE_LEFT - SPOT_W / 2 - 4;
-    svg.appendChild(makeSpot(label, cx, cy, -ANGLE, 'left'));
+    const rank = 10 - i; // i=0 -> 20 -> rank 10 ; i=9 -> 11 -> rank 1
+    svg.appendChild(makeSpotGroup(label, laneGeom(rank, 'left')));
   });
-
-  // Right diagonal row
+  // Right lane: spots 10..1 (top to bottom). rank 10 = spot10, rank 1 = spot1.
   RIGHT_SPOTS.forEach((label, i) => {
-    const cy = START_Y + i * STEP_Y;
-    const cx = LANE_RIGHT + SPOT_W / 2 + 4;
-    svg.appendChild(makeSpot(label, cx, cy, ANGLE, 'right'));
+    const rank = 10 - i; // i=0 -> 10 -> rank 10 ; i=9 -> 1 -> rank 1
+    svg.appendChild(makeSpotGroup(label, laneGeom(rank, 'right')));
   });
 
-  // ── Bottom wedge spots (A, B) ──
-  function makeWedge(label, points) {
-    const spotData = getSpotData(spots, label);
-    const renter = spotData.assignedUserId
-      ? users.find(u => u.id === spotData.assignedUserId)
-      : null;
+  // ── Bottom-row perpendicular spots (22 left, 21 right) ──
+  svg.appendChild(makeSpotGroup('22', { rect: { x: 107, y: 423, w: 36, h: 67 }, textX: 125, textY: 456 }));
+  svg.appendChild(makeSpotGroup('21', { rect: { x: 157, y: 423, w: 36, h: 67 }, textX: 175, textY: 456 }));
 
-    const stateClass = spotStateClass(spotData, pendingSpotIds);
-
-    const g = document.createElementNS(svgNS, 'g');
-    g.setAttribute('class', `spot ${stateClass}`);
-    g.setAttribute('data-id', spotData.id);
-
-    const poly = document.createElementNS(svgNS, 'polygon');
-    poly.setAttribute('points', points.map(p => p.join(',')).join(' '));
-    g.appendChild(poly);
-
-    // Enlarged transparent hit target for mobile (bounding box of the polygon)
-    const xs = points.map(p => p[0]);
-    const ys = points.map(p => p[1]);
-    const bx = Math.min(...xs) - 10, by = Math.min(...ys) - 10;
-    const bw = Math.max(...xs) - bx + 20, bh = Math.max(...ys) - by + 20;
-    const hitRect = document.createElementNS(svgNS, 'rect');
-    hitRect.setAttribute('x', bx); hitRect.setAttribute('y', by);
-    hitRect.setAttribute('width', bw); hitRect.setAttribute('height', bh);
-    hitRect.setAttribute('fill', 'transparent');
-    hitRect.setAttribute('style', 'cursor:pointer');
-    g.appendChild(hitRect);
-
-    // Owned indicator
-    if (spotData.owned) {
-      const dot = document.createElementNS(svgNS, 'circle');
-      dot.setAttribute('cx', points[1][0] - 8); dot.setAttribute('cy', points[0][1] + 8);
-      dot.setAttribute('r', '4');
-      dot.setAttribute('fill', 'rgba(255,255,255,0.9)');
-      dot.setAttribute('pointer-events', 'none');
-      g.appendChild(dot);
-    }
-
-    const cx = points.reduce((a, p) => a + p[0], 0) / points.length;
-    const cy = points.reduce((a, p) => a + p[1], 0) / points.length;
-
-    // Spot number — upper area
-    const numText = document.createElementNS(svgNS, 'text');
-    numText.setAttribute('class', 'spot-label');
-    numText.setAttribute('x', cx);
-    numText.setAttribute('y', renter ? cy - 10 : cy);
-    numText.textContent = label;
-    g.appendChild(numText);
-
-    if (renter) {
-      const plate = (renter.licensePlate || renter.username || '').toUpperCase();
-      if (plate) {
-        const PILL_H = 13, PILL_PAD = 5;
-        const approxW = plate.length * 5.5 + PILL_PAD * 2;
-        const pill = document.createElementNS(svgNS, 'rect');
-        pill.setAttribute('x', cx - approxW / 2);
-        pill.setAttribute('y', cy + 2);
-        pill.setAttribute('width', approxW);
-        pill.setAttribute('height', PILL_H);
-        pill.setAttribute('rx', '3');
-        pill.setAttribute('fill', 'rgba(0,0,0,0.85)');
-        pill.setAttribute('pointer-events', 'none');
-        g.appendChild(pill);
-
-        const pt = document.createElementNS(svgNS, 'text');
-        pt.setAttribute('x', cx); pt.setAttribute('y', cy + 9);
-        pt.setAttribute('text-anchor', 'middle');
-        pt.setAttribute('dominant-baseline', 'middle');
-        pt.setAttribute('font-size', '8'); pt.setAttribute('font-weight', '800');
-        pt.setAttribute('fill', '#fff'); pt.setAttribute('pointer-events', 'none');
-        pt.setAttribute('letter-spacing', '0.5');
-        pt.textContent = plate;
-        g.appendChild(pt);
-      }
-    }
-
-    if (currentUser) {
-      g.addEventListener('click', () => {
-        const alreadySelected = svg.querySelector('.spot.selected') === g;
-        svg.querySelectorAll('.spot.selected').forEach(el => el.classList.remove('selected'));
-        if (alreadySelected) {
-          closeBottomSheet();
-        } else {
-          g.classList.add('selected');
-          openBottomSheet(spotData, label, users, currentUser, pendingSpotIds);
-        }
-      });
-    }
-    return g;
-  }
-
-  // ── Bottom perpendicular spots (21, 22) ──
-  function makeBottomLanePerpSpot(label, x, y, w, h) {
-    const spotData = getSpotData(spots, label);
-    const renter = spotData.assignedUserId
-      ? users.find(u => u.id === spotData.assignedUserId)
-      : null;
-
-    const stateClass = spotStateClass(spotData, pendingSpotIds);
-
-    const g = document.createElementNS(svgNS, 'g');
-    g.setAttribute('class', `spot ${stateClass}`);
-    g.setAttribute('data-id', spotData.id);
-
-    const rect = document.createElementNS(svgNS, 'rect');
-    rect.setAttribute('x', x); rect.setAttribute('y', y);
-    rect.setAttribute('width', w); rect.setAttribute('height', h);
-    rect.setAttribute('rx', '4');
-    g.appendChild(rect);
-
-    // Enlarged transparent hit target for mobile
-    const hitRect = document.createElementNS(svgNS, 'rect');
-    hitRect.setAttribute('x', x - 15);
-    hitRect.setAttribute('y', y - 15);
-    hitRect.setAttribute('width', w + 30);
-    hitRect.setAttribute('height', h + 30);
-    hitRect.setAttribute('fill', 'transparent');
-    hitRect.setAttribute('style', 'cursor:pointer');
-    g.appendChild(hitRect);
-
-    // Owned indicator
-    if (spotData.owned) {
-      const dot = document.createElementNS(svgNS, 'circle');
-      dot.setAttribute('cx', x + w - 6); dot.setAttribute('cy', y + 6);
-      dot.setAttribute('r', '3.5');
-      dot.setAttribute('fill', 'rgba(255,255,255,0.9)');
-      dot.setAttribute('pointer-events', 'none');
-      g.appendChild(dot);
-    }
-    const numText = document.createElementNS(svgNS, 'text');
-    numText.setAttribute('class', 'spot-label');
-    numText.setAttribute('x', x + w / 2);
-    numText.setAttribute('y', renter ? y + h / 2 - 12 : y + h / 2);
-    numText.textContent = label;
-    g.appendChild(numText);
-
-    if (renter) {
-      const plate = (renter.licensePlate || renter.username || '').toUpperCase();
-      if (plate) {
-        const PILL_H = 13, PILL_PAD = 5;
-        const approxW = plate.length * 5.5 + PILL_PAD * 2;
-        const pill = document.createElementNS(svgNS, 'rect');
-        pill.setAttribute('x', x + w / 2 - approxW / 2);
-        pill.setAttribute('y', y + h / 2 + 2);
-        pill.setAttribute('width', approxW);
-        pill.setAttribute('height', PILL_H);
-        pill.setAttribute('rx', '3');
-        pill.setAttribute('fill', 'rgba(0,0,0,0.85)');
-        pill.setAttribute('pointer-events', 'none');
-        g.appendChild(pill);
-
-        const pt = document.createElementNS(svgNS, 'text');
-        pt.setAttribute('x', x + w / 2); pt.setAttribute('y', y + h / 2 + 9);
-        pt.setAttribute('text-anchor', 'middle');
-        pt.setAttribute('dominant-baseline', 'middle');
-        pt.setAttribute('font-size', '8'); pt.setAttribute('font-weight', '800');
-        pt.setAttribute('fill', '#fff'); pt.setAttribute('pointer-events', 'none');
-        pt.setAttribute('letter-spacing', '0.5');
-        pt.textContent = plate;
-        g.appendChild(pt);
-      }
-    }
-
-    if (currentUser) {
-      g.addEventListener('click', () => {
-        const alreadySelected = svg.querySelector('.spot.selected') === g;
-        svg.querySelectorAll('.spot.selected').forEach(el => el.classList.remove('selected'));
-        if (alreadySelected) {
-          closeBottomSheet();
-        } else {
-          g.classList.add('selected');
-          openBottomSheet(spotData, label, users, currentUser, pendingSpotIds);
-        }
-      });
-    }
-    return g;
-  }
-
-  const bottomY = LANE_BOTTOM + 10;
-  const bottomH = 60;
-  const perpW = (LANE_RIGHT - LANE_LEFT) / 2 - 4;
-  const laneCenterX = (LANE_LEFT + LANE_RIGHT) / 2;
-
-  svg.appendChild(makeBottomLanePerpSpot('22', LANE_LEFT + 4, bottomY, perpW, bottomH));
-  svg.appendChild(makeBottomLanePerpSpot('21', laneCenterX + 4, bottomY, perpW - 4, bottomH));
-
-  svg.appendChild(makeWedge('B', [
-    [bxLeft,    bottomY],
-    [LANE_LEFT, bottomY],
-    [LANE_LEFT, bottomY + bottomH],
-    [bxLeft,    byBottom]
-  ]));
-  svg.appendChild(makeWedge('A', [
-    [LANE_RIGHT, bottomY],
-    [bxRight,    bottomY],
-    [bxRight,    byBottom],
-    [LANE_RIGHT, bottomY + bottomH]
-  ]));
+  // ── Corner triangle spots (B left, A right) ──
+  svg.appendChild(makeSpotGroup('B', {
+    facePts: '95,423 25,490 95,490',
+    shadowPts: '95,428 25,495 95,495',
+    textX: 72, textY: 468,
+  }));
+  svg.appendChild(makeSpotGroup('A', {
+    facePts: '205,423 275,490 205,490',
+    shadowPts: '205,428 275,495 205,495',
+    textX: 228, textY: 468,
+  }));
 }
 
 function showSpotInfo(spotData, label, users, currentUser, pendingSpotIds) {
