@@ -5,6 +5,8 @@ import { loginAs } from './helpers.js';
 const RENTER_USER = 'HD-AA-001';
 const RENTER_PASS = 'TestPass123!';
 
+test.use({ viewport: { width: 390, height: 844 } });
+
 test('Full renter journey: login → view map → click own spot → view payments → edit profile', async ({ page }) => {
   // Step 1: Login as renter
   await loginAs(page, RENTER_USER, RENTER_PASS);
