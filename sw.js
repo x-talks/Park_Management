@@ -9,27 +9,30 @@
 // handler purges stale caches. The date suffix makes the current version
 // obvious; change it whenever the shell files change.
 const CACHE = 'pm-2026-07-14';
+// Relative paths — the site is served under a GitHub Pages project subpath
+// (/Park_Management/), so absolute "/index.html" would 404. Relative paths
+// resolve against the SW scope, which is the subpath.
 const SHELL = [
-  '/',
-  '/index.html',
-  '/parking.html',
-  '/incident.html',
-  '/admin.html',
-  '/css/style.css',
-  '/js/config.js',
-  '/js/api.js',
-  '/js/auth.js',
-  '/js/i18n.js',
-  '/js/i18n/en.js',
-  '/js/i18n/de.js',
-  '/js/i18n/tr.js',
-  '/js/modal.js',
-  '/js/toast.js',
-  '/js/theme.js',
-  '/js/parking.js',
-  '/js/admin.js',
-  '/logo.png',
-  '/manifest.json'
+  './',
+  './index.html',
+  './parking.html',
+  './incident.html',
+  './admin.html',
+  './css/style.css',
+  './js/config.js',
+  './js/api.js',
+  './js/auth.js',
+  './js/i18n.js',
+  './js/i18n/en.js',
+  './js/i18n/de.js',
+  './js/i18n/tr.js',
+  './js/modal.js',
+  './js/toast.js',
+  './js/theme.js',
+  './js/parking.js',
+  './js/admin.js',
+  './logo.png',
+  './manifest.json'
 ];
 
 self.addEventListener('install', e => {

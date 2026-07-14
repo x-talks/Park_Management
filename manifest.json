@@ -2,7 +2,7 @@
   "name": "Park Management",
   "short_name": "ParkMgmt",
   "description": "Parking spot management for residents",
-  "start_url": "/parking.html",
+  "start_url": "parking.html",
   "display": "standalone",
   "background_color": "#0a0a12",
   "theme_color": "#818cf8",

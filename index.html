@@ -51,7 +51,7 @@
   initTheme();
   window.lucide.createIcons();
   document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 <script>
 buildSwitcher('lang-switcher');
