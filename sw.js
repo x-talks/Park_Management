@@ -1,7 +1,14 @@
-// sw.js — minimal service worker for PWA installability
-// Caches app shell for offline use
-
-const CACHE = 'pm-v1';
+// sw.js — service worker for PWA installability + offline fallback
+//
+// Strategy: NETWORK-FIRST for the app shell (HTML/CSS/JS). When online, users
+// always get the freshly deployed files; the cache is only a fallback for
+// offline use. This prevents the classic "deployed but users still see the old
+// version" problem caused by cache-first serving.
+//
+// IMPORTANT: bump CACHE on every meaningful frontend change so the `activate`
+// handler purges stale caches. The date suffix makes the current version
+// obvious; change it whenever the shell files change.
+const CACHE = 'pm-2026-07-14';
 const SHELL = [
   '/',
   '/index.html',
@@ -39,25 +46,24 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Network-first for API calls, cache-first for shell assets
+// Network-first for same-origin GET (app shell). Fall back to cache offline.
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Skip non-GET and cross-origin (Supabase, worker, CDN)
+  // Skip non-GET and cross-origin (Supabase, worker, CDN) — let them hit network directly.
   if (e.request.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
 
-  // Cache-first for shell files
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const network = fetch(e.request).then(res => {
+    fetch(e.request)
+      .then(res => {
+        // Cache a fresh copy of successful responses for offline fallback.
         if (res.ok) {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      });
-      return cached || network;
-    })
+      })
+      .catch(() => caches.match(e.request))
   );
 });
