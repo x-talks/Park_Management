@@ -95,6 +95,9 @@ jobs:
         run: npm run test:e2e
         env:
           SKIP_SEED: "1"
+          # Stop the run on the first failure (after retries) for fast feedback
+          # while we stabilize the suite. Remove this line to run the full suite.
+          MAX_FAILURES: "1"
 
       - name: Upload Playwright report on failure
         if: failure()

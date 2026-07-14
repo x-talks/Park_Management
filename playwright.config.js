@@ -6,6 +6,10 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 2 : 0,
+  // Fail-fast: stop the whole run after N failures (after retries are exhausted).
+  // Default 0 = no limit (a healthy run validates everything). Set MAX_FAILURES=1
+  // in CI while stabilizing to get fast red feedback instead of waiting for all tests.
+  maxFailures: process.env.MAX_FAILURES ? Number(process.env.MAX_FAILURES) : 0,
   timeout: 60_000,
   reporter: [
     ['list'],
