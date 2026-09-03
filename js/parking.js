@@ -114,9 +114,10 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   svg.appendChild(gridG);
 
   // ── Axis labels (outside the card, in viewBox overflow space) ──
+  // Colors are semi-transparent dark — readable on both light and dark backgrounds
   const axisG = el('g', { 'pointer-events': 'none', 'font-family': 'system-ui' });
 
-  // X-axis labels every 10dm above the card: SVGx = 8 + dm*2.02857, center=150=70dm
+  // X-axis labels every 10dm above the card
   const xLabels = [
     [-70,8],[-60,28.29],[-50,48.57],[-40,68.86],[-30,89.14],
     [-20,109.43],[-10,129.71],[0,150],[10,170.29],[20,190.57],
@@ -125,7 +126,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   xLabels.forEach(([dm, x]) => {
     const t = el('text', {
       x, y: 14, 'text-anchor': 'middle',
-      fill: dm === 0 ? 'rgba(255,255,255,1)' : (dm % 20 === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.25)'),
+      fill: dm === 0 ? 'rgba(100,100,100,1)' : (dm % 20 === 0 ? 'rgba(120,120,120,0.9)' : 'rgba(150,150,150,0.6)'),
       'font-size': dm === 0 ? '7' : (dm % 20 === 0 ? '5.5' : '5'),
       'font-weight': dm === 0 ? 'bold' : 'normal',
     });
@@ -133,18 +134,16 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     axisG.appendChild(t);
   });
 
-  // Y-axis labels every 10dm: SVGy = 22 + dm*1.06818, left x=3, right x=297
+  // Y-axis labels every 10dm on both left and right sides
   for (let dm = 0; dm <= 440; dm += 10) {
     const y = +(22 + dm * 1.06818).toFixed(1);
     const strong = dm % 20 === 0;
-    const fill = strong ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)';
+    const fill = strong ? 'rgba(100,100,100,0.9)' : 'rgba(150,150,150,0.6)';
     const fs = strong ? '5.5' : '5';
     const label = String(dm);
-    // Left
     const tl = el('text', { x: 3, y, 'text-anchor': 'end', fill, 'font-size': fs });
     tl.textContent = label;
     axisG.appendChild(tl);
-    // Right
     const tr = el('text', { x: 297, y, 'text-anchor': 'start', fill, 'font-size': fs });
     tr.textContent = label;
     axisG.appendChild(tr);
