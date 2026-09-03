@@ -38,6 +38,34 @@ test.describe('Spots table', () => {
   });
 });
 
+test.describe('Reserve/unreserve toggle', () => {
+  test('reserved spot can be unreserved and then re-reserved (toggle)', async ({ page }) => {
+    // s3 is reserved in staging — locate it by its label "3"
+    const s3Row = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
+    await expect(s3Row).toBeVisible({ timeout: 10_000 });
+
+    // Step 1: spot starts reserved — click Unreserve button
+    const unreserveBtn = s3Row.locator('button').filter({ hasText: /unreserve/i }).first();
+    await expect(unreserveBtn).toBeVisible();
+    await unreserveBtn.click();
+    await page.waitForTimeout(1500);
+
+    // After unreserving, spot should no longer show "Reserved" chip; state chip should show Free
+    await expect(s3Row).not.toContainText(/reserved/i);
+
+    // Step 2: re-reserve — "Mark reserved" button should now appear
+    const reserveBtn = s3Row.locator('button').filter({ hasText: /mark reserved/i }).first();
+    await expect(reserveBtn).toBeVisible({ timeout: 5_000 });
+    await reserveBtn.click();
+    // Confirm the modal dialog (confirm button has id="pm-modal-confirm")
+    await page.locator('#pm-modal-confirm').click();
+    await page.waitForTimeout(1500);
+
+    // Spot should be reserved again
+    await expect(s3Row).toContainText(/reserved/i);
+  });
+});
+
 test.describe('Rent editing', () => {
   test('change rent on s1 to 95 → value saved', async ({ page }) => {
     // s1 has plate HD-AA-001 — use that to identify the row
