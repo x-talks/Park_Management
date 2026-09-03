@@ -572,6 +572,16 @@ async function renderUsers() {
         }));
       }
 
+      if (!u.authId) {
+        btnRow.appendChild(iconBtn('⚠', 'Fix Auth', 'warning-btn', async () => {
+          try {
+            const res = await migrateUserToAuth(u.id);
+            await modalAlert(`Auth created.\nEmail: ${res.email}\nTemp password: ${res.tempPassword}`);
+            refreshAll();
+          } catch(e) { await modalAlert(e.message); }
+        }));
+      }
+
       btnRow.appendChild(iconBtn('🗑', t('admin.btn.delete'), 'danger', async () => {
         if (!await modalConfirm(t('admin.confirm.delete', u.licensePlate || u.username), { danger: true })) return;
         try { await deleteUser(u.id); refreshAll(); }

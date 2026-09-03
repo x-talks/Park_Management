@@ -417,6 +417,8 @@ button.danger { background: var(--red); border-color: var(--red); color: #fff; }
 button.danger:hover { opacity: 0.88; }
 button.success-btn { background: var(--green); border-color: var(--green); color: #fff; }
 button.success-btn:hover { opacity: 0.88; }
+button.warning-btn { background: var(--amber); border-color: var(--amber); color: #fff; }
+button.warning-btn:hover { opacity: 0.88; }
 button.accent { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 button.accent:hover { opacity: 0.88; }
 button[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }

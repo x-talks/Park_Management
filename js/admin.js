@@ -160,6 +160,10 @@ async function rejectPendingRegistration(prId) {
 
 // ── Invite links ──────────────────────────────────────────────────────────────
 
+async function migrateUserToAuth(userId) {
+  return workerRequest('POST', `/admin/migrate-user/${userId}`);
+}
+
 async function createAndInviteUser({ name, lastName, phone, address, spotId, licensePlate, carModel, carColor }) {
   const result = await workerRequest('POST', '/invites', {
     name: name || '', lastName: lastName || '',
