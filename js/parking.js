@@ -1,6 +1,6 @@
 // js/parking.js
 // Renders the SVG parking layout using the v40 map design:
-// dark background, gradient fills, double-polygon depth (shadow + face),
+// dark background, flat gradient fills (no shadow layer),
 // rounded corners via morphology filter, and a glow filter on the current
 // user's own spots. Spot states: free (green), occupied (red),
 // reserved (grey), pending (amber), mine (indigo + glow).
@@ -24,35 +24,28 @@ function spotStateClass(spotData, pendingSpotIds) {
 }
 
 // ── v40 map design ──
-// Static <defs> (gradients + filters) injected on every render since the SVG
-// is cleared and rebuilt each time buildSVG runs.
 const V40_STATUS_GRADIENT = {
-  free:     { face: 'gFree', shadow: 'gFreeS' },
-  occupied: { face: 'gOcc',  shadow: 'gOccS'  },
-  reserved: { face: 'gRes',  shadow: 'gResS'  },
-  pending:  { face: 'gPend', shadow: 'gPendS' },
-  mine:     { face: 'gMine', shadow: 'gMineS' },
+  free:     'gFree',
+  occupied: 'gOcc',
+  reserved: 'gRes',
+  pending:  'gPend',
+  mine:     'gMine',
 };
 
-// Text fill per status: green (free) spots use dark green, pending uses black,
-// occupied/reserved/mine use white.
+// White only for occupied and mine (dark backgrounds); dark for all others.
 function v40TextFill(kind) {
-  if (kind === 'free') return '#052e16';
-  if (kind === 'pending') return '#000';
-  return '#fff';
+  if (kind === 'occupied' || kind === 'mine') return '#fff';
+  if (kind === 'free')     return '#052e16';
+  if (kind === 'pending')  return '#000';
+  return '#111827'; // reserved
 }
 
 const V40_DEFS = `
   <linearGradient id="gFree" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#15803d"/></linearGradient>
-  <linearGradient id="gFreeS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#052e16"/><stop offset="100%" stop-color="#041a0c"/></linearGradient>
-  <linearGradient id="gOcc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>
-  <linearGradient id="gOccS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3b0a0a"/><stop offset="100%" stop-color="#250707"/></linearGradient>
-  <linearGradient id="gRes" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9ca3af"/><stop offset="100%" stop-color="#4b5563"/></linearGradient>
-  <linearGradient id="gResS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1f2937"/><stop offset="100%" stop-color="#111827"/></linearGradient>
+  <linearGradient id="gOcc"  x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>
+  <linearGradient id="gRes"  x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9ca3af"/><stop offset="100%" stop-color="#4b5563"/></linearGradient>
   <linearGradient id="gMine" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c4b5fd"/><stop offset="100%" stop-color="#4f46e5"/></linearGradient>
-  <linearGradient id="gMineS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2e1065"/><stop offset="100%" stop-color="#1e0a47"/></linearGradient>
   <linearGradient id="gPend" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#b45309"/></linearGradient>
-  <linearGradient id="gPendS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#451a03"/><stop offset="100%" stop-color="#2d1102"/></linearGradient>
   <linearGradient id="gLane" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#131c2e"/><stop offset="50%" stop-color="#0f172a"/><stop offset="100%" stop-color="#131c2e"/></linearGradient>
   <filter id="myGlow" x="-50%" y="-50%" width="200%" height="200%">
     <feGaussianBlur stdDeviation="5" result="blur"/>
@@ -149,14 +142,6 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
 
     const g = el('g', { 'data-id': spotData.id, class: `spot spot-group ${kind}`, style: 'cursor:pointer' });
 
-    // Shadow (offset +5 down)
-    if (geom.rect) {
-      const r = geom.rect;
-      g.appendChild(el('rect', { x: r.x, y: r.y + 5, width: r.w, height: r.h, rx: 2, fill: `url(#${grad.shadow})`, opacity: 0.85 }));
-    } else {
-      g.appendChild(el('polygon', { points: geom.shadowPts, fill: `url(#${grad.shadow})`, opacity: isMine ? 0.9 : 0.85 }));
-    }
-
     // Face (with round filter), wrapped in glow group if mine
     let faceParent = g;
     if (isMine) {
@@ -166,9 +151,9 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     }
     if (geom.rect) {
       const r = geom.rect;
-      faceParent.appendChild(el('rect', { x: r.x, y: r.y, width: r.w, height: r.h, rx: 3, fill: `url(#${grad.face})`, filter: 'url(#round)' }));
+      faceParent.appendChild(el('rect', { x: r.x, y: r.y, width: r.w, height: r.h, rx: 3, fill: `url(#${grad})`, filter: 'url(#round)' }));
     } else {
-      faceParent.appendChild(el('polygon', { points: geom.facePts, fill: `url(#${grad.face})`, filter: 'url(#round)' }));
+      faceParent.appendChild(el('polygon', { points: geom.facePts, fill: `url(#${grad})`, filter: 'url(#round)' }));
     }
 
     // Spot number
@@ -202,17 +187,13 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   function laneGeom(rank, side) {
     const y0 = 456 - (rank - 1) * 34;
     const shift = rank * 2;
-    const y = y0 - shift; // y0_eff
+    const y = y0 - shift;
     if (side === 'left') {
-      // TL(25,y) TR(95,y-67) BR(95,y-40) BL(25,y+27)
       const facePts = `25,${y} 95,${y - 67} 95,${y - 40} 25,${y + 27}`;
-      const shadowPts = `25,${y + 5} 95,${y - 67 + 5} 95,${y - 40 + 5} 25,${y + 27 + 5}`;
-      return { facePts, shadowPts, textX: 60, textY: y - 20 };
+      return { facePts, textX: 60, textY: y - 20 };
     }
-    // right (mirror): TL(205,y-67) TR(275,y) BR(275,y+27) BL(205,y-40)
     const facePts = `205,${y - 67} 275,${y} 275,${y + 27} 205,${y - 40}`;
-    const shadowPts = `205,${y - 67 + 5} 275,${y + 5} 275,${y + 27 + 5} 205,${y - 40 + 5}`;
-    return { facePts, shadowPts, textX: 240, textY: y - 20 };
+    return { facePts, textX: 240, textY: y - 20 };
   }
 
   // Left lane: spots 20..11 (top to bottom). rank 10 = spot20, rank 1 = spot11.
@@ -233,12 +214,10 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   // ── Corner triangle spots (B left, A right) ──
   svg.appendChild(makeSpotGroup('B', {
     facePts: '95,423 25,490 95,490',
-    shadowPts: '95,428 25,495 95,495',
     textX: 72, textY: 468,
   }));
   svg.appendChild(makeSpotGroup('A', {
     facePts: '205,423 275,490 205,490',
-    shadowPts: '205,428 275,495 205,495',
     textX: 228, textY: 468,
   }));
 }
