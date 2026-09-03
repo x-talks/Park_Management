@@ -90,33 +90,61 @@
     document.documentElement.lang = getLang();
   }
 
+  const LANG_LABELS = { en: '🇬🇧 EN', de: '🇩🇪 DE', tr: '🇹🇷 TR' };
+
   // ── Language switcher widget ─────────────────────────────────────────────
-  // Updates ALL switchers on the page (multiple containers supported)
   function _updateAllSwitchers() {
-    document.querySelectorAll('[data-lang-switcher]').forEach(sw => {
-      const cur = getLang();
-      sw.querySelectorAll('button[data-lang]').forEach(btn => {
+    const cur = getLang();
+    document.querySelectorAll('[data-lang-globe]').forEach(wrap => {
+      const trigger = wrap.querySelector('.lang-globe-btn');
+      if (trigger) trigger.textContent = '🌐 ' + cur.toUpperCase();
+      wrap.querySelectorAll('button[data-lang]').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === cur);
       });
     });
   }
 
+  function _closeAllDropdowns() {
+    document.querySelectorAll('[data-lang-globe]').forEach(w => w.classList.remove('open'));
+  }
+
   function buildSwitcher(containerId) {
     const sw = document.getElementById(containerId || 'lang-switcher');
     if (!sw) return;
-    sw.setAttribute('data-lang-switcher', '');
+    sw.setAttribute('data-lang-globe', '');
+    sw.className = 'lang-globe-wrap';
     sw.innerHTML = '';
-    sw.style.cssText = 'display:flex;gap:0.2rem;align-items:center';
+
+    const trigger = document.createElement('button');
+    trigger.className = 'lang-globe-btn icon-btn';
+    trigger.textContent = '🌐 ' + getLang().toUpperCase();
+    trigger.setAttribute('aria-label', 'Switch language');
+    trigger.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = sw.classList.contains('open');
+      _closeAllDropdowns();
+      if (!isOpen) sw.classList.add('open');
+    });
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'lang-globe-dropdown';
     SUPPORTED.forEach(lang => {
       const btn = document.createElement('button');
       btn.dataset.lang = lang;
-      btn.textContent = lang.toUpperCase();
-      btn.className = 'secondary sm lang-btn';
-      btn.style.cssText = 'min-width:2.2rem;padding:0.15rem 0.35rem;font-size:0.7rem;font-weight:700;letter-spacing:.03em';
+      btn.textContent = LANG_LABELS[lang] || lang.toUpperCase();
       if (lang === getLang()) btn.classList.add('active');
-      btn.addEventListener('click', () => setLang(lang));
-      sw.appendChild(btn);
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        setLang(lang);
+        _closeAllDropdowns();
+      });
+      dropdown.appendChild(btn);
     });
+
+    sw.appendChild(trigger);
+    sw.appendChild(dropdown);
+
+    document.addEventListener('click', _closeAllDropdowns, { capture: false });
   }
 
   // ── Expose globally ──────────────────────────────────────────────────────

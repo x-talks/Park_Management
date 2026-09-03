@@ -120,9 +120,9 @@
     <a href="parking.html" data-i18n="nav.map">Map</a>
     <span id="admin-link" style="display:none"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
     <a href="incident.html" class="active" data-i18n="nav.incidents">Incidents</a>
-    <a href="#" id="logout-link" data-i18n="nav.logout">Logout</a>
     <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
-    <div id="lang-switcher-nav" style="display:inline-flex"></div>
+    <div id="lang-switcher-nav"></div>
+    <button id="logout-link" class="icon-btn" title="Logout" data-i18n-title="nav.logout" style="font-size:1.1rem">⎋</button>
   </nav>
 </header>
 
@@ -203,10 +203,6 @@
     <span class="bn-icon">⚠️</span>
     <span data-i18n="nav.incidents">Incidents</span>
   </a>
-  <button id="bottom-logout-btn">
-    <span class="bn-icon">→</span>
-    <span data-i18n="nav.logout">Logout</span>
-  </button>
 </nav>
 
 <!-- Lightbox -->
@@ -232,8 +228,7 @@ if (!currentUser) throw new Error('not authed');
 if (currentUser.role === 'admin' || currentUser.role === 'master') {
   document.getElementById('admin-link').style.display = 'inline';
 }
-document.getElementById('logout-link').addEventListener('click', e => { e.preventDefault(); logout(); });
-document.getElementById('bottom-logout-btn').addEventListener('click', () => logout());
+document.getElementById('logout-link').addEventListener('click', () => logout());
 
 // ── Spot dropdown ──────────────────────────────────────────────────────────────
 async function loadSpots() {

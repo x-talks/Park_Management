@@ -37,9 +37,9 @@
     <a href="parking.html" data-i18n="nav.map">Map</a>
     <a href="admin.html" class="active" data-i18n="nav.admin">Admin</a>
     <a href="incident.html" data-i18n="nav.incidents">Incidents</a>
-    <a href="#" id="logout-link" data-i18n="nav.logout">Logout</a>
     <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
-    <div id="lang-switcher-nav" style="display:inline-flex"></div>
+    <div id="lang-switcher-nav"></div>
+    <button id="logout-link" class="icon-btn" title="Logout" data-i18n-title="nav.logout" style="font-size:1.1rem">⎋</button>
   </nav>
 </header>
 
@@ -160,7 +160,7 @@
 buildSwitcher('lang-switcher-nav');
 applyPage();
 const currentUser = requireAuth('admin');
-document.getElementById('logout-link').addEventListener('click', e => { e.preventDefault(); logout(); });
+document.getElementById('logout-link').addEventListener('click', () => logout());
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 let activeTab = 'users';

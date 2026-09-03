@@ -23,9 +23,8 @@
     <a href="parking.html" class="active" data-i18n="nav.map">Map</a>
     <span id="admin-link" style="display:none"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
     <a href="incident.html" data-i18n="nav.incidents">Incidents</a>
-    <a href="#" id="logout-link" data-i18n="nav.logout">Logout</a>
     <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
-    <div id="lang-switcher-nav" style="display:inline-flex"></div>
+    <div id="lang-switcher-nav"></div>
   </nav>
 </header>
 
@@ -98,8 +97,6 @@ const currentUser = requireAuth('renter');
 
 if (currentUser.role === 'admin' || currentUser.role === 'master') {
   document.getElementById('admin-link').style.display = 'inline';
-}
-document.getElementById('logout-link').addEventListener('click', e => { e.preventDefault(); logout(); });
 
 // Build role-aware bottom nav
 (function buildBottomNav() {
@@ -423,6 +420,17 @@ function renderProfile() {
   });
 
   card.appendChild(form);
+
+  const logoutRow = document.createElement('div');
+  logoutRow.style.cssText = 'margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end';
+  const logoutBtn = document.createElement('button');
+  logoutBtn.className = 'secondary';
+  logoutBtn.style.cssText = 'color:var(--red,#ef4444);border-color:var(--red,#ef4444);font-size:0.82rem;gap:0.4rem;display:inline-flex;align-items:center';
+  logoutBtn.innerHTML = '⎋ <span data-i18n="nav.logout">' + t('nav.logout') + '</span>';
+  logoutBtn.addEventListener('click', () => logout());
+  logoutRow.appendChild(logoutBtn);
+  card.appendChild(logoutRow);
+
   section.appendChild(card);
 }
 </script>
