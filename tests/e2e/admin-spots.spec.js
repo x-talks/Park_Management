@@ -44,8 +44,12 @@ test.describe('Reserve/unreserve toggle', () => {
     const s3Row = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
     await expect(s3Row).toBeVisible({ timeout: 10_000 });
 
-    // Step 1: spot starts reserved — click Unreserve button
-    const unreserveBtn = s3Row.locator('button').filter({ hasText: /unreserve/i }).first();
+    // Buttons are rendered via iconBtn(): the label lives in the `title`
+    // attribute, and the visible content is a Lucide icon — NOT text. So we
+    // must target buttons by [title=...], not by hasText.
+
+    // Step 1: spot starts reserved — click Unreserve button (title="Unreserve")
+    const unreserveBtn = s3Row.locator('button[title="Unreserve"]').first();
     await expect(unreserveBtn).toBeVisible();
     await unreserveBtn.click();
     await page.waitForTimeout(1500);
@@ -53,8 +57,8 @@ test.describe('Reserve/unreserve toggle', () => {
     // After unreserving, spot should no longer show "Reserved" chip; state chip should show Free
     await expect(s3Row).not.toContainText(/reserved/i);
 
-    // Step 2: re-reserve — "Mark reserved" button should now appear
-    const reserveBtn = s3Row.locator('button').filter({ hasText: /mark reserved/i }).first();
+    // Step 2: re-reserve — "Mark reserved" button (title="Mark reserved") should now appear
+    const reserveBtn = s3Row.locator('button[title="Mark reserved"]').first();
     await expect(reserveBtn).toBeVisible({ timeout: 5_000 });
     await reserveBtn.click();
     // Confirm the modal dialog (confirm button has id="pm-modal-confirm")
