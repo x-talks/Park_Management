@@ -130,7 +130,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
       'font-size': dm === 0 ? '7' : (dm % 20 === 0 ? '5.5' : '5'),
       'font-weight': dm === 0 ? 'bold' : 'normal',
     });
-    t.textContent = dm === 0 ? '0' : (dm > 0 ? `+${dm}` : `${dm}`);
+    t.textContent = String(Math.abs(dm));
     axisG.appendChild(t);
   });
 
