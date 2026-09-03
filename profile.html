@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#818cf8"/>
+<title data-i18n="profile.title">My Profile</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css"/>
+<script>!function(){var t=localStorage.getItem("pm-theme");if(t&&t!=="light")document.documentElement.dataset.theme=t==="dark-deep"?"dark-glass":t}()</script>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="parking.html" class="logo-link">
+    <img src="logo.png" alt="" style="height:28px;width:auto;filter:invert(1);opacity:0.9" onerror="this.style.display='none'"/>
+    <h1 data-i18n="app.name">Park Management</h1>
+  </a>
+  <nav class="site-nav">
+    <div class="nav-links">
+      <a href="parking.html" data-i18n="nav.map">Map</a>
+      <span id="admin-link" style="display:none"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
+      <a href="incident.html" data-i18n="nav.incidents">Incidents</a>
+      <a href="profile.html" class="active" data-i18n="nav.profile">Profile</a>
+    </div>
+    <div class="nav-controls">
+      <div id="user-chip-nav"></div>
+      <div id="lang-switcher-nav"></div>
+      <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
+      <button id="logout-link" class="icon-btn" title="Logout" data-i18n-title="nav.logout" style="font-size:1.1rem">⎋</button>
+    </div>
+  </nav>
+</header>
+
+<div class="page-wrap">
+
+  <!-- Personal info -->
+  <div class="card" id="profile-card">
+    <div class="card-header">
+      <h2 data-i18n="profile.title">My Profile</h2>
+    </div>
+    <div id="profile-pending-alert" class="alert info" style="display:none" data-i18n="profile.pending"></div>
+    <form id="profile-form">
+      <div class="grid-2">
+        <div class="form-group">
+          <label data-i18n="profile.label.plate">License Plate (username)</label>
+          <input id="p-plate" readonly style="opacity:0.6"/>
+          <small style="font-size:0.72rem;color:var(--text-secondary)" data-i18n="profile.readonly">Read-only — contact admin to change.</small>
+        </div>
+        <div class="form-group">
+          <label data-i18n="profile.label.name">First Name</label>
+          <input id="p-name" readonly style="opacity:0.6"/>
+          <small style="font-size:0.72rem;color:var(--text-secondary)" data-i18n="profile.readonly">Read-only — contact admin to change.</small>
+        </div>
+        <div class="form-group">
+          <label data-i18n="profile.label.lastname">Last Name</label>
+          <input id="p-lastname" readonly style="opacity:0.6"/>
+        </div>
+        <div class="form-group">
+          <label data-i18n="profile.label.phone">Phone / WhatsApp</label>
+          <input id="p-phone"/>
+        </div>
+        <div class="form-group">
+          <label data-i18n="profile.label.address">Address</label>
+          <input id="p-address"/>
+        </div>
+      </div>
+
+      <h3 style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);margin:1rem 0 0.5rem" data-i18n="profile.section.car">Vehicle Details</h3>
+      <div class="grid-2">
+        <div class="form-group">
+          <label data-i18n="profile.label.carmodel">Car Model</label>
+          <input id="p-carmodel" placeholder="e.g. VW Golf"/>
+        </div>
+        <div class="form-group">
+          <label data-i18n="profile.label.carcolor">Car Color</label>
+          <input id="p-carcolor" placeholder="e.g. blue"/>
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-top:0.75rem">
+        <button type="submit" data-i18n="profile.btn.submit">Submit Changes</button>
+      </div>
+      <p style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem" data-i18n="profile.note">Changes require admin approval before taking effect.</p>
+    </form>
+  </div>
+
+  <!-- Change password -->
+  <div class="card">
+    <div class="card-header">
+      <h2 data-i18n="profile.section.password">Change Password</h2>
+    </div>
+    <form id="password-form">
+      <div class="grid-2">
+        <div class="form-group">
+          <label data-i18n="profile.label.currentpw">Current Password</label>
+          <input id="pw-current" type="password" required autocomplete="current-password"/>
+        </div>
+        <div class="form-group">
+          <label data-i18n="profile.label.newpw">New Password</label>
+          <input id="pw-new" type="password" required autocomplete="new-password" minlength="8"/>
+        </div>
+        <div class="form-group">
+          <label data-i18n="profile.label.confirmpw">Confirm New Password</label>
+          <input id="pw-confirm" type="password" required autocomplete="new-password" minlength="8"/>
+        </div>
+      </div>
+      <div id="pw-msg" style="font-size:0.85rem;margin-bottom:0.5rem"></div>
+      <div class="btn-row">
+        <button type="submit" data-i18n="profile.btn.changepw">Change Password</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/i18n/en.js"></script>
+<script src="js/i18n/de.js"></script>
+<script src="js/i18n/tr.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/toast.js"></script>
+<script>
+buildSwitcher('lang-switcher-nav');
+applyPage();
+const currentUser = requireAuth('renter');
+buildUserChip('user-chip-nav', currentUser);
+document.getElementById('logout-link').addEventListener('click', () => logout());
+
+if (currentUser.role === 'admin' || currentUser.role === 'master') {
+  document.getElementById('admin-link').style.display = 'inline';
+}
+
+// Bottom nav
+(function buildBottomNav() {
+  const nav = document.getElementById('bottom-nav');
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'master';
+  const tabs = [
+    { href: 'parking.html',  icon: '🗺',  labelKey: 'nav.map',       active: false },
+    { href: 'incident.html', icon: '⚠️', labelKey: 'nav.incidents', active: false },
+    { href: 'profile.html',  icon: '👤', labelKey: 'nav.profile',   active: true  },
+  ];
+  if (isAdmin) tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', labelKey: 'nav.admin', active: false });
+  tabs.forEach(tab => {
+    const a = document.createElement('a');
+    a.href = tab.href;
+    if (tab.active) a.className = 'active';
+    a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span data-i18n="${tab.labelKey}">${tab.labelKey}</span>`;
+    nav.appendChild(a);
+  });
+})();
+
+// Load user data
+async function loadProfile() {
+  const users = await readFile('data/users.json');
+  const me = users.find(u => u.id === currentUser.id);
+  if (!me) return;
+
+  document.getElementById('p-plate').value    = (me.licensePlate || me.username || '').toUpperCase();
+  document.getElementById('p-name').value     = me.name || '';
+  document.getElementById('p-lastname').value = me.lastName || '';
+  document.getElementById('p-phone').value    = me.phone || '';
+  document.getElementById('p-address').value  = me.address || '';
+  document.getElementById('p-carmodel').value = me.carModel || '';
+  document.getElementById('p-carcolor').value = me.carColor || '';
+
+  if (me.pendingEdits) {
+    const alert = document.getElementById('profile-pending-alert');
+    alert.style.display = 'block';
+    // Disable form while pending
+    document.getElementById('profile-form').querySelectorAll('input:not([readonly]), button').forEach(el => el.disabled = true);
+  }
+}
+loadProfile();
+
+// Profile form submit
+document.getElementById('profile-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const users = await readFile('data/users.json');
+  const me = users.find(u => u.id === currentUser.id);
+  if (!me) return;
+
+  const changes = {};
+  const phone    = document.getElementById('p-phone').value.trim();
+  const address  = document.getElementById('p-address').value.trim();
+  const carModel = document.getElementById('p-carmodel').value.trim();
+  const carColor = document.getElementById('p-carcolor').value.trim();
+  if (phone    !== (me.phone    || '')) changes.phone    = phone;
+  if (address  !== (me.address  || '')) changes.address  = address;
+  if (carModel !== (me.carModel || '')) changes.carModel = carModel;
+  if (carColor !== (me.carColor || '')) changes.carColor = carColor;
+
+  if (!Object.keys(changes).length) { toast(t('profile.warn.nochange'), 'warn'); return; }
+
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true;
+  try {
+    await workerRequest('PATCH', `/users/${me.id}`, {
+      pendingEdits: { ...changes, requestedAt: new Date().toISOString() }
+    });
+    toast(t('profile.success'), 'success');
+    loadProfile();
+  } catch(err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// Password form submit
+document.getElementById('password-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msgEl = document.getElementById('pw-msg');
+  msgEl.textContent = '';
+  const current = document.getElementById('pw-current').value;
+  const newPw   = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+
+  if (newPw.length < 8) { msgEl.className = 'alert error'; msgEl.textContent = t('profile.pw.short'); return; }
+  if (newPw !== confirm) { msgEl.className = 'alert error'; msgEl.textContent = t('profile.pw.mismatch'); return; }
+
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true;
+  try {
+    await workerRequest('POST', `/users/${currentUser.id}/password`, {
+      password: newPw,
+      currentPassword: current,
+    });
+    toast(t('profile.pw.success'), 'success');
+    e.target.reset();
+    msgEl.textContent = '';
+  } catch(err) {
+    msgEl.className = 'alert error'; msgEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+window.addEventListener('langchange', () => { applyPage(); });
+</script>
+<script type="module">
+  import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
+  import { initTheme, cycleTheme } from './js/theme.js';
+  window.lucide = { createIcons: () => createIcons({ icons }) };
+  initTheme();
+  window.lucide.createIcons();
+  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>

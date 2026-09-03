@@ -78,3 +78,47 @@ test.describe('Mark paid / revert', () => {
     await expect(page.locator('#payment-matrix')).toBeVisible({ timeout: 5_000 });
   });
 });
+
+// Bug 8 fix: commission row mark/revert + inline per-spot rent editing
+test.describe('Commission row and variable rent', () => {
+  test('commission row is visible for s1', async ({ page }) => {
+    const s1Row = page.locator('#payment-matrix table tr').filter({ hasText: 'Spot 1' }).first();
+    await expect(s1Row).toBeVisible({ timeout: 10_000 });
+    // Commission row is adjacent — look for a row with "Commission" text in same block
+    const commRow = page.locator('#payment-matrix').locator('tr').filter({ hasText: /commission/i }).first();
+    await expect(commRow).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('mark commission as paid → commission row shows paid state', async ({ page }) => {
+    const commRow = page.locator('#payment-matrix').locator('tr').filter({ hasText: /commission/i }).first();
+    await expect(commRow).toBeVisible({ timeout: 10_000 });
+
+    const isPaid = await commRow.locator('.payment-cell-paid, .chip.paid').count() > 0;
+    if (!isPaid) {
+      const markBtn = commRow.locator('button[title="Mark paid"]').first();
+      if (await markBtn.count() > 0) {
+        await markBtn.click();
+        await page.waitForTimeout(2000);
+      }
+    }
+    // Commission row should show paid indicator (✓ or chip)
+    await expect(commRow).toContainText(/✓|paid/i, { timeout: 5_000 });
+  });
+
+  test('inline rent input is present on spot rows in payments tab', async ({ page }) => {
+    // Per-spot inline rent editor added in Bug 8 fix: an input or editable element per row
+    const rentInput = page.locator('#payment-matrix').locator('input[type="number"], input.rent-input').first();
+    await expect(rentInput).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('inline rent edit saves on Enter — no error', async ({ page }) => {
+    const rentInput = page.locator('#payment-matrix').locator('input[type="number"], input.rent-input').first();
+    await expect(rentInput).toBeVisible({ timeout: 10_000 });
+    await rentInput.click();
+    await rentInput.fill('88');
+    await rentInput.press('Enter');
+    await page.waitForTimeout(1500);
+    // No error toast after saving
+    await expect(page.locator('.toast-error, [class*="toast"][class*="error"]')).not.toBeVisible({ timeout: 3_000 });
+  });
+});

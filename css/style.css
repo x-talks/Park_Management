@@ -1333,10 +1333,7 @@ tr:hover td { background: var(--bg-card-hover); }
 
 .spot-sheet {
   position: fixed;
-  /* Sit above the bottom nav (measured ≈55px + safe area) so the collapsed 48px
-     peek ends exactly at the nav's top edge instead of covering it. Without this
-     the z-index:300 sheet overlaps the z-index:200 nav, hiding it and blocking taps. */
-  bottom: calc(56px + env(safe-area-inset-bottom));
+  bottom: 0;
   left: 0;
   right: 0;
   z-index: 300;
@@ -1346,9 +1343,17 @@ tr:hover td { background: var(--bg-card-hover); }
   padding: 0 1rem 1rem;
   transform: translateY(100%);
   transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
-  max-height: 55vh;
+  max-height: 70vh;
   overflow-y: auto;
   pointer-events: none;
+}
+
+/* On mobile, sit above the bottom nav */
+@media (max-width: 640px) {
+  .spot-sheet {
+    bottom: calc(56px + env(safe-area-inset-bottom));
+    max-height: 60vh;
+  }
 }
 
 .spot-sheet.open {

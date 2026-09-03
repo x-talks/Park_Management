@@ -42,7 +42,13 @@ test('Full admin journey: login → generate invite → approve pending registra
     if (await pendingRow.count() > 0) {
       await expect(pendingRow).toBeVisible({ timeout: 10_000 });
       await pendingRow.locator('button[title="Approve"]').first().click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(3000);
+
+      // Bug 6 fix: approve must complete without FK violation (no error toast, no error modal)
+      await expect(page.locator('.toast-error, [class*="toast"][class*="error"]')).not.toBeVisible({ timeout: 3_000 });
+      // Modal overlay must NOT be open (a FK violation would have triggered modalAlert)
+      const modalOpen = await page.locator('#pm-modal-overlay.open').count();
+      expect(modalOpen, 'FK violation opened error modal on approve').toBe(0);
     }
   }
   await expect(page.locator('#user-list')).toContainText('HD-DD-004', { timeout: 10_000 });

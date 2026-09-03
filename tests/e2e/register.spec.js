@@ -72,4 +72,37 @@ test.describe('register.html — step progression', () => {
     await expect(page.locator('#step-done')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('#done-username')).toContainText('HD-GG-007');
   });
+
+  // Bug 4 fix: payment notice is fully translated (no raw i18n key visible)
+  test('payment notice shows translated text with euro amount — not raw i18n key', async ({ page }) => {
+    await page.goto('/register.html?token=valid-token-s7');
+    const notice = page.locator('#payment-notice');
+    await expect(notice).toBeVisible({ timeout: 10_000 });
+    const text = await notice.textContent();
+    // Must contain a euro sign and NOT contain a raw key like "reg.payment.notice"
+    expect(text).toMatch(/€/);
+    expect(text).not.toMatch(/reg\.payment\.notice/);
+    expect(text).not.toMatch(/pay\.fraction\./);
+  });
+
+  // Bug 5 fix: step 3 credentials box shows plate as username
+  test('step 3 credentials box shows plate and non-empty password', async ({ page }) => {
+    await page.goto('/register.html?token=valid-token-s7');
+    await page.locator('#agree-btn').click();
+    await expect(page.locator('#step-register')).toBeVisible({ timeout: 5_000 });
+    await page.locator('#r-password').fill('CredCheck9!');
+    await page.locator('#register-form button[type=submit]').click();
+    await expect(page.locator('#step-done')).toBeVisible({ timeout: 20_000 });
+
+    // Credentials box must show the plate (license plate = username)
+    const credUser = page.locator('#cred-username');
+    await expect(credUser).toBeVisible({ timeout: 5_000 });
+    await expect(credUser).toContainText('HD-GG-007');
+
+    // Password box must be non-empty
+    const credPw = page.locator('#cred-password');
+    await expect(credPw).toBeVisible({ timeout: 5_000 });
+    const pwText = await credPw.textContent();
+    expect(pwText && pwText.trim().length).toBeGreaterThan(0);
+  });
 });

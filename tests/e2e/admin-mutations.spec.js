@@ -123,6 +123,32 @@ test.describe('Generate invite', () => {
     await expect(page.locator('#invite-result-box')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#invite-url-text')).not.toBeEmpty();
   });
+
+  // Bug 3 fix: invite form auto-fills monthlyRent from selected spot; field is editable
+  test('selecting a spot auto-fills monthly rent field with spot rent', async ({ page }) => {
+    await page.waitForFunction(
+      () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
+      { timeout: 30_000 }
+    );
+    const spotSelect = page.locator('#cu-spot');
+    const rentField  = page.locator('#cu-rent');
+    await expect(rentField).toBeVisible({ timeout: 10_000 });
+
+    // Select a real spot (index 1 skips the placeholder)
+    await spotSelect.selectOption({ index: 1 });
+    await page.waitForTimeout(500);
+
+    // Rent field must be populated (non-empty) after selecting the spot
+    const rentVal = await rentField.inputValue();
+    expect(rentVal.trim().length, 'rent field should be populated after spot selection').toBeGreaterThan(0);
+
+    // Field must remain editable (not readonly)
+    expect(await rentField.getAttribute('readonly')).toBeNull();
+
+    // User can override the value
+    await rentField.fill('120');
+    await expect(rentField).toHaveValue('120');
+  });
 });
 
 // ── Spot assignment ────────────────────────────────────────────────────────────

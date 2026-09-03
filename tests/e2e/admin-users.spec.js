@@ -59,3 +59,45 @@ test.describe('Pending registrations', () => {
     expect(pendingText + userText).toContain('HD-DD-004');
   });
 });
+
+// Bug 7 fix: admin can directly create a user without invite flow
+test.describe('Direct create user', () => {
+  test('direct create form is visible in the UI', async ({ page }) => {
+    // The direct-create section must be rendered (added in Bug 7 fix)
+    const section = page.locator('#direct-create-section, [id*="direct"], .direct-create-card').first();
+    await expect(section).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('direct create — fills form and submits, user appears in list', async ({ page }) => {
+    const plate = `HD-ZZ-${Date.now().toString().slice(-3)}`;
+
+    // Fill direct create form fields
+    const dc = (id) => page.locator(`#dc-${id}, [id*="dc-${id}"]`).first();
+    await dc('name').fill('Direct');
+    await dc('lastname').fill('Testuser');
+    await dc('phone').fill('+49300000001');
+    await dc('address').fill('Test Street 99');
+    await dc('plate').fill(plate);
+    await dc('password').fill('DirectPass123!');
+
+    // Select first available spot if select exists
+    const spotSel = page.locator('#dc-spot').first();
+    if (await spotSel.count() > 0) {
+      const opts = await spotSel.locator('option').count();
+      if (opts > 1) await spotSel.selectOption({ index: 1 });
+    }
+
+    // Submit
+    const submitBtn = page.locator('#direct-create-form button[type=submit], form button[type=submit]')
+      .filter({ hasText: /create|add/i }).first();
+    await expect(submitBtn).toBeVisible({ timeout: 5_000 });
+    await submitBtn.click();
+    await page.waitForTimeout(3000);
+
+    // No error toast
+    await expect(page.locator('.toast-error, [class*="toast"][class*="error"]')).not.toBeVisible({ timeout: 3_000 });
+
+    // Plate should now appear in user list
+    await expect(page.locator('#user-list')).toContainText(plate, { timeout: 10_000 });
+  });
+});

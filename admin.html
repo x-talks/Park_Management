@@ -101,6 +101,11 @@
           <label><span data-i18n="admin.create.label.spot">Parking Spot *</span> <small style="font-weight:400;text-transform:none" data-i18n="admin.create.spot.hint">(free spots only)</small></label>
           <select id="cu-spot" required><option value="" data-i18n="admin.create.spot.default">— select —</option></select>
         </div>
+        <div class="form-group">
+          <label data-i18n="admin.create.label.rent">Monthly Rent (€) *</label>
+          <input id="cu-rent" type="number" min="1" step="0.01" value="80" required style="max-width:180px"/>
+          <small style="font-size:0.75rem;color:var(--text-secondary)" data-i18n="admin.create.rent.hint">Pre-filled from spot default — edit if needed</small>
+        </div>
         <p style="font-size:0.8rem;color:var(--text-secondary);margin:0 0 0.75rem" data-i18n="admin.create.car.note">
           Car details are optional — user must complete missing fields during registration.
         </p>
@@ -117,7 +122,38 @@
         <a id="invite-wa-link" class="wa-btn" target="_blank" data-i18n="admin.invite.wa">💬 Send via WhatsApp</a>
       </div>
     </div>
-  </div>
+
+    <!-- Direct create user (no invite flow) -->
+    <div class="card">
+      <div class="card-header"><h2 data-i18n="admin.direct.title">Direct Create User</h2></div>
+      <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem" data-i18n="admin.direct.note">Create a user and assign them a spot immediately — no invitation link needed. Share the credentials directly.</p>
+      <form id="direct-create-form">
+        <div class="grid-2">
+          <div class="form-group"><label data-i18n="admin.create.label.fname">First Name *</label><input id="dc-name" required/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.lname">Last Name *</label><input id="dc-lastname" required/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.phone">Phone / WhatsApp *</label><input id="dc-phone" required/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.address">Address *</label><input id="dc-address" required/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.plate">License Plate *</label><input id="dc-plate" placeholder="HD-XY-123" required/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.password">Password *</label><input id="dc-password" type="text" required placeholder="min. 8 characters"/></div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="admin.create.label.spot">Parking Spot</label>
+          <select id="dc-spot"><option value="" data-i18n="admin.direct.spot.optional">— optional —</option></select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="admin.create.label.rent">Monthly Rent (€)</label>
+          <input id="dc-rent" type="number" min="1" step="0.01" value="80" style="max-width:180px"/>
+        </div>
+        <div class="grid-3">
+          <div class="form-group"><label data-i18n="admin.create.label.model">Car Model</label><input id="dc-carmodel"/></div>
+          <div class="form-group"><label data-i18n="admin.create.label.color">Car Color</label><input id="dc-carcolor"/></div>
+        </div>
+        <button type="submit" data-i18n="admin.direct.btn">Create User</button>
+      </form>
+      <div id="direct-result-box" style="display:none;margin-top:0.75rem" class="alert success"></div>
+    </div>
+
+  </div><!-- end tab-users -->
 
   <!-- ── Spots tab ── -->
   <div id="tab-spots" class="tab-panel" style="display:none">
@@ -655,14 +691,34 @@ async function renderUsers() {
 // ── Free spots dropdown ───────────────────────────────────────────────────────
 async function loadFreeSpots() {
   const spots = await readFile('data/spots.json');
+  // Invite form
   const sel = document.getElementById('cu-spot');
   sel.innerHTML = `<option value="">${t('admin.create.spot.default')}</option>`;
-  sortSpots(spots).filter(s => !s.assignedUserId).forEach(s => {
+  // Direct create form
+  const dcSel = document.getElementById('dc-spot');
+  dcSel.innerHTML = `<option value="">— optional —</option>`;
+  sortSpots(spots).filter(s => !s.assignedUserId && !s.reserved).forEach(s => {
     const opt = document.createElement('option');
-    opt.value = s.id; opt.textContent = `Spot ${s.label}`;
+    opt.value = s.id;
+    opt.textContent = `Spot ${s.label}`;
+    opt.dataset.rent = s.monthlyRent || 80;
     sel.appendChild(opt);
+    const opt2 = opt.cloneNode(true);
+    dcSel.appendChild(opt2);
   });
 }
+
+// Auto-fill rent when spot is selected (invite form)
+document.getElementById('cu-spot').addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  if (opt && opt.dataset.rent) document.getElementById('cu-rent').value = opt.dataset.rent;
+});
+
+// Auto-fill rent when spot is selected (direct create form)
+document.getElementById('dc-spot').addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  if (opt && opt.dataset.rent) document.getElementById('dc-rent').value = opt.dataset.rent;
+});
 
 // ── Create user + invite ──────────────────────────────────────────────────────
 document.getElementById('create-user-form').addEventListener('submit', async e => {
@@ -680,6 +736,7 @@ document.getElementById('create-user-form').addEventListener('submit', async e =
       licensePlate: document.getElementById('cu-plate').value.trim() || null,
       carModel:     document.getElementById('cu-carmodel').value.trim() || null,
       carColor:     document.getElementById('cu-carcolor').value.trim() || null,
+      monthlyRent:  parseFloat(document.getElementById('cu-rent').value) || 80,
     });
     document.getElementById('invite-url-text').textContent = url;
     const name = document.getElementById('cu-name').value.trim();
@@ -694,6 +751,38 @@ document.getElementById('create-user-form').addEventListener('submit', async e =
     toast(err.message, 'error');
   } finally {
     submitBtn.disabled = false; submitBtn.textContent = t('admin.create.btn');
+  }
+});
+
+// ── Direct create user (no invite) ───────────────────────────────────────────
+document.getElementById('direct-create-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const resultBox = document.getElementById('direct-result-box');
+  resultBox.style.display = 'none';
+  const submitBtn = e.target.querySelector('button[type=submit]');
+  submitBtn.disabled = true; submitBtn.textContent = t('admin.create.btn.loading');
+  const plate    = document.getElementById('dc-plate').value.trim().toUpperCase();
+  const password = document.getElementById('dc-password').value.trim();
+  try {
+    const res = await workerRequest('POST', '/users', {
+      name:        document.getElementById('dc-name').value.trim(),
+      lastName:    document.getElementById('dc-lastname').value.trim(),
+      phone:       document.getElementById('dc-phone').value.trim(),
+      address:     document.getElementById('dc-address').value.trim(),
+      licensePlate: plate,
+      password,
+      spotId:      document.getElementById('dc-spot').value || null,
+      monthlyRent: parseFloat(document.getElementById('dc-rent').value) || 80,
+      carModel:    document.getElementById('dc-carmodel').value.trim() || null,
+      carColor:    document.getElementById('dc-carcolor').value.trim() || null,
+    });
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = `✓ User created.<br><strong>Username:</strong> ${plate}<br><strong>Password:</strong> ${password}<br><small>Share these credentials with the user directly.</small>`;
+    e.target.reset(); loadFreeSpots(); refreshAll();
+  } catch(err) {
+    toast(err.message, 'error');
+  } finally {
+    submitBtn.disabled = false; submitBtn.textContent = t('admin.direct.btn');
   }
 });
 
@@ -869,7 +958,7 @@ async function renderPayments() {
     // Spot label
     row.appendChild(mkTd(`Spot ${s.label}`));
 
-    // Renter name (+ termination chip if set)
+    // Renter name (+ termination chip if set) + inline rent editor
     const renterName = renter ? `${renter.name||''} ${renter.lastName||''}`.trim() : '—';
     const renterTd = mkTd(renterName);
     if (termDate) {
@@ -879,6 +968,32 @@ async function renderPayments() {
       tc.textContent = t('admin.users.termination.chip', renter.terminationDate);
       renterTd.appendChild(tc);
     }
+    // Inline monthly rent editor
+    const rentWrap = document.createElement('div');
+    rentWrap.style.cssText = 'margin-top:0.3rem;display:flex;align-items:center;gap:0.3rem;font-size:0.75rem';
+    const rentLbl = document.createElement('span');
+    rentLbl.textContent = '€/mo:';
+    rentLbl.style.color = 'var(--text-secondary)';
+    const rentInp = document.createElement('input');
+    rentInp.type = 'number'; rentInp.min = '1'; rentInp.step = '0.01';
+    rentInp.value = (s.monthlyRent || 80).toFixed(2);
+    rentInp.style.cssText = 'width:70px;font-size:0.75rem;padding:0.1rem 0.25rem';
+    rentInp.title = 'Edit monthly rent — press Enter or click away to save';
+    const saveRentInPayments = async () => {
+      const val = parseFloat(rentInp.value);
+      if (isNaN(val) || val <= 0) return;
+      if (Math.abs(val - (s.monthlyRent || 80)) < 0.001) return;
+      try {
+        const now = new Date();
+        const fromMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        await setSpotRent(s.id, val, fromMonth);
+        refreshAll();
+      } catch(e) { await modalAlert(e.message); }
+    };
+    rentInp.addEventListener('blur', saveRentInPayments);
+    rentInp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); rentInp.blur(); } });
+    rentWrap.appendChild(rentLbl); rentWrap.appendChild(rentInp);
+    renterTd.appendChild(rentWrap);
     row.appendChild(renterTd);
 
     // Commission cell (single column, not tied to any specific month)
@@ -889,18 +1004,24 @@ async function renderPayments() {
       commCell.appendChild(document.createTextNode(`✓ ${commPaid.paidDate} `));
       commCell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
         if (!await modalConfirm(t('admin.confirm.revert.commission'), { danger: true })) return;
-        await unmarkPaid(commPaid.id); refreshAll();
+        try { await unmarkPaid(commPaid.id); refreshAll(); }
+        catch(e) { await modalAlert(e.message); }
       }));
     } else {
       commCell.className = 'payment-cell-unpaid';
       const commissionRent = getRentForMonth(s, selectedYear, 1);
-      const amtDiv = document.createElement('div');
-      amtDiv.style.cssText = 'font-size:0.72rem;color:var(--text-secondary);margin-bottom:0.2rem';
-      amtDiv.textContent = `€${commissionRent.toFixed(2)} (1×)`;
-      commCell.appendChild(amtDiv);
+      // Editable commission amount
+      const commInput = document.createElement('input');
+      commInput.type = 'number'; commInput.min = '0'; commInput.step = '0.01';
+      commInput.value = commissionRent.toFixed(2);
+      commInput.style.cssText = 'width:70px;font-size:0.78rem;padding:0.15rem 0.3rem;margin-bottom:0.2rem';
+      commInput.title = 'Commission amount (editable)';
+      commCell.appendChild(commInput);
+      commCell.appendChild(document.createElement('br'));
       commCell.appendChild(iconBtn('✓', t('admin.btn.markpaid'), 'success-btn', async () => {
         try {
-          await markPaid(s.id, s.assignedUserId, 0, selectedYear, currentUser.id, 'commission');
+          const customAmt = parseFloat(commInput.value);
+          await markPaid(s.id, s.assignedUserId, 0, selectedYear, currentUser.id, 'commission', customAmt);
           refreshAll();
         } catch(e) { await modalAlert(e.message); }
       }));

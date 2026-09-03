@@ -208,6 +208,71 @@ export default {
 
       // ── Users ───────────────────────────────────────────────────────────────
 
+      // POST /users  { name, lastName, phone, address, licensePlate, carModel, carColor, spotId, password, monthlyRent }
+      // Direct user creation by admin — no invite flow needed
+      if (method === 'POST' && path === '/users') {
+        const payload = await verifyJWT(request, env);
+        requireRole(payload, 'admin');
+        const body = await request.json();
+        const { name, lastName, phone, address, licensePlate, carModel, carColor, spotId, password, monthlyRent } = body;
+        if (!licensePlate) return err('licensePlate required');
+        if (!password) return err('password required');
+
+        const client = sb(env);
+        const plate = licensePlate.trim().toUpperCase();
+
+        // Check plate not taken
+        const existing = await client.get('users', `username=eq.${encodeURIComponent(plate)}&limit=1`);
+        if (existing.length) return err('License plate already registered');
+
+        // Check spot exists and is free (if provided)
+        let assignedSpots = [];
+        if (spotId) {
+          const spots = await client.get('spots', `id=eq.${encodeURIComponent(spotId)}&limit=1`);
+          if (!spots.length) return err('Spot not found', 404);
+          if (spots[0].assignedUserId) return err('Spot already assigned');
+          assignedSpots = [spotId];
+        }
+
+        // Create Supabase Auth user
+        const email = plateToEmail(plate);
+        const authUser = await client.authAdmin('POST', 'users', {
+          email,
+          password,
+          email_confirm: true,
+          app_metadata: { role: 'renter' },
+        });
+
+        const userId = 'u' + Date.now();
+        await client.post('users', {
+          id: userId,
+          username: plate,
+          passwordHash: null,
+          lastPassword: null,
+          authId: authUser.id,
+          name: name || '',
+          lastName: lastName || '',
+          phone: phone || '',
+          address: address || '',
+          licensePlate: plate,
+          carModel: carModel || null,
+          carColor: carColor || null,
+          role: 'renter',
+          active: true,
+          assignedSpots,
+          pendingEdits: null,
+          registeredAt: new Date().toISOString(),
+        });
+
+        if (spotId) {
+          const rentUpdates = { assignedUserId: userId, state: 'occupied' };
+          if (monthlyRent) rentUpdates.monthlyRent = Number(monthlyRent);
+          await client.patch('spots', `id=eq.${encodeURIComponent(spotId)}`, rentUpdates);
+        }
+
+        return json({ ok: true, userId, email });
+      }
+
       // PATCH /users/:id
       if (method === 'PATCH' && path.match(/^\/users\/[^/]+$/)) {
         const payload = await verifyJWT(request, env);
@@ -257,22 +322,40 @@ export default {
         return json({ ok: true });
       }
 
-      // POST /users/:id/password  { password }
+      // POST /users/:id/password  { password, currentPassword? }
+      // Admin: can reset any user's password (no currentPassword needed)
+      // Renter: can change own password (currentPassword required for verification)
       if (method === 'POST' && path.match(/^\/users\/[^/]+\/password$/)) {
         const payload = await verifyJWT(request, env);
-        requireRole(payload, 'admin');
-        const userId  = path.split('/')[2];
-        const { password } = await request.json();
+        const role = getRole(payload);
+        const userId = path.split('/')[2];
+        const { password, currentPassword } = await request.json();
         if (!password) return err('Password required');
 
         const client = sb(env);
         const rows = await client.get('users', `id=eq.${encodeURIComponent(userId)}&limit=1`);
         if (!rows.length) return err('User not found', 404);
-        if (rows[0].role === 'master') return err('Cannot reset master password here', 403);
-        if (!rows[0].authId) return err('User has no Auth account yet — migrate first', 400);
+        const user = rows[0];
 
-        await client.authAdmin('PUT', `users/${rows[0].authId}`, { password });
-        // Clear lastPassword for security
+        if (role === 'renter') {
+          // Must be own account
+          const selfRows = await client.get('users', `authId=eq.${encodeURIComponent(payload.sub)}&limit=1`);
+          if (!selfRows.length || selfRows[0].id !== userId) return err('Forbidden', 403);
+          // Verify current password by attempting sign-in
+          if (!currentPassword) return err('Current password required');
+          const email = plateToEmail(user.licensePlate || user.username);
+          try {
+            await client.signIn(email, currentPassword);
+          } catch (_) {
+            return err('Current password is incorrect', 403);
+          }
+        } else {
+          requireRole(payload, 'admin');
+          if (user.role === 'master') return err('Cannot reset master password here', 403);
+        }
+
+        if (!user.authId) return err('User has no Auth account yet — migrate first', 400);
+        await client.authAdmin('PUT', `users/${user.authId}`, { password });
         await client.patch('users', `id=eq.${encodeURIComponent(userId)}`, { lastPassword: null });
         return json({ ok: true });
       }
@@ -311,13 +394,70 @@ export default {
         return json(result);
       }
 
+      // POST /spots/:id/assign  { userId }  — atomically assign a renter to a spot
+      if (method === 'POST' && path.match(/^\/spots\/[^/]+\/assign$/)) {
+        const payload = await verifyJWT(request, env);
+        requireRole(payload, 'admin');
+        const spotId = path.split('/')[2];
+        const { userId } = await request.json();
+        if (!userId) return err('userId required');
+        const client = sb(env);
+
+        const spots = await client.get('spots', `id=eq.${encodeURIComponent(spotId)}&limit=1`);
+        if (!spots.length) return err('Spot not found', 404);
+
+        const users = await client.get('users', `id=eq.${encodeURIComponent(userId)}&limit=1`);
+        if (!users.length) return err('User not found', 404);
+        if (users[0].role !== 'renter') return err('Only renters can be assigned to spots');
+
+        // Build updated assignedSpots for user (add this spot if not already there)
+        const existing = users[0].assignedSpots || [];
+        const updatedSpots = existing.includes(spotId) ? existing : [...existing, spotId];
+
+        await Promise.all([
+          client.patch('spots', `id=eq.${encodeURIComponent(spotId)}`, {
+            assignedUserId: userId, state: 'occupied'
+          }),
+          client.patch('users', `id=eq.${encodeURIComponent(userId)}`, {
+            assignedSpots: updatedSpots
+          }),
+        ]);
+        return json({ ok: true });
+      }
+
+      // POST /spots/:id/release  — remove renter assignment from a spot
+      if (method === 'POST' && path.match(/^\/spots\/[^/]+\/release$/)) {
+        const payload = await verifyJWT(request, env);
+        requireRole(payload, 'admin');
+        const spotId = path.split('/')[2];
+        const client = sb(env);
+
+        const spots = await client.get('spots', `id=eq.${encodeURIComponent(spotId)}&limit=1`);
+        if (!spots.length) return err('Spot not found', 404);
+        const currentUserId = spots[0].assignedUserId;
+
+        await client.patch('spots', `id=eq.${encodeURIComponent(spotId)}`, {
+          assignedUserId: null, state: 'free'
+        });
+        if (currentUserId) {
+          const users = await client.get('users', `id=eq.${encodeURIComponent(currentUserId)}&limit=1`);
+          if (users.length) {
+            const updatedSpots = (users[0].assignedSpots || []).filter(s => s !== spotId);
+            await client.patch('users', `id=eq.${encodeURIComponent(currentUserId)}`, {
+              assignedSpots: updatedSpots
+            });
+          }
+        }
+        return json({ ok: true });
+      }
+
       // ── Payments ────────────────────────────────────────────────────────────
 
-      // POST /payments  { spotId, userId, month, year, type }
+      // POST /payments  { spotId, userId, month, year, type, amount? }
       if (method === 'POST' && path === '/payments') {
         const payload = await verifyJWT(request, env);
         requireRole(payload, 'admin');
-        const { spotId, userId, month, year, type = 'rent' } = await request.json();
+        const { spotId, userId, month, year, type = 'rent', amount } = await request.json();
         const client = sb(env);
 
         // Check not already paid
@@ -330,11 +470,13 @@ export default {
         const adminId = adminRows[0]?.id || 'admin';
 
         const id = 'p' + Date.now() + '_' + type;
-        await client.post('payments', {
+        const row = {
           id, spotId, userId, month, year, type,
           paidDate: new Date().toISOString().slice(0, 10),
           markedByAdminId: adminId,
-        }, 'return=representation');
+        };
+        if (amount != null) row.amount = amount;
+        await client.post('payments', row, 'return=representation');
         return json({ ok: true });
       }
 
@@ -375,6 +517,7 @@ export default {
           licensePlate: body.licensePlate || null,
           carModel:     body.carModel     || null,
           carColor:     body.carColor     || null,
+          monthlyRent:  body.monthlyRent  || null,
         });
 
         // Build invite URL (Worker can't know the Pages URL, return token instead)
@@ -472,32 +615,32 @@ export default {
         });
 
         const userId = 'u' + Date.now();
-        await Promise.all([
-          client.post('users', {
-            id:           userId,
-            username:     pr.licensePlate,
-            passwordHash: null,
-            lastPassword: null,
-            authId:       authUser.id,
-            name:         pr.name,
-            lastName:     pr.lastName,
-            phone:        pr.phone,
-            address:      pr.address,
-            licensePlate: pr.licensePlate,
-            carModel:     pr.carModel,
-            carColor:     pr.carColor,
-            role:         'renter',
-            active:       true,
-            assignedSpots:[pr.spotId],
-            pendingEdits: null,
-            registeredAt: pr.submittedAt,
-          }),
-          client.patch('spots', `id=eq.${encodeURIComponent(pr.spotId)}`, {
-            assignedUserId: userId, state: 'occupied'
-          }),
-          client.patch('invites', `id=eq.${encodeURIComponent(invite.id)}`, { usedBy: userId }),
-          client.delete('pending_registrations', `id=eq.${encodeURIComponent(prId)}`),
-        ]);
+        // Write user row FIRST so the FK on invites.usedBy is satisfied
+        await client.post('users', {
+          id:           userId,
+          username:     pr.licensePlate,
+          passwordHash: null,
+          lastPassword: null,
+          authId:       authUser.id,
+          name:         pr.name,
+          lastName:     pr.lastName,
+          phone:        pr.phone,
+          address:      pr.address,
+          licensePlate: pr.licensePlate,
+          carModel:     pr.carModel,
+          carColor:     pr.carColor,
+          role:         'renter',
+          active:       true,
+          assignedSpots:[pr.spotId],
+          pendingEdits: null,
+          registeredAt: pr.submittedAt,
+        });
+        // Then patch spot, mark invite used, delete pending — order matters for FK
+        await client.patch('spots', `id=eq.${encodeURIComponent(pr.spotId)}`, {
+          assignedUserId: userId, state: 'occupied'
+        });
+        await client.patch('invites', `id=eq.${encodeURIComponent(invite.id)}`, { usedBy: userId });
+        await client.delete('pending_registrations', `id=eq.${encodeURIComponent(prId)}`);
 
         // Return userId so admin panel can update UI
         return json({ ok: true, userId });

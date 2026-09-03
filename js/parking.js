@@ -386,7 +386,7 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
     btn.textContent = 'Release';
     btn.onclick = async () => {
       try {
-        await unassignSpot(spotData.id);
+        await workerRequest('POST', `/spots/${spotData.id}/release`);
         toast('Spot released', 'success');
         closeBottomSheet();
         refresh();

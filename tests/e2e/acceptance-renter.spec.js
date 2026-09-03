@@ -31,20 +31,23 @@ test('Full renter journey: login → view map → click own spot → view paymen
   const currentYear = String(new Date().getFullYear());
   await expect(page.locator('#my-payments-section')).toContainText(currentYear);
 
-  // Step 5: Profile destination is reachable (#profile). Navigate directly — the
-  // bottom-nav link is visually correct but the mobile bottom sheet's 48px peek
-  // (z-index 300) overlaps the nav (z-index 200), so a real tap is intercepted.
-  // See follow-up: fix sheet/nav overlap in the app.
-  await page.goto('/parking.html#profile');
-  await expect(page.locator('#profile-edit-section')).toBeVisible({ timeout: 10_000 });
+  // Step 5: Profile page is a separate page (Bug 9 fix). Navigate directly.
+  await page.goto('/profile.html');
+  await page.waitForURL(/profile\.html/, { timeout: 10_000 });
+  await expect(page.locator('#profile-form, #profile-card')).toBeVisible({ timeout: 10_000 });
 
-  // Step 6: Profile edit section is visible, phone field is editable
-  await expect(page.locator('#profile-edit-section')).toBeVisible({ timeout: 10_000 });
+  // Step 6: Profile edit section has editable phone field
   const phoneField = page.locator('#p-phone');
   await expect(phoneField).toBeVisible({ timeout: 5_000 });
   await phoneField.fill('+49300000099');
-  const saveBtn = page.locator('#profile-edit-section button[type=submit]').first();
+  const saveBtn = page.locator('#profile-form button[type=submit]').first();
   await saveBtn.click();
   await page.waitForTimeout(2000);
   await expect(page.locator('.toast-error, .alert.error')).not.toBeVisible({ timeout: 3_000 });
+
+  // Step 7: Password change form is present on the same profile page
+  await expect(page.locator('#password-form')).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator('#pw-current')).toBeVisible();
+  await expect(page.locator('#pw-new')).toBeVisible();
+  await expect(page.locator('#pw-confirm')).toBeVisible();
 });

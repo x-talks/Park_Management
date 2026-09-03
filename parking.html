@@ -24,6 +24,7 @@
       <a href="parking.html" class="active" data-i18n="nav.map">Map</a>
       <span id="admin-link" style="display:none"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
       <a href="incident.html" data-i18n="nav.incidents">Incidents</a>
+      <a href="profile.html" data-i18n="nav.profile">Profile</a>
     </div>
     <div class="nav-controls">
       <div id="user-chip-nav"></div>
@@ -116,7 +117,7 @@ if (currentUser.role === 'admin' || currentUser.role === 'master') {
   if (isAdmin) {
     tabs.push({ href: 'admin.html', icon: '⚙️', labelKey: 'nav.admin', active: false });
   }
-  tabs.push({ href: 'parking.html#profile', icon: '👤', labelKey: 'nav.profile', active: false });
+  tabs.push({ href: 'profile.html', icon: '👤', labelKey: 'nav.profile', active: false });
   tabs.forEach(tab => {
     const a = document.createElement('a');
     a.href = tab.href;

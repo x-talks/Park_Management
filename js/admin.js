@@ -126,9 +126,11 @@ function getRentForMonth(spot, year, month) {
   return spot.monthlyRent || 80;
 }
 
-async function markPaid(spotId, userId, month, year, adminId, type) {
+async function markPaid(spotId, userId, month, year, adminId, type, amount) {
   type = type || 'rent';
-  await workerRequest('POST', '/payments', { spotId, userId, month, year, type });
+  const body = { spotId, userId, month, year, type };
+  if (amount != null) body.amount = amount;
+  await workerRequest('POST', '/payments', body);
 }
 
 async function unmarkPaid(paymentId) {
@@ -164,7 +166,7 @@ async function migrateUserToAuth(userId) {
   return workerRequest('POST', `/admin/migrate-user/${userId}`);
 }
 
-async function createAndInviteUser({ name, lastName, phone, address, spotId, licensePlate, carModel, carColor }) {
+async function createAndInviteUser({ name, lastName, phone, address, spotId, licensePlate, carModel, carColor, monthlyRent }) {
   const result = await workerRequest('POST', '/invites', {
     name: name || '', lastName: lastName || '',
     phone: phone || '', address: address || '',
@@ -172,6 +174,7 @@ async function createAndInviteUser({ name, lastName, phone, address, spotId, lic
     licensePlate: licensePlate || null,
     carModel: carModel || null,
     carColor: carColor || null,
+    monthlyRent: monthlyRent || null,
   });
 
   const base = location.origin + location.pathname.replace('admin.html', '');

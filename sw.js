@@ -8,7 +8,7 @@
 // IMPORTANT: bump CACHE on every meaningful frontend change so the `activate`
 // handler purges stale caches. The date suffix makes the current version
 // obvious; change it whenever the shell files change.
-const CACHE = 'pm-2026-09-03-f';
+const CACHE = 'pm-2026-09-04-a';
 // Relative paths — the site is served under a GitHub Pages project subpath
 // (/Park_Management/), so absolute "/index.html" would 404. Relative paths
 // resolve against the SW scope, which is the subpath.
@@ -18,6 +18,8 @@ const SHELL = [
   './parking.html',
   './incident.html',
   './admin.html',
+  './profile.html',
+  './register.html',
   './css/style.css',
   './js/config.js',
   './js/api.js',

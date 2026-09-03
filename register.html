@@ -121,6 +121,21 @@
         <span data-i18n="reg.success.spot">Spot:</span> <strong id="done-spot"></strong> &nbsp;·&nbsp;
         <span data-i18n="reg.success.user">Username:</span> <strong id="done-username"></strong>
       </p>
+
+      <!-- Credentials box — filled by JS after submit -->
+      <div id="credentials-box" style="margin-top:1.25rem;background:var(--amber-bg);border:2px solid var(--amber);border-radius:var(--radius);padding:1rem;text-align:left">
+        <strong id="cred-title" data-i18n="reg.success.credentials.title" style="display:block;margin-bottom:0.5rem;font-size:0.95rem">🔐 Save your login credentials</strong>
+        <p id="cred-note" data-i18n="reg.success.credentials.note" style="font-size:0.82rem;color:var(--text-secondary);margin:0 0 0.75rem"></p>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.4rem">
+          <span style="font-size:0.82rem;color:var(--text-secondary)" data-i18n="reg.success.credentials.user">Username (your license plate):</span>
+          <strong id="cred-username" style="font-family:monospace;font-size:1rem;letter-spacing:0.05em"></strong>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.75rem">
+          <span style="font-size:0.82rem;color:var(--text-secondary)" data-i18n="reg.success.credentials.pass">Password:</span>
+          <strong id="cred-password" style="font-family:monospace;font-size:1rem;letter-spacing:0.05em"></strong>
+        </div>
+        <button id="copy-creds-btn" style="width:100%;font-size:0.85rem" data-i18n="reg.success.credentials.copy">Copy</button>
+      </div>
     </div>
   </div>
 
@@ -186,12 +201,13 @@ applyPage();
   document.getElementById('spot-label-display').textContent = spot ? `Spot ${spot.label}` : invite.spotId;
 
   // Payment notice based on today's date
+  // Use monthlyRent from invite if set (admin-specified), fall back to spot default
   const today = new Date();
   const pf = getPaymentFraction(today);
-  const rent = spot && spot.monthlyRent ? spot.monthlyRent : 80;
+  const rent = (invite.monthlyRent != null ? invite.monthlyRent : (spot && spot.monthlyRent ? spot.monthlyRent : 80));
   const dueAmt = (rent * pf.fraction).toFixed(2);
   const noticeEl = document.getElementById('payment-notice');
-  noticeEl.textContent = `${t('pay.fraction.' + pf.key)}: €${dueAmt} — ${t('pay.fraction.' + pf.key + '.desc')}`;
+  noticeEl.textContent = t('reg.payment.notice', t('pay.fraction.' + pf.key), `€${dueAmt}`, t('pay.fraction.' + pf.key + '.desc'));
 
   // Build pre-fill table
   const table = document.getElementById('prefill-table');
@@ -237,17 +253,30 @@ applyPage();
     msg.textContent = '';
     const submitBtn = e.target.querySelector('button[type=submit]');
     submitBtn.disabled = true; submitBtn.textContent = t('reg.btn.loading');
+    const plate    = document.getElementById('r-plate').value.toUpperCase().trim();
+    const password = document.getElementById('r-password').value;
     try {
       const spotId = await registerViaInvite({
         token,
-        password:    document.getElementById('r-password').value,
-        licensePlate: document.getElementById('r-plate').value,
+        password,
+        licensePlate: plate,
         carModel:    document.getElementById('r-carmodel').value,
         carColor:    document.getElementById('r-carcolor').value
       });
       const doneSpot = spots.find(s => s.id === spotId);
       document.getElementById('done-spot').textContent = doneSpot ? doneSpot.label : spotId;
-      document.getElementById('done-username').textContent = document.getElementById('r-plate').value.toUpperCase().trim();
+      document.getElementById('done-username').textContent = plate;
+      // Fill credentials box
+      document.getElementById('cred-username').textContent = plate;
+      document.getElementById('cred-password').textContent = password;
+      document.getElementById('copy-creds-btn').addEventListener('click', () => {
+        const text = plate + '\n' + password;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById('copy-creds-btn');
+          btn.textContent = t('reg.success.credentials.copied');
+          setTimeout(() => { btn.textContent = t('reg.success.credentials.copy'); }, 2000);
+        });
+      });
       show('step-done');
     } catch(err) {
       msg.className = 'alert error'; msg.textContent = err.message;
