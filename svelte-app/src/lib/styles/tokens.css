@@ -1,0 +1,159 @@
+/* Design tokens — ported verbatim from the current app's css/style.css.
+ * Two themes: Light (:root default) and Dark Glass. dark-deep is intentionally
+ * dropped (the theme cycle migrates it to dark-glass). */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+/* ── Design Tokens: Light Premium (default) ──────────────────────────────── */
+:root {
+	/* Surface */
+	--bg-page: #f0f2f5;
+	--bg-card: #ffffff;
+	--bg-card-hover: #f8f9fb;
+	--bg-input: #ffffff;
+	--bg-input-focus: #ffffff;
+
+	/* Header */
+	--header-bg: #0f0f14;
+	--header-text: #ffffff;
+
+	/* Text */
+	--text-primary: #0d0d12;
+	--text-secondary: #6b7280;
+	--text-muted: #9ca3af;
+	--text-inverse: #ffffff;
+
+	/* Borders */
+	--border: #e5e7eb;
+	--border-focus: #0d0d12;
+
+	/* Brand / accent */
+	--accent: #4f46e5;
+	--accent-hover: #4338ca;
+	--accent-text: #ffffff;
+
+	/* Semantic colours */
+	--green: #059669;
+	--green-bg: #d1fae5;
+	--red: #dc2626;
+	--red-bg: #fee2e2;
+	--amber: #d97706;
+	--amber-bg: #fef3c7;
+	--blue: #2563eb;
+	--blue-bg: #eff6ff;
+
+	/* Parking spots */
+	--spot-free-fill: #4ade80;
+	--spot-free-stroke: #16a34a;
+	--spot-occ-fill: #f87171;
+	--spot-occ-stroke: #dc2626;
+	--spot-res-fill: #9ca3af;
+	--spot-res-stroke: #6b7280;
+	--spot-pend-fill: #fbbf24;
+	--spot-pend-stroke: #d97706;
+	--spot-mine-fill: #818cf8;
+	--spot-mine-stroke: #4f46e5;
+
+	/* SVG parking map structural colors */
+	--svg-boundary: #e8ede8;
+	--svg-boundary-stroke: #aaa;
+	--svg-lane: #d4d4d4;
+	--svg-lane-stroke: #bbb;
+	--svg-text: #555;
+	--svg-arrow: #666;
+
+	/* Elevation */
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+	--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+	--shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.05);
+
+	/* Shape */
+	--radius-sm: 4px;
+	--radius: 8px;
+	--radius-lg: 12px;
+	--radius-xl: 16px;
+
+	/* Motion */
+	--transition: 0.15s ease;
+	--transition-md: 0.25s ease;
+
+	/* Legacy aliases (backward compat with inline styles using old var names) */
+	--black: #0d0d12;
+	--white: #ffffff;
+	--gray-50: #f9f9f9;
+	--gray-100: #f2f2f2;
+	--gray-200: #e5e5e5;
+	--gray-400: #aaa;
+	--gray-600: #666;
+	--gray-800: #333;
+}
+
+/* ── Design Tokens: Dark Glass ────────────────────────────────────────────── */
+[data-theme='dark-glass'] {
+	--bg-page: #0a0a12;
+	--bg-card: rgba(255, 255, 255, 0.06);
+	--bg-card-hover: rgba(255, 255, 255, 0.09);
+	--bg-input: rgba(255, 255, 255, 0.08);
+	--bg-input-focus: rgba(255, 255, 255, 0.12);
+
+	--header-bg: rgba(10, 10, 20, 0.85);
+	--header-text: #ffffff;
+
+	--text-primary: #f0f0ff;
+	--text-secondary: #a5b4fc;
+	--text-muted: #6366f1;
+	--text-inverse: #0a0a12;
+
+	--border: rgba(255, 255, 255, 0.1);
+	--border-focus: #818cf8;
+
+	--accent: #818cf8;
+	--accent-hover: #a5b4fc;
+	--accent-text: #0a0a12;
+
+	--green: #34d399;
+	--green-bg: rgba(52, 211, 153, 0.12);
+	--red: #f87171;
+	--red-bg: rgba(248, 113, 113, 0.12);
+	--amber: #fbbf24;
+	--amber-bg: rgba(251, 191, 36, 0.12);
+	--blue: #60a5fa;
+	--blue-bg: rgba(96, 165, 250, 0.12);
+
+	--spot-free-fill: rgba(74, 222, 128, 0.8);
+	--spot-free-stroke: #4ade80;
+	--spot-occ-fill: rgba(248, 113, 113, 0.8);
+	--spot-occ-stroke: #f87171;
+	--spot-res-fill: rgba(156, 163, 175, 0.5);
+	--spot-res-stroke: #9ca3af;
+	--spot-pend-fill: rgba(251, 191, 36, 0.8);
+	--spot-pend-stroke: #fbbf24;
+	--spot-mine-fill: rgba(129, 140, 248, 0.85);
+	--spot-mine-stroke: #818cf8;
+
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+	--shadow-md: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+	--shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.07);
+
+	--black: #f0f0ff;
+	--white: rgba(255, 255, 255, 0.06);
+	--gray-50: rgba(255, 255, 255, 0.04);
+	--gray-100: rgba(255, 255, 255, 0.06);
+	--gray-200: rgba(255, 255, 255, 0.1);
+	--gray-400: rgba(255, 255, 255, 0.3);
+	--gray-600: #a5b4fc;
+	--gray-800: #e0e0ff;
+
+	--svg-boundary: #12121e;
+	--svg-boundary-stroke: rgba(255, 255, 255, 0.15);
+	--svg-lane: rgba(255, 255, 255, 0.07);
+	--svg-lane-stroke: rgba(255, 255, 255, 0.12);
+	--svg-text: #a5b4fc;
+	--svg-arrow: #6366f1;
+}
