@@ -16,7 +16,7 @@ test.describe('profile.html — page structure', () => {
   });
 
   test('profile page loads and shows personal info form', async ({ page }) => {
-    await expect(page.locator('#profile-form, #profile-card')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#profile-card')).toBeVisible({ timeout: 10_000 });
   });
 
   test('plate field is pre-filled and read-only', async ({ page }) => {

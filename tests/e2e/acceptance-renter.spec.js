@@ -34,7 +34,7 @@ test('Full renter journey: login → view map → click own spot → view paymen
   // Step 5: Profile page is a separate page (Bug 9 fix). Navigate directly.
   await page.goto('/profile.html');
   await page.waitForURL(/profile\.html/, { timeout: 10_000 });
-  await expect(page.locator('#profile-form, #profile-card')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('#profile-card')).toBeVisible({ timeout: 10_000 });
 
   // Step 6: Profile edit section has editable phone field
   const phoneField = page.locator('#p-phone');
