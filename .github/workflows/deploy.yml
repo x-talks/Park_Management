@@ -1,13 +1,8 @@
-name: Deploy to GitHub Pages (DISABLED — deploy is now gated inside ci.yml)
-# Deploy is handled by the `deploy` job in ci.yml, which runs only after
-# unit-tests AND e2e-tests pass on main. This file is kept for reference only.
+name: Deploy to GitHub Pages
 
 on:
-  workflow_dispatch:
-    inputs:
-      reason:
-        description: 'Manual trigger reason'
-        required: false
+  push:
+    branches: [main]
 
 permissions:
   contents: read

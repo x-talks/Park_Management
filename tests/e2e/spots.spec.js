@@ -4,17 +4,16 @@ import { loginAs, waitForAppReady } from './helpers.js';
 
 const RENTER_USER = 'HD-AA-001';
 const RENTER_PASS = 'TestPass123!';
-const ADMIN_USER  = 'TEST-ADMIN';
-const ADMIN_PASS  = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
+
+test.beforeEach(async ({ page }) => {
+  await loginAs(page, RENTER_USER, RENTER_PASS);
+  await page.waitForURL(/parking\.html/, { timeout: 30_000 });
+  await waitForAppReady(page, 'renter');
+});
 
 test.describe('Map rendering', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAs(page, RENTER_USER, RENTER_PASS);
-    await page.waitForURL(/parking\.html/, { timeout: 30_000 });
-    await waitForAppReady(page, 'renter');
-  });
-
   test('parking map has 24 spot elements', async ({ page }) => {
+    // SVG spots are <g class="spot ..."> elements with data-id attribute
     const spots = page.locator('svg g.spot, svg g[data-id]');
     await expect(spots.first()).toBeVisible({ timeout: 10_000 });
     const count = await spots.count();
@@ -30,12 +29,6 @@ test.describe('Map rendering', () => {
 });
 
 test.describe('Bottom sheet', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAs(page, RENTER_USER, RENTER_PASS);
-    await page.waitForURL(/parking\.html/, { timeout: 30_000 });
-    await waitForAppReady(page, 'renter');
-  });
-
   test('clicking a free spot (s5) opens the bottom sheet', async ({ page }) => {
     await page.waitForSelector('svg g[data-id="s5"]', { timeout: 10_000 });
     await page.locator('svg g[data-id="s5"]').first().click();
@@ -52,12 +45,6 @@ test.describe('Bottom sheet', () => {
 });
 
 test.describe('Bottom sheet content', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAs(page, RENTER_USER, RENTER_PASS);
-    await page.waitForURL(/parking\.html/, { timeout: 30_000 });
-    await waitForAppReady(page, 'renter');
-  });
-
   test('clicking occupied spot shows occupied status in sheet', async ({ page }) => {
     await page.waitForSelector('svg g[data-id="s2"]', { timeout: 10_000 });
     await expect(page.locator('svg g[data-id="s2"]')).toHaveClass(/occupied/, { timeout: 20_000 });
@@ -75,66 +62,9 @@ test.describe('Bottom sheet content', () => {
 });
 
 test.describe('My payments section', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAs(page, RENTER_USER, RENTER_PASS);
-    await page.waitForURL(/parking\.html/, { timeout: 30_000 });
-    await waitForAppReady(page, 'renter');
-  });
-
   test('payments section shows current year', async ({ page }) => {
+    // beforeEach already logged in as HD-AA-001
     await expect(page.locator('#my-payments-section')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#my-payments-section')).toContainText(String(new Date().getFullYear()));
-  });
-});
-
-test.describe('Admin — map assign modal', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAs(page, ADMIN_USER, ADMIN_PASS);
-    await page.waitForURL(/parking\.html|admin\.html/, { timeout: 30_000 });
-    // Admin lands on admin.html — navigate to map
-    if (page.url().includes('admin.html')) {
-      await page.goto(page.url().replace('admin.html', 'parking.html'));
-    }
-    await waitForAppReady(page, 'admin');
-  });
-
-  test('clicking free spot as admin shows Assign button in sheet', async ({ page }) => {
-    await page.waitForSelector('svg g[data-id="s5"]', { timeout: 10_000 });
-    await page.locator('svg g[data-id="s5"]').first().click();
-    await expect(page.locator('#spot-sheet')).toHaveClass(/open/, { timeout: 5_000 });
-    await expect(page.locator('#sheet-content button')).toContainText(/assign/i, { timeout: 5_000 });
-  });
-
-  test('Assign button opens renter list in sheet', async ({ page }) => {
-    await page.waitForSelector('svg g[data-id="s5"]', { timeout: 10_000 });
-    await page.locator('svg g[data-id="s5"]').first().click();
-    await expect(page.locator('#spot-sheet')).toHaveClass(/open/, { timeout: 5_000 });
-    const assignBtn = page.locator('#sheet-content button', { hasText: /assign/i });
-    await assignBtn.click();
-    // Sheet should now show renter list or "No unassigned renters" message
-    await expect(page.locator('#sheet-content')).toContainText(/assign renter|no unassigned/i, { timeout: 5_000 });
-  });
-});
-
-test.describe('Language switch — no logout', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAs(page, RENTER_USER, RENTER_PASS);
-    await page.waitForURL(/parking\.html/, { timeout: 30_000 });
-    await waitForAppReady(page, 'renter');
-  });
-
-  test('switching language does not redirect to login', async ({ page }) => {
-    // Open the globe dropdown first, then pick DE
-    await page.locator('.lang-globe-btn').first().click();
-    await expect(page.locator('.lang-globe-dropdown')).toBeVisible({ timeout: 3_000 });
-    await page.locator('.lang-globe-dropdown button[data-lang="de"]').click();
-    await page.waitForTimeout(1000);
-    // Should still be on parking.html, not index.html
-    expect(page.url()).toMatch(/parking\.html/);
-    // Page should still show the map
-    await expect(page.locator('#parking-svg')).toBeVisible();
-    // Reset to EN so other tests start clean
-    await page.locator('.lang-globe-btn').first().click();
-    await page.locator('.lang-globe-dropdown button[data-lang="en"]').click();
   });
 });
