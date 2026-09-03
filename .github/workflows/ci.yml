@@ -94,16 +94,16 @@ jobs:
 
       - name: Warm up worker (fail fast if unreachable)
         run: |
-          for attempt in 1 2 3; do
+          for attempt in 1 2 3 4 5; do
             echo "Warm-up attempt $attempt..."
             RESPONSE=$(curl -sS -m 15 -X POST "$STAGING_WORKER_URL/auth/login" \
               -H "Content-Type: application/json" \
               -d "{\"username\":\"TEST-ADMIN\",\"password\":\"$STAGING_ADMIN_PASSWORD\"}" || true)
             echo "$RESPONSE" | grep -q '"accessToken"' && { echo "Worker OK"; exit 0; }
             echo "No token yet; response: $RESPONSE"
-            sleep 3
+            sleep 5
           done
-          echo "Worker unreachable after 3 attempts."
+          echo "Worker unreachable after 5 attempts."
           exit 1
 
       - name: Run E2E tests

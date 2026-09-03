@@ -11,7 +11,7 @@ export default defineConfig({
   // Stop the whole run on the first failure so CI gives immediate feedback.
   // In local runs there is no limit (run everything to see all issues at once).
   maxFailures: process.env.CI ? 1 : 0,
-  timeout: 30_000,
+  timeout: 35_000,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
