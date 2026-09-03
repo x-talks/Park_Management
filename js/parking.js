@@ -428,7 +428,7 @@ function showAssignModal(spotId, users, refreshFn) {
   if (!sheet || !content) return;
 
   const unassigned = (users || []).filter(u =>
-    u.role === 'renter' && u.active && (!u.assignedSpots || u.assignedSpots.length === 0)
+    u.role === 'renter' && u.active
   );
 
   content.innerHTML = '';
@@ -441,7 +441,7 @@ function showAssignModal(spotId, users, refreshFn) {
   if (!unassigned.length) {
     const msg = document.createElement('p');
     msg.style.cssText = 'color:var(--text-muted);font-size:0.85rem;margin:0.75rem 0';
-    msg.textContent = 'No unassigned renters available.';
+    msg.textContent = 'No active renters found.';
     content.appendChild(msg);
   } else {
     unassigned.forEach(u => {
