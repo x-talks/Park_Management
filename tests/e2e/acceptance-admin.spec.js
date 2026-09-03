@@ -30,22 +30,31 @@ test('Full admin journey: login → generate invite → approve pending registra
   const inviteUrl = await page.locator('#invite-url-text').textContent();
   expect(inviteUrl).toBeTruthy();
 
-  // Step 4: Approve the existing pending registration HD-DD-004 (if not already approved)
-  const pendingRow = page.locator('#pending-reg-list tr, #pending-reg-list .pending-row')
-    .filter({ hasText: 'HD-DD-004' }).first();
-  const pendingExists = await pendingRow.count() > 0;
-  if (pendingExists) {
-    await expect(pendingRow).toBeVisible({ timeout: 10_000 });
-    // iconBtn uses title attribute, not textContent
-    await pendingRow.locator('button[title="Approve"]').first().click();
-    await page.waitForTimeout(2000);
-    await expect(page.locator('#user-list')).toContainText('HD-DD-004', { timeout: 10_000 });
-  } else {
-    // Already approved by a previous test — verify it's in user list
-    await expect(page.locator('#user-list')).toContainText('HD-DD-004', { timeout: 10_000 });
+  // Step 4: Approve HD-DD-004 only if it is still pending AND not yet a user.
+  // admin-mutations.spec.js may have already approved it — attempting a second approve
+  // returns 400 "License plate already registered" which opens a modal and blocks the tab.
+  const alreadyUser = await page.locator('#user-list').evaluate(
+    el => el.textContent.includes('HD-DD-004')
+  );
+  if (!alreadyUser) {
+    const pendingRow = page.locator('#pending-reg-list tr, #pending-reg-list .pending-row')
+      .filter({ hasText: 'HD-DD-004' }).first();
+    if (await pendingRow.count() > 0) {
+      await expect(pendingRow).toBeVisible({ timeout: 10_000 });
+      await pendingRow.locator('button[title="Approve"]').first().click();
+      await page.waitForTimeout(2000);
+    }
   }
+  await expect(page.locator('#user-list')).toContainText('HD-DD-004', { timeout: 10_000 });
 
-  // Step 5: Navigate to payments, verify s1 shows paid
+  // Step 5: Force-close any open modal before clicking the Payments tab.
+  // A prior step may have triggered a modalAlert (e.g. approve error) that blocks clicks.
+  await page.evaluate(() => {
+    const o = document.getElementById('pm-modal-overlay');
+    if (o && o.classList.contains('open')) o.classList.remove('open');
+  });
+
+  // Navigate to payments, verify s1 shows paid
   const paymentsTab = page.locator('#tab-btn-payments');
   await paymentsTab.scrollIntoViewIfNeeded();
   await expect(paymentsTab).toBeEnabled({ timeout: 10_000 });
