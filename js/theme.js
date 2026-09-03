@@ -1,14 +1,18 @@
 // js/theme.js
-// Theme cycling: Light Premium → Dark Glass → Dark Deep → (loop)
+// Theme cycling: Light → Dark Glass → (loop). dark-deep removed.
 
-const THEMES = ['light', 'dark-glass', 'dark-deep'];
-const ICONS  = { 'light': 'sun', 'dark-glass': 'sparkles', 'dark-deep': 'moon' };
-const LABELS = { 'light': 'Light', 'dark-glass': 'Dark Glass', 'dark-deep': 'Dark Deep' };
+const THEMES = ['light', 'dark-glass'];
+const ICONS  = { 'light': 'sun', 'dark-glass': 'sparkles' };
+const LABELS = { 'light': 'Light', 'dark-glass': 'Dark Glass' };
 const KEY = 'pm-theme';
 
 export function initTheme() {
+  // Theme already applied by inline head script — just sync the button icon.
   const saved = localStorage.getItem(KEY) || 'light';
-  _applyTheme(saved);
+  // Migrate anyone stuck on dark-deep → dark-glass
+  const theme = saved === 'dark-deep' ? 'dark-glass' : saved;
+  if (theme !== saved) localStorage.setItem(KEY, theme);
+  _applyTheme(theme);
 }
 
 export function cycleTheme() {
@@ -29,9 +33,9 @@ function _applyTheme(theme) {
   if (btn) {
     const icon = btn.querySelector('i');
     if (icon) {
-      icon.dataset.lucide = ICONS[theme];
+      icon.dataset.lucide = ICONS[theme] || 'sun';
       if (window.lucide) window.lucide.createIcons();
     }
-    btn.title = LABELS[theme];
+    btn.title = LABELS[theme] || 'Light';
   }
 }

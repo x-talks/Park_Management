@@ -400,7 +400,7 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
     const btn = document.createElement('button');
     btn.className = 'sheet-btn admin';
     btn.textContent = 'Assign';
-    btn.onclick = () => { closeBottomSheet(); typeof showAssignModal === 'function' && showAssignModal(spotData.id); };
+    btn.onclick = () => { closeBottomSheet(); showAssignModal(spotData.id, users, refresh); };
     actionsEl.appendChild(btn);
   }
 
@@ -418,8 +418,59 @@ function closeBottomSheet() {
   const backdrop = document.getElementById('sheet-backdrop');
   if (sheet) sheet.classList.remove('open');
   if (backdrop) backdrop.classList.remove('open');
-  // Deselect any selected spot
   document.querySelectorAll('#parking-svg .spot.selected').forEach(el => el.classList.remove('selected'));
+}
+
+function showAssignModal(spotId, users, refreshFn) {
+  const sheet = document.getElementById('spot-sheet');
+  const content = document.getElementById('sheet-content');
+  const backdrop = document.getElementById('sheet-backdrop');
+  if (!sheet || !content) return;
+
+  const unassigned = (users || []).filter(u =>
+    u.role === 'renter' && u.active && (!u.assignedSpots || u.assignedSpots.length === 0)
+  );
+
+  content.innerHTML = '';
+
+  const title = document.createElement('div');
+  title.className = 'sheet-title';
+  title.textContent = 'Assign Renter';
+  content.appendChild(title);
+
+  if (!unassigned.length) {
+    const msg = document.createElement('p');
+    msg.style.cssText = 'color:var(--text-muted);font-size:0.85rem;margin:0.75rem 0';
+    msg.textContent = 'No unassigned renters available.';
+    content.appendChild(msg);
+  } else {
+    unassigned.forEach(u => {
+      const btn = document.createElement('button');
+      btn.className = 'sheet-btn';
+      btn.style.cssText = 'margin-bottom:0.5rem;text-align:left';
+      const name = `${u.name || ''} ${u.lastName || ''}`.trim() || u.username;
+      const plate = (u.licensePlate || u.username || '').toUpperCase();
+      btn.textContent = `${name}  ·  ${plate}`;
+      btn.onclick = async () => {
+        try {
+          await workerRequest('POST', `/spots/${spotId}/assign`, { userId: u.id });
+          sheet.classList.remove('open');
+          if (backdrop) backdrop.classList.remove('open');
+          if (refreshFn) refreshFn();
+        } catch (err) { toast(err.message, 'error'); }
+      };
+      content.appendChild(btn);
+    });
+  }
+
+  const cancel = document.createElement('button');
+  cancel.className = 'sheet-btn secondary';
+  cancel.textContent = 'Cancel';
+  cancel.onclick = () => { sheet.classList.remove('open'); if (backdrop) backdrop.classList.remove('open'); };
+  content.appendChild(cancel);
+
+  sheet.classList.add('open');
+  if (backdrop) backdrop.classList.add('open');
 }
 
 async function initParking(highlightSpotId) {
