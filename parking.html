@@ -99,6 +99,7 @@ buildUserChip('user-chip-nav', currentUser);
 
 if (currentUser.role === 'admin' || currentUser.role === 'master') {
   document.getElementById('admin-link').style.display = 'inline';
+}
 
 // Build role-aware bottom nav
 (function buildBottomNav() {
