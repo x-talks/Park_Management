@@ -12,20 +12,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Run unit tests with coverage
-        run: npm run test:unit -- --coverage
+      - run: npm run test:unit -- --coverage
 
       - name: Upload coverage report
         if: always()
@@ -49,19 +45,41 @@ jobs:
       STAGING_MASTER_PASSWORD:      ${{ secrets.STAGING_MASTER_PASSWORD }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
+      # Cache Playwright browser binaries — keyed on Playwright version so a
+      # version bump automatically busts the cache and re-downloads.
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # Always install OS deps (shared libs) even when browser binary is cached —
+      # they live outside ~/.cache/ms-playwright and are not restored by the cache.
+      - name: Install Playwright OS dependencies
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      # Only apply schema when db/schema.sql actually changed in this push.
+      # On PRs we always apply to ensure safety.
       - name: Apply schema to staging
+        if: >
+          github.event_name == 'pull_request' ||
+          contains(join(github.event.commits.*.modified, ' '), 'db/schema.sql') ||
+          contains(join(github.event.commits.*.added, ' '), 'db/schema.sql')
         run: |
           curl -sS --fail-with-body \
             -X POST "https://api.supabase.com/v1/projects/yuoqbjopaemikxiwvtup/database/query" \
@@ -69,35 +87,29 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{\"query\": $(jq -Rs . < db/schema.sql)}"
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
       - name: Seed staging database
         run: |
           node tests/fixtures/staging-config.js
           node tests/fixtures/seed.js
 
-      - name: Warm up worker and assert login works (fail fast)
+      - name: Warm up worker (fail fast if unreachable)
         run: |
           for attempt in 1 2 3; do
             echo "Warm-up attempt $attempt..."
             RESPONSE=$(curl -sS -m 15 -X POST "$STAGING_WORKER_URL/auth/login" \
               -H "Content-Type: application/json" \
               -d "{\"username\":\"TEST-ADMIN\",\"password\":\"$STAGING_ADMIN_PASSWORD\"}" || true)
-            echo "$RESPONSE" | grep -q '"accessToken"' && { echo "Worker login OK"; exit 0; }
-            echo "No accessToken yet; response was: $RESPONSE"
+            echo "$RESPONSE" | grep -q '"accessToken"' && { echo "Worker OK"; exit 0; }
+            echo "No token yet; response: $RESPONSE"
             sleep 3
           done
-          echo "Worker login failed after 3 attempts — failing fast instead of running the full suite."
+          echo "Worker unreachable after 3 attempts."
           exit 1
 
       - name: Run E2E tests
         run: npm run test:e2e
         env:
           SKIP_SEED: "1"
-          # Stop the run on the first failure (after retries) for fast feedback
-          # while we stabilize the suite. Remove this line to run the full suite.
-          MAX_FAILURES: "1"
 
       - name: Upload Playwright report on failure
         if: failure()

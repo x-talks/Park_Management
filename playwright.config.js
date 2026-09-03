@@ -5,11 +5,12 @@ export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 1 : 0,
-  // Fail-fast: stop the whole run after N failures (after retries are exhausted).
-  // Default 0 = no limit (a healthy run validates everything). Set MAX_FAILURES=1
-  // in CI while stabilizing to get fast red feedback instead of waiting for all tests.
-  maxFailures: process.env.MAX_FAILURES ? Number(process.env.MAX_FAILURES) : 0,
+  // No retries — a failing test should fail immediately without burning 30s on a retry.
+  // Fix the test; don't mask it with a retry.
+  retries: 0,
+  // Stop the whole run on the first failure so CI gives immediate feedback.
+  // In local runs there is no limit (run everything to see all issues at once).
+  maxFailures: process.env.CI ? 1 : 0,
   timeout: 30_000,
   reporter: [
     ['list'],
