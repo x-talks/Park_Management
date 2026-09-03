@@ -35,9 +35,8 @@ const V40_STATUS_GRADIENT = {
 // White only for occupied and mine (dark backgrounds); dark for all others.
 function v40TextFill(kind) {
   if (kind === 'occupied' || kind === 'mine') return '#fff';
-  if (kind === 'free')     return '#052e16';
   if (kind === 'pending')  return '#000';
-  return '#111827'; // reserved
+  return '#fff'; // free and reserved — white reads on both bright green and grey
 }
 
 const V40_DEFS = `
@@ -113,6 +112,45 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     gridG.appendChild(gridLine(8, y, 292, y, stroke, dash));
   }
   svg.appendChild(gridG);
+
+  // ── Axis labels (outside the card, in viewBox overflow space) ──
+  const axisG = el('g', { 'pointer-events': 'none', 'font-family': 'system-ui' });
+
+  // X-axis labels every 10dm above the card: SVGx = 8 + dm*2.02857, center=150=70dm
+  const xLabels = [
+    [-70,8],[-60,28.29],[-50,48.57],[-40,68.86],[-30,89.14],
+    [-20,109.43],[-10,129.71],[0,150],[10,170.29],[20,190.57],
+    [30,210.86],[40,231.14],[50,251.43],[60,271.71],[70,292]
+  ];
+  xLabels.forEach(([dm, x]) => {
+    const t = el('text', {
+      x, y: 14, 'text-anchor': 'middle',
+      fill: dm === 0 ? 'rgba(255,255,255,1)' : (dm % 20 === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.25)'),
+      'font-size': dm === 0 ? '7' : (dm % 20 === 0 ? '5.5' : '5'),
+      'font-weight': dm === 0 ? 'bold' : 'normal',
+    });
+    t.textContent = dm === 0 ? '0' : (dm > 0 ? `+${dm}` : `${dm}`);
+    axisG.appendChild(t);
+  });
+
+  // Y-axis labels every 10dm: SVGy = 22 + dm*1.06818, left x=3, right x=297
+  for (let dm = 0; dm <= 440; dm += 10) {
+    const y = +(22 + dm * 1.06818).toFixed(1);
+    const strong = dm % 20 === 0;
+    const fill = strong ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)';
+    const fs = strong ? '5.5' : '5';
+    const label = String(dm);
+    // Left
+    const tl = el('text', { x: 3, y, 'text-anchor': 'end', fill, 'font-size': fs });
+    tl.textContent = label;
+    axisG.appendChild(tl);
+    // Right
+    const tr = el('text', { x: 297, y, 'text-anchor': 'start', fill, 'font-size': fs });
+    tr.textContent = label;
+    axisG.appendChild(tr);
+  }
+
+  svg.appendChild(axisG);
 
   // ── Card + driving lane ──
   svg.appendChild(el('rect', { x: 8, y: 22, width: 284, height: 480, rx: 12, fill: '#0d1117', stroke: 'rgba(255,255,255,0.07)', 'stroke-width': '1.5' }));
