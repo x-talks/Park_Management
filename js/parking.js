@@ -32,11 +32,11 @@ const V40_STATUS_GRADIENT = {
   mine:     'gMine',
 };
 
-// White only for occupied and mine (dark backgrounds); dark for all others.
+// White only for occupied, mine, reserved; black/dark for free and pending.
 function v40TextFill(kind) {
-  if (kind === 'occupied' || kind === 'mine') return '#fff';
-  if (kind === 'pending')  return '#000';
-  return '#fff'; // free and reserved — white reads on both bright green and grey
+  if (kind === 'occupied' || kind === 'mine' || kind === 'reserved') return '#fff';
+  if (kind === 'pending') return '#000';
+  return '#000'; // free — black on bright green, matches mockup
 }
 
 const V40_DEFS = `
