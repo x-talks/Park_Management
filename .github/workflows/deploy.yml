@@ -1,8 +1,10 @@
 name: Deploy to GitHub Pages
 
+# Deployment is handled by the `deploy` job in ci.yml, which runs only after
+# unit-tests AND e2e-tests pass on main. This file is kept for manual emergency
+# redeploy only.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
