@@ -12,8 +12,10 @@ test('Full renter journey: login → view map → click own spot → view paymen
   await loginAs(page, RENTER_USER, RENTER_PASS);
   await page.waitForURL(/parking\.html/, { timeout: 30_000 });
 
-  // Step 2: Parking map is visible with spots
+  // Step 2: Parking map is visible with spots — wait for SVG spots to actually render
   await expect(page.locator('#parking-svg')).toBeVisible({ timeout: 10_000 });
+  // buildSVG() is async — wait until at least one g[data-id] element is present
+  await expect(page.locator('svg g[data-id]').first()).toBeVisible({ timeout: 15_000 });
   const spotCount = await page.locator('svg g[data-id]').count();
   expect(spotCount).toBeGreaterThanOrEqual(24);
 
