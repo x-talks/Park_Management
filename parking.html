@@ -41,10 +41,12 @@
         Open in Maps
       </a>
     </div>
-      <!-- max-width capped by .page-wrap (980px) not inline style — intentional -->
-      <svg id="parking-svg" viewBox="-60 -20 380 540"
-           style="width:100%;height:auto;display:block;overflow:visible">
-      </svg>
+      <!-- padding makes room for axis labels that overflow the SVG viewBox -->
+      <div style="padding: 20px 60px 8px 60px">
+        <svg id="parking-svg" viewBox="-60 -20 380 540"
+             style="width:100%;height:auto;display:block;overflow:visible">
+        </svg>
+      </div>
 
     <!-- Legend -->
     <div class="map-legend">
