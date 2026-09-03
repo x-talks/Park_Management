@@ -39,10 +39,23 @@ test('Full admin journey: login → generate invite → approve pending registra
     // iconBtn uses title attribute, not textContent
     await pendingRow.locator('button[title="Approve"]').first().click();
     await page.waitForTimeout(2000);
+    // Dismiss the success modal that shows temp password
+    const modalOk = page.locator('#pm-modal-confirm');
+    if (await modalOk.isVisible()) {
+      await modalOk.click();
+      await expect(page.locator('#pm-modal-overlay')).not.toHaveClass(/open/, { timeout: 5_000 });
+    }
     await expect(page.locator('#user-list')).toContainText('HD-DD-004', { timeout: 10_000 });
   } else {
     // Already approved by a previous test — verify it's in user list
     await expect(page.locator('#user-list')).toContainText('HD-DD-004', { timeout: 10_000 });
+  }
+
+  // Step 5: Dismiss any open modal (success or error from approve step), then navigate to payments
+  const modalOverlay = page.locator('#pm-modal-overlay');
+  if (await modalOverlay.evaluate(el => el.classList.contains('open'))) {
+    await page.locator('#pm-modal-confirm').click();
+    await expect(modalOverlay).not.toHaveClass(/open/, { timeout: 5_000 });
   }
 
   // Step 5: Navigate to payments, verify s1 shows paid

@@ -11,6 +11,14 @@ test.beforeEach(async ({ page }) => {
   // Do NOT use waitForLoadState('networkidle') — loadPendingRegistrations() blocks it in CI.
   // Instead wait for stat-cards (lightweight, rendered synchronously) before clicking payments tab.
   await expect(page.locator('#stat-cards')).toBeVisible({ timeout: 20_000 });
+
+  // Dismiss any open modal before interacting (e.g. loadPendingRegistrations error)
+  const overlay = page.locator('#pm-modal-overlay');
+  if (await overlay.evaluate(el => el.classList.contains('open')).catch(() => false)) {
+    await page.locator('#pm-modal-confirm').click();
+    await expect(overlay).not.toHaveClass(/open/, { timeout: 5_000 });
+  }
+
   await page.locator('#tab-btn-payments').click();
   await expect(page.locator('#payment-year')).toBeVisible({ timeout: 30_000 });
   // Wait for payment matrix to actually render rows (avoid networkidle due to pending renderUsers)
@@ -21,8 +29,20 @@ test.describe('Mark paid / revert', () => {
   test('mark s2 current month as paid → cell shows ✓', async ({ page }) => {
     const s2Row = page.locator('#payment-matrix table tr').filter({ hasText: 'Spot 2' }).first();
     await expect(s2Row).toBeVisible({ timeout: 10_000 });
-    // iconBtn uses title="Mark paid", not textContent
+
+    // Idempotent: if already paid, revert first so we can test mark-paid cleanly
+    const alreadyPaid = await s2Row.locator('.payment-cell-paid').count() > 0;
+    if (alreadyPaid) {
+      const revertBtn = s2Row.locator('.payment-cell-paid button[title="Revert"]').first();
+      await revertBtn.click();
+      await page.locator('#pm-modal-confirm').click();
+      await expect(page.locator('#pm-modal-overlay')).not.toHaveClass(/open/, { timeout: 5_000 });
+      await page.waitForTimeout(1500);
+    }
+
+    // Now mark paid
     const markBtn = s2Row.locator('button[title="Mark paid"]').first();
+    await expect(markBtn).toBeVisible({ timeout: 10_000 });
     await markBtn.click();
     await page.waitForTimeout(2000);
     await expect(s2Row).toContainText('✓');

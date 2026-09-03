@@ -95,9 +95,6 @@ jobs:
         run: npm run test:e2e
         env:
           SKIP_SEED: "1"
-          # Stop the run on the first failure (after retries) for fast feedback
-          # while we stabilize the suite. Remove this line to run the full suite.
-          MAX_FAILURES: "1"
 
       - name: Upload Playwright report on failure
         if: failure()
@@ -114,3 +111,25 @@ jobs:
           name: test-screenshots
           path: test-results/
           retention-days: 7
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

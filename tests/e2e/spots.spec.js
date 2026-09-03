@@ -5,7 +5,7 @@ import { loginAs, waitForAppReady } from './helpers.js';
 const RENTER_USER = 'HD-AA-001';
 const RENTER_PASS = 'TestPass123!';
 const ADMIN_USER  = 'TEST-ADMIN';
-const ADMIN_PASS  = 'ParkManagement123!';
+const ADMIN_PASS  = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 
 test.describe('Map rendering', () => {
   test.beforeEach(async ({ page }) => {
@@ -124,12 +124,17 @@ test.describe('Language switch — no logout', () => {
   });
 
   test('switching language does not redirect to login', async ({ page }) => {
-    // Switch to German
-    await page.locator('button', { hasText: 'DE' }).click();
+    // Open the globe dropdown first, then pick DE
+    await page.locator('.lang-globe-btn').first().click();
+    await expect(page.locator('.lang-globe-dropdown')).toBeVisible({ timeout: 3_000 });
+    await page.locator('.lang-globe-dropdown button[data-lang="de"]').click();
     await page.waitForTimeout(1000);
     // Should still be on parking.html, not index.html
     expect(page.url()).toMatch(/parking\.html/);
     // Page should still show the map
     await expect(page.locator('#parking-svg')).toBeVisible();
+    // Reset to EN so other tests start clean
+    await page.locator('.lang-globe-btn').first().click();
+    await page.locator('.lang-globe-dropdown button[data-lang="en"]').click();
   });
 });
