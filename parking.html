@@ -24,6 +24,7 @@
     <span id="admin-link" style="display:none"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
     <a href="incident.html" data-i18n="nav.incidents">Incidents</a>
     <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
+    <div id="user-chip-nav"></div>
     <div id="lang-switcher-nav"></div>
   </nav>
 </header>
@@ -94,6 +95,7 @@
 buildSwitcher('lang-switcher-nav');
 applyPage();
 const currentUser = requireAuth('renter');
+buildUserChip('user-chip-nav', currentUser);
 
 if (currentUser.role === 'admin' || currentUser.role === 'master') {
   document.getElementById('admin-link').style.display = 'inline';

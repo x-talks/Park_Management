@@ -38,6 +38,7 @@
     <a href="admin.html" class="active" data-i18n="nav.admin">Admin</a>
     <a href="incident.html" data-i18n="nav.incidents">Incidents</a>
     <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
+    <div id="user-chip-nav"></div>
     <div id="lang-switcher-nav"></div>
     <button id="logout-link" class="icon-btn" title="Logout" data-i18n-title="nav.logout" style="font-size:1.1rem">⎋</button>
   </nav>
@@ -160,6 +161,7 @@
 buildSwitcher('lang-switcher-nav');
 applyPage();
 const currentUser = requireAuth('admin');
+buildUserChip('user-chip-nav', currentUser);
 document.getElementById('logout-link').addEventListener('click', () => logout());
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
