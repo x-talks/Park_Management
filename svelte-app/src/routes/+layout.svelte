@@ -15,6 +15,9 @@
 
 	if (browser) {
 		initAuth();
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.register('./sw.js').catch(() => {/* SW optional */});
+		}
 	}
 
 	const isAuthPage = $derived(
