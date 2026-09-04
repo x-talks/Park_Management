@@ -4,6 +4,9 @@
 import { test, expect } from './fixtures.js';
 import { loginAs, waitForAppReady } from './helpers.js';
 
+// Journey tests do login + multi-page navigation; give them more room than the 35s global timeout.
+test.setTimeout(90_000);
+
 const ADMIN_USER = 'TEST-ADMIN';
 const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 const MASTER_USER = 'TEST-MASTER';
