@@ -123,8 +123,8 @@ test('Renter journey: login → lands on parking.html → map visible → no Adm
   await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeHidden();
 
   // Navigate to profile via bottom nav
-  await page.locator('.bottom-nav a[href="parking.html#profile"]').click();
-  await page.waitForTimeout(600);
+  await page.locator('.bottom-nav a[href="profile.html"]').click();
+  await page.waitForURL(/profile\.html/, { timeout: 10_000 });
 
   // Profile card rendered (renter-only)
   await expect(page.locator('#profile-edit-section .card')).toBeVisible({ timeout: 5_000 });
