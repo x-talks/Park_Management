@@ -2,7 +2,7 @@
 // Used by parking and admin pages to refresh data reactively.
 import { browser } from '$app/environment';
 
-class PollStore {
+export class PollStore {
 	private interval: ReturnType<typeof setInterval> | null = null;
 	private handler: (() => void) | null = null;
 

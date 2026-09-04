@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Pill-style status chip. `variant` maps to a semantic color class.
-	type Variant =
+	export type Variant =
 		| 'free'
 		| 'occupied'
 		| 'reserved'
@@ -10,12 +10,14 @@
 		| 'paid'
 		| 'unpaid'
 		| 'partial'
+		| 'warn'
 		| 'neutral';
 
-	let { variant = 'neutral', text }: { variant?: Variant; text: string } = $props();
+	let { variant = 'neutral', text, label }: { variant?: Variant; text?: string; label?: string } = $props();
+	const display = $derived(label ?? text ?? '');
 </script>
 
-<span class="chip chip-{variant}">{text}</span>
+<span class="chip chip-{variant}">{display}</span>
 
 <style>
 	.chip {
@@ -42,7 +44,8 @@
 		color: var(--red);
 	}
 	.chip-pending,
-	.chip-partial {
+	.chip-partial,
+	.chip-warn {
 		background: var(--amber-bg);
 		color: var(--amber);
 	}
