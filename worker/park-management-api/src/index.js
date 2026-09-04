@@ -517,7 +517,6 @@ export default {
           licensePlate: body.licensePlate || null,
           carModel:     body.carModel     || null,
           carColor:     body.carColor     || null,
-          monthlyRent:  body.monthlyRent  || null,
         });
 
         // Build invite URL (Worker can't know the Pages URL, return token instead)

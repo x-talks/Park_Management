@@ -59,8 +59,7 @@ CREATE TABLE IF NOT EXISTS invites (
   address         TEXT,
   "licensePlate"  TEXT,
   "carModel"      TEXT,
-  "carColor"      TEXT,
-  "monthlyRent"   INTEGER
+  "carColor"      TEXT
 );
 
 CREATE TABLE IF NOT EXISTS pending_registrations (
