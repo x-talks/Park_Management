@@ -88,7 +88,15 @@ jobs:
             echo "Schema apply failed with HTTP $HTTP_CODE"
             exit 1
           fi
-          echo "Schema applied successfully."
+          echo "Schema applied. Reloading PostgREST schema cache..."
+          RELOAD=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://api.supabase.com/v1/projects/yuoqbjopaemikxiwvtup/database/query" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"query":"NOTIFY pgrst, '\''reload schema'\''"}')
+          RELOAD_CODE=$(echo "$RELOAD" | tail -1)
+          echo "Reload HTTP $RELOAD_CODE"
+          sleep 3
 
       - name: Seed staging database
         run: |
