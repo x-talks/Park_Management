@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/react-migration]
+    branches: [main, feat/react-migration, feat/svelte-migration]
   pull_request:
-    branches: [main, feat/react-migration]
+    branches: [main, feat/react-migration, feat/svelte-migration]
 
 jobs:
   unit-tests:
@@ -125,6 +125,92 @@ jobs:
         with:
           name: test-screenshots
           path: test-results/
+          retention-days: 7
+
+  svelte-e2e-tests:
+    name: Svelte E2E Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    env:
+      STAGING_SUPABASE_URL:         ${{ secrets.STAGING_SUPABASE_URL }}
+      STAGING_SUPABASE_ANON_KEY:    ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+      STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_KEY }}
+      STAGING_WORKER_URL:           ${{ secrets.STAGING_WORKER_URL }}
+      STAGING_ADMIN_PASSWORD:       ${{ secrets.STAGING_ADMIN_PASSWORD }}
+      STAGING_MASTER_PASSWORD:      ${{ secrets.STAGING_MASTER_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # Install root deps (seed/setup scripts live there)
+      - run: npm ci
+
+      # Install Svelte app deps
+      - run: npm ci
+        working-directory: svelte-app
+
+      # Build the Svelte static output (vite preview serves from ./build)
+      - name: Build Svelte app
+        run: npm run build
+        working-directory: svelte-app
+        env:
+          BASE_PATH: ''
+
+      # Cache Playwright browser binaries for the svelte-app
+      - name: Cache Playwright browsers (svelte)
+        id: pw-cache-svelte
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-svelte-${{ hashFiles('svelte-app/package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache-svelte.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+        working-directory: svelte-app
+
+      - name: Install Playwright OS dependencies
+        if: steps.pw-cache-svelte.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+        working-directory: svelte-app
+
+      # Seed staging (shared staging DB, same seed as vanilla E2E)
+      - name: Seed staging database
+        run: |
+          node tests/fixtures/staging-config.js
+          node tests/fixtures/seed.js
+
+      - name: Warm up worker
+        run: |
+          for attempt in 1 2 3 4 5; do
+            echo "Warm-up attempt $attempt..."
+            RESPONSE=$(curl -sS -m 15 -X POST "$STAGING_WORKER_URL/auth/login" \
+              -H "Content-Type: application/json" \
+              -d "{\"username\":\"TEST-ADMIN\",\"password\":\"$STAGING_ADMIN_PASSWORD\"}" || true)
+            echo "$RESPONSE" | grep -q '"accessToken"' && { echo "Worker OK"; exit 0; }
+            sleep 5
+          done
+          echo "Worker unreachable after 5 attempts."
+          exit 1
+
+      - name: Run Svelte E2E tests
+        run: npm run test:e2e
+        working-directory: svelte-app
+        env:
+          SKIP_SEED: "1"
+
+      - name: Upload Svelte Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: svelte-playwright-report
+          path: svelte-app/playwright-report/
           retention-days: 7
 
   deploy:
