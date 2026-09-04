@@ -295,7 +295,7 @@
 
 <!-- Pending registrations -->
 {#if pendingRegs.length > 0}
-<div class="card">
+<div id="pending-reg-list" class="card">
 	<div class="card-header">
 		<h2>{i18n.t('admin.pr.title')}</h2>
 		<span class="badge badge-warn">{pendingRegs.length}</span>
@@ -335,7 +335,7 @@
 {/if}
 
 <!-- User list -->
-<div class="card">
+<div id="user-list" class="card">
 	<div class="card-header">
 		<h2>{i18n.t('admin.users.title')}</h2>
 		<span class="last-refresh">{lastUpdated}</span>
@@ -498,7 +498,7 @@
 </div>
 
 <!-- Direct create form -->
-<div class="card">
+<div id="direct-create-section" class="card">
 	<div class="card-header"><h2>{i18n.t('admin.direct.title')}</h2></div>
 	<p class="form-note">{i18n.t('admin.direct.note')}</p>
 	<form onsubmit={submitDirect}>

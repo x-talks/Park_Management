@@ -131,10 +131,7 @@
 	const canEdit = $derived(session.hasRole('admin'));
 </script>
 
-<div class="card">
-	<div class="card-header">
-		<h2>{i18n.t('nav.spots')}</h2>
-	</div>
+<div id="spot-list" class="card">
 	<div class="table-wrap">
 		<table>
 			<thead>

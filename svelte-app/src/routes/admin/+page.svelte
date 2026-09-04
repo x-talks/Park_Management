@@ -49,8 +49,9 @@
 </script>
 
 <div class="page-wrap admin-page">
-	<div class="tab-bar">
+	<div class="tab-bar" id="stat-cards">
 		<button
+			id="tab-btn-users"
 			class="tab-btn"
 			class:active={activeTab === 'users'}
 			onclick={() => (activeTab = 'users')}
@@ -61,6 +62,7 @@
 			{/if}
 		</button>
 		<button
+			id="tab-btn-spots"
 			class="tab-btn"
 			class:active={activeTab === 'spots'}
 			onclick={() => (activeTab = 'spots')}
@@ -68,6 +70,7 @@
 			{i18n.t('nav.spots')}
 		</button>
 		<button
+			id="tab-btn-payments"
 			class="tab-btn"
 			class:active={activeTab === 'payments'}
 			onclick={() => (activeTab = 'payments')}

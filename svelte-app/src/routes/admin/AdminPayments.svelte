@@ -157,12 +157,12 @@
 	<div class="card-header">
 		<h2>{i18n.t('admin.pay.title')}</h2>
 		<div class="header-actions">
-			<select bind:value={selectedYear} class="year-sel">
+			<select id="payment-year" bind:value={selectedYear} class="year-sel">
 				{#each yearOptions as y}
 					<option value={y}>{y}</option>
 				{/each}
 			</select>
-			<button class="secondary" onclick={doExportCsv}>{i18n.t('admin.csv.export')}</button>
+			<button id="csv-export-btn" class="secondary" onclick={doExportCsv}>{i18n.t('admin.csv.export')}</button>
 		</div>
 	</div>
 
@@ -172,7 +172,7 @@
 		<span class="legend-item comm-sample">{i18n.t('admin.pay.legend.commission')}</span>
 	</div>
 
-	<div class="table-wrap">
+	<div id="payment-matrix" class="table-wrap">
 		<table class="payment-matrix">
 			<thead>
 				<tr>
