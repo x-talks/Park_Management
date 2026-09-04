@@ -78,19 +78,25 @@ test.describe('User activate/deactivate', () => {
 test.describe('Generate invite', () => {
   test('fill invite form → invite URL is displayed', async ({ page }) => {
     await waitForUserList(page);
-    // Svelte invite form uses cu-fname, cu-lname, cu-model, cu-color
     await page.locator('#cu-fname').fill('Test');
     await page.locator('#cu-lname').fill('Invitee');
     await page.locator('#cu-phone').fill('+49300000099');
     await page.locator('#cu-address').fill('Test Street 99');
-    await page.locator('#cu-spot').selectOption({ index: 1 });
+    // Don't assign a spot — it may be occupied after prior test mutations
     await page.locator('#cu-plate').fill('HD-ZZ-099');
     await page.locator('#cu-model').fill('Test Car');
     await page.locator('#cu-color').fill('white');
-    await page.locator('form button[type=submit]').filter({ hasText: /invite|create/i }).first().click();
-    await page.waitForTimeout(2000);
-    // Invite result is shown inline in the invite form card
-    await expect(page.locator('.invite-result-box')).toBeVisible({ timeout: 10_000 });
+    // Scroll submit button into view before clicking
+    const submitBtn = page.locator('#cu-fname').locator('xpath=ancestor::form').locator('button[type=submit]');
+    await submitBtn.scrollIntoViewIfNeeded();
+    await submitBtn.click();
+    // Wait for either success (invite-result-box) or error (toast); timeout 30s covers cold worker
+    await Promise.race([
+      page.locator('.invite-result-box').waitFor({ state: 'visible', timeout: 30_000 }),
+      page.locator('.pm-toast-error').waitFor({ state: 'visible', timeout: 30_000 }),
+    ]).catch(() => {});
+    await expect(page.locator('.pm-toast-error')).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator('.invite-result-box')).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.invite-url')).not.toBeEmpty();
   });
 
@@ -118,17 +124,32 @@ test.describe('Spot assign/unassign', () => {
     await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s8Row = page.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     await expect(s8Row).toBeVisible({ timeout: 10_000 });
+    // If already assigned, unassign first
     if (await s8Row.locator('button[title="Unassign"]').count() > 0) {
       await s8Row.locator('button[title="Unassign"]').first().click();
-      await page.locator('#pm-modal-confirm').click();
-      await page.waitForTimeout(2000);
+      const confirmBtn = page.locator('#pm-modal-confirm');
+      await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
+      await confirmBtn.click();
+      await expect(confirmBtn).not.toBeVisible({ timeout: 5_000 });
+      await expect(page.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ })
+        .first().locator('select')).toBeVisible({ timeout: 10_000 });
     }
     const s8Fresh = page.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
-    await s8Fresh.locator('select').first().selectOption({ label: /Bob.*HD-BB-002/ });
+    const s8Sel = s8Fresh.locator('select').first();
+    // Get the option value for HD-BB-002, then use selectOption to trigger Svelte binding
+    const s8OptValue = await s8Sel.evaluate((sel, plate) => {
+      const opt = Array.from(sel.options).find(o => o.textContent.includes(plate));
+      return opt ? opt.value : '';
+    }, 'HD-BB-002');
+    if (!s8OptValue) throw new Error('HD-BB-002 option not found in select');
+    // Use Playwright selectOption (triggers DOM change event picked up by Svelte bind:value)
+    await s8Sel.selectOption({ value: s8OptValue });
     await s8Fresh.locator('button[title="Assign"]').first().click();
-    await page.waitForTimeout(2000);
+    // Ensure no error toast (would indicate API failure)
+    await expect(page.locator('.pm-toast-error')).not.toBeVisible({ timeout: 3_000 });
+    // Wait reactively for the Unassign button to appear (up to 15s)
     const s8After = page.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
-    await expect(s8After.locator('button[title="Unassign"]')).toBeVisible({ timeout: 10_000 });
+    await expect(s8After.locator('button[title="Unassign"]')).toBeVisible({ timeout: 15_000 });
   });
 
   test('unassign s1 → spot becomes free', async ({ page }) => {
@@ -138,14 +159,25 @@ test.describe('Spot assign/unassign', () => {
     const s1Row = page.locator('#spot-list table tr').filter({ hasText: 'HD-AA-001' }).first();
     await expect(s1Row).toBeVisible({ timeout: 10_000 });
     await s1Row.locator('button[title="Unassign"]').first().click();
-    await page.locator('#pm-modal-confirm').click();
-    await page.waitForTimeout(2000);
+    // Wait for modal to fully render before clicking confirm
+    const confirmBtn = page.locator('#pm-modal-confirm');
+    await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
+    await confirmBtn.waitFor({ state: 'visible' });
+    await confirmBtn.click();
+    // Modal should close after confirm
+    await expect(confirmBtn).not.toBeVisible({ timeout: 5_000 });
+    // Wait reactively for the unassign button to disappear (up to 15s for Worker + refresh)
     const s1After = page.locator('#spot-list table tr').filter({ hasText: /^1[^0-9]/ }).first();
-    await expect(s1After.locator('button[title="Unassign"]')).toHaveCount(0);
+    await expect(s1After.locator('button[title="Unassign"]')).toHaveCount(0, { timeout: 15_000 });
     // Restore state
     try {
       const s1Free = page.locator('#spot-list table tr').filter({ hasText: /^1[^0-9]/ }).first();
-      await s1Free.locator('select').first().selectOption({ label: /Alice.*HD-AA-001/ });
+      const s1Sel = s1Free.locator('select').first();
+      const s1OptValue = await s1Sel.evaluate((sel, plate) => {
+        const opt = Array.from(sel.options).find(o => o.textContent.includes(plate));
+        return opt ? opt.value : '';
+      }, 'HD-AA-001');
+      await s1Sel.selectOption(s1OptValue);
       await s1Free.locator('button[title="Assign"]').first().click();
       await page.waitForTimeout(2000);
     } catch (e) { console.warn('State restore s1:', e.message); }

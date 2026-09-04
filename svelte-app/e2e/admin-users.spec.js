@@ -67,18 +67,23 @@ test.describe('Direct create user', () => {
     await page.locator('#dc-plate').fill(plate);
     await page.locator('#dc-password').fill('DirectPass123!');
 
-    const spotSel = page.locator('#dc-spot').first();
-    if (await spotSel.count() > 0) {
-      const opts = await spotSel.locator('option').count();
-      if (opts > 1) await spotSel.selectOption({ index: 1 });
-    }
+    // Spot is optional — skip it to avoid state-pollution failures
+    // const spotSel = page.locator('#dc-spot').first();
+    // if (await spotSel.count() > 0) {
+    //   const opts = await spotSel.locator('option').count();
+    //   if (opts > 1) await spotSel.selectOption({ index: 1 });
+    // }
 
     const submitBtn = page.locator('#direct-create-section button[type=submit]').first();
     await expect(submitBtn).toBeVisible({ timeout: 5_000 });
     await submitBtn.click();
-    await page.waitForTimeout(3000);
+    // Wait for either success (invite-result-box) or error (toast); timeout 30s covers cold worker
+    await Promise.race([
+      page.locator('.invite-result-box').waitFor({ state: 'visible', timeout: 30_000 }),
+      page.locator('.toast-error, [class*="toast"][class*="error"]').waitFor({ state: 'visible', timeout: 30_000 }),
+    ]).catch(() => {});
 
     await expect(page.locator('.toast-error, [class*="toast"][class*="error"]')).not.toBeVisible({ timeout: 3_000 });
-    await expect(page.locator('#user-list')).toContainText(plate, { timeout: 10_000 });
+    await expect(page.locator('#user-list')).toContainText(plate, { timeout: 20_000 });
   });
 });

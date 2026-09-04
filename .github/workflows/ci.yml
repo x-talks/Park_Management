@@ -155,13 +155,6 @@ jobs:
       - run: npm ci
         working-directory: svelte-app
 
-      # Build the Svelte static output (vite preview serves from ./build)
-      - name: Build Svelte app
-        run: npm run build
-        working-directory: svelte-app
-        env:
-          BASE_PATH: ''
-
       # Cache Playwright browser binaries for the svelte-app
       - name: Cache Playwright browsers (svelte)
         id: pw-cache-svelte

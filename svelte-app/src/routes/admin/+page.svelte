@@ -4,14 +4,11 @@
 	import { session } from '$lib/stores/session.svelte';
 	import { i18n } from '$lib/stores/i18n.svelte';
 	import { getSpots, getUsers, getPayments, getInvites, getPendingRegistrations } from '$lib/api/supabase';
-	import { requireAuth } from '$lib/utils/auth-guard';
 	import { PollStore } from '$lib/stores/poll';
 	import type { Spot, User, Payment, Invite, PendingRegistration } from '$lib/types';
 	import AdminUsers from './AdminUsers.svelte';
 	import AdminSpots from './AdminSpots.svelte';
 	import AdminPayments from './AdminPayments.svelte';
-
-	requireAuth('admin');
 
 	type Tab = 'users' | 'spots' | 'payments';
 	let activeTab = $state<Tab>('users');

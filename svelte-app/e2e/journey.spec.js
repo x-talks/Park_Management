@@ -67,12 +67,12 @@ test('Master journey: login → /admin → /parking → globe switches language'
   const globeBtn = page.locator('.lang-globe-btn').first();
   await expect(globeBtn).toBeVisible();
   await globeBtn.click();
-  await expect(page.locator('.lang-globe-dropdown')).toBeVisible({ timeout: 3_000 });
-  await page.locator('.lang-globe-dropdown button[data-lang="de"]').click();
+  await expect(page.locator('.lang-globe-dropdown, .lang-dropdown')).toBeVisible({ timeout: 3_000 });
+  await page.locator('.lang-globe-dropdown button[data-lang="de"], .lang-dropdown button[data-lang="de"]').click();
   await expect(globeBtn).toContainText('DE', { timeout: 3_000 });
 
   await globeBtn.click();
-  await page.locator('.lang-globe-dropdown button[data-lang="en"]').click();
+  await page.locator('.lang-globe-dropdown button[data-lang="en"], .lang-dropdown button[data-lang="en"]').click();
   await expect(globeBtn).toContainText('EN', { timeout: 3_000 });
 });
 

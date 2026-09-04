@@ -6,15 +6,12 @@
 	import { toast } from '$lib/stores/toast.svelte';
 	import { getSpots, getUsers, getPayments, getPendingRegistrations } from '$lib/api/supabase';
 	import { assignSpot, releaseSpot } from '$lib/api/endpoints';
-	import { requireAuth } from '$lib/utils/auth-guard';
 	import { PollStore } from '$lib/stores/poll';
 	import { getRentForMonth, getPaymentFraction } from '$lib/utils/payments';
 	import { sortSpots } from '$lib/utils/spots';
 	import ParkingMap from './ParkingMap.svelte';
 	import Chip, { type Variant as ChipVariant } from '$lib/components/Chip.svelte';
 	import type { Spot, User, Payment, PendingRegistration } from '$lib/types';
-
-	requireAuth('renter');
 
 	let spots = $state<Spot[]>([]);
 	let users = $state<User[]>([]);

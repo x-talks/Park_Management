@@ -36,6 +36,7 @@
 					class:active={lang === i18n.lang}
 					role="option"
 					aria-selected={lang === i18n.lang}
+					data-lang={lang}
 					onclick={() => pick(lang)}
 				>
 					{lang.toUpperCase()}

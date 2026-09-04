@@ -5,10 +5,8 @@
 	import { getUsers } from '$lib/api/supabase';
 	import { patchUser, setPassword } from '$lib/api/endpoints';
 	import { toast } from '$lib/stores/toast.svelte';
-	import { requireAuth } from '$lib/utils/auth-guard';
+	import { goto } from '$app/navigation';
 	import type { User } from '$lib/types';
-
-	requireAuth('renter');
 
 	let me = $state<User | null>(null);
 	let phone = $state('');
@@ -26,7 +24,7 @@
 
 	onMount(async () => {
 		const uid = session.user?.id;
-		if (!uid) return;
+		if (!uid) { void goto('/', { replaceState: true }); return; }
 		const users = await getUsers();
 		const found = users.find((u) => u.id === uid) ?? null;
 		me = found;

@@ -1,6 +1,14 @@
 // playwright.config.js — Svelte app E2E config
 // Runs against the built SvelteKit static output (vite preview).
+// The build is triggered here so VITE_ env vars can be injected from STAGING_* vars.
 import { defineConfig, devices } from '@playwright/test';
+
+// Map STAGING_* → VITE_* so vite build picks up the staging endpoints.
+const stagingEnv = {
+  VITE_SUPABASE_URL: process.env.STAGING_SUPABASE_URL ?? '',
+  VITE_SUPABASE_ANON_KEY: process.env.STAGING_SUPABASE_ANON_KEY ?? '',
+  VITE_WORKER_URL: process.env.STAGING_WORKER_URL ?? '',
+};
 
 export default defineConfig({
   testDir: './e2e',
@@ -8,7 +16,7 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   maxFailures: process.env.CI ? 1 : 0,
-  timeout: 35_000,
+  timeout: 60_000,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
@@ -20,10 +28,11 @@ export default defineConfig({
     video: 'off',
   },
   webServer: {
-    command: 'npm run preview -- --port 4173',
+    command: 'npm run build && npm run preview -- --port 4173',
     url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
+    reuseExistingServer: false,
+    timeout: 120_000,
+    env: stagingEnv,
   },
   projects: [
     {

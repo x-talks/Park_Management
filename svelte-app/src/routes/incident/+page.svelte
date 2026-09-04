@@ -5,12 +5,10 @@
 	import { getSpots, getIncidents, getUsers, uploadIncidentImage } from '$lib/api/supabase';
 	import { createIncident, deleteIncident as apiDeleteIncident } from '$lib/api/endpoints';
 	import { toast } from '$lib/stores/toast.svelte';
-	import { requireAuth } from '$lib/utils/auth-guard';
 	import { sortSpots } from '$lib/utils/spots';
 	import { modalConfirm } from '$lib/stores/modal.svelte';
 	import type { Spot, Incident, User } from '$lib/types';
-
-	requireAuth('renter');
+	import { goto } from '$app/navigation';
 
 	let spots = $state<Spot[]>([]);
 	let incidents = $state<Incident[]>([]);
@@ -28,6 +26,7 @@
 	let lightboxOpen = $state(false);
 
 	onMount(async () => {
+		if (!session.user) { void goto('/', { replaceState: true }); return; }
 		[spots, incidents, users] = await Promise.all([getSpots(), getIncidents(), getUsers()]);
 		spots = sortSpots(spots);
 		// Pre-select user's own spot
@@ -203,15 +202,16 @@
 	</form>
 </div>
 
-<div class="card">
+<div class="card" id="incident-log">
 	<div class="card-header">
 		<h2>{i18n.t('inc.log.title')}</h2>
 		<span class="log-count">{visibleIncidents.length}</span>
 	</div>
+
 	{#if visibleIncidents.length === 0}
 		<p class="empty-msg">{i18n.t('inc.log.empty')}</p>
 	{:else}
-		{#each visibleIncidents as inc}
+		{#each visibleIncidents as inc (inc.id)}
 			<div class="incident-card">
 				{#if inc.imageUrl}
 					<button class="img-btn" onclick={() => { lightboxUrl = inc.imageUrl!; lightboxOpen = true; }}>
