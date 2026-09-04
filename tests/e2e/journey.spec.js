@@ -126,8 +126,8 @@ test('Renter journey: login → lands on parking.html → map visible → no Adm
   await page.locator('.bottom-nav a[href="profile.html"]').click();
   await page.waitForURL(/profile\.html/, { timeout: 10_000 });
 
-  // Profile card rendered (renter-only)
-  await expect(page.locator('#profile-edit-section .card')).toBeVisible({ timeout: 5_000 });
+  // Profile card rendered
+  await expect(page.locator('#profile-card')).toBeVisible({ timeout: 5_000 });
 
   // Logout button always in nav controls (not in profile card anymore)
   await expect(page.locator('#logout-link')).toBeVisible({ timeout: 3_000 });
