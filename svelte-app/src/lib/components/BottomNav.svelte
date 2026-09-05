@@ -22,7 +22,7 @@
 	}
 </script>
 
-<nav class="fixed bottom-0 left-0 right-0 z-50 flex h-[60px] items-stretch border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+<nav data-testid="bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 flex h-[60px] items-stretch border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
 	{#each tabs as tab}
 		<a
 			href={tab.href}
