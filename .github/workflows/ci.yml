@@ -254,47 +254,7 @@ jobs:
           VITE_WORKER_URL:        ${{ secrets.PROD_WORKER_URL }}
 
       - name: Assemble deploy artifact
-        run: |
-          mkdir -p _site
-          # Copy vanilla app (everything except node_modules, .git, svelte-app, tests, docs)
-          rsync -a --exclude=node_modules --exclude=.git --exclude=svelte-app \
-            --exclude=tests --exclude=coverage --exclude=docs --exclude=_site \
-            --exclude='.github' --exclude='.superpowers' \
-            . _site/
-          # Copy Svelte build under /svelte/
-          mkdir -p _site/svelte
-          cp -r svelte-app/build/. _site/svelte/
-          # GitHub Pages SPA routing hack: place a 404.html at the SITE ROOT that
-          # detects paths under /svelte/ and redirects them to the Svelte SPA shell
-          # with the path encoded as a query param. The Svelte index.html then
-          # restores the path before SvelteKit boots.
-          cat > _site/404.html << 'EOFHTML'
-<!doctype html><html><head><meta charset="utf-8">
-<script>
-  var l = window.location;
-  var p = l.pathname;
-  // If path is under /Park_Management/svelte/, send to Svelte SPA shell
-  if (p.indexOf('/Park_Management/svelte') === 0) {
-    var route = p.replace('/Park_Management/svelte', '') || '/';
-    l.replace(l.origin + '/Park_Management/svelte/?p=' + encodeURIComponent(route) + (l.search ? '&q=' + encodeURIComponent(l.search.slice(1)) : '') + l.hash);
-  } else {
-    // For vanilla app 404s, show a simple message
-    document.write('<h1>404 Not Found</h1><a href="/Park_Management/">Go to app</a>');
-  }
-</script>
-</head></html>
-EOFHTML
-          # Inject path-restore script into Svelte index.html so SvelteKit
-          # starts at the correct route when redirected from 404.html
-          python3 - << 'PYEOF'
-import re
-with open('_site/svelte/index.html') as f:
-    html = f.read()
-restore = '<script>(function(){var sp=new URLSearchParams(window.location.search);var p=sp.get("p");if(p){var q=sp.get("q");window.history.replaceState(null,null,"/Park_Management/svelte"+p+(q?"?"+q:"")+window.location.hash);}})();</script>'
-html = html.replace('<head>', '<head>' + restore, 1)
-with open('_site/svelte/index.html', 'w') as f:
-    f.write(html)
-PYEOF
+        run: bash .github/scripts/assemble-site.sh
 
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
