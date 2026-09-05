@@ -34,13 +34,20 @@
 /* ── Base ────────────────────────────────────────────────────────────────── */
 @layer base {
   * { @apply border-border outline-ring/50; }
-  body { @apply bg-background text-foreground; font-size: 15px; line-height: 1.6; }
   html { @apply font-sans; }
   h1 { font-family: var(--font-heading); font-size: clamp(1.25rem, 4vw, 1.75rem); font-weight: 700; margin: 0; letter-spacing: -0.02em; }
   h2 { font-size: clamp(1rem, 3vw, 1.2rem); font-weight: 700; margin: 0 0 0.75rem; letter-spacing: -0.01em; }
   h3 { font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); }
   a { color: var(--accent); text-decoration: none; -webkit-tap-highlight-color: transparent; }
   a:hover { text-decoration: underline; }
+}
+
+/* Force body background/color outside @layer to guarantee specificity */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
