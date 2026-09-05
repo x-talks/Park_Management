@@ -5,13 +5,13 @@ export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
   workers: 1,
-  // No retries — a failing test should fail immediately without burning 30s on a retry.
-  // Fix the test; don't mask it with a retry.
-  retries: 0,
+  // 1 retry on CI to handle worker cold-start flakiness (15-25s delays can exceed timeout).
+  // No retries locally — a failing test should be visible immediately.
+  retries: process.env.CI ? 1 : 0,
   // Stop the whole run on the first failure so CI gives immediate feedback.
   // In local runs there is no limit (run everything to see all issues at once).
   maxFailures: process.env.CI ? 1 : 0,
-  timeout: 35_000,
+  timeout: 60_000,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
