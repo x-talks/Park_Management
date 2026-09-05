@@ -460,6 +460,17 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
   }
 
   content.innerHTML = '';
+
+  // Close button row at the top
+  const closeRow = document.createElement('div');
+  closeRow.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:0.25rem';
+  const closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'background:none;border:none;font-size:1.3rem;color:var(--text-muted);cursor:pointer;padding:0.25rem 0.5rem;min-height:0;line-height:1';
+  closeBtn.textContent = '✕';
+  closeBtn.onclick = closeBottomSheet;
+  closeRow.appendChild(closeBtn);
+  content.appendChild(closeRow);
+
   content.appendChild(titleEl);
   content.appendChild(actionsEl);
 
