@@ -82,7 +82,10 @@ test.describe('Generate invite', () => {
     await page.locator('#cu-lname').fill('Invitee');
     await page.locator('#cu-phone').fill('+49300000099');
     await page.locator('#cu-address').fill('Test Street 99');
-    // Don't assign a spot — it may be occupied after prior test mutations
+    // A spot is required by the Worker — select the first available free spot
+    const spotSelect = page.locator('#cu-spot');
+    await expect(spotSelect).toBeVisible({ timeout: 10_000 });
+    await spotSelect.selectOption({ index: 1 });
     await page.locator('#cu-plate').fill('HD-ZZ-099');
     await page.locator('#cu-model').fill('Test Car');
     await page.locator('#cu-color').fill('white');
