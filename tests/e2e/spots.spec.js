@@ -101,8 +101,10 @@ test.describe('My payments section', () => {
 test.describe('Admin map assign — Bug 1 fix: assign/release via new routes', () => {
   test.beforeEach(async ({ page }) => {
     await loginAs(page, ADMIN_USER, ADMIN_PASS);
-    await page.waitForURL(/parking\.html/, { timeout: 30_000 });
-    await waitForAppReady(page, 'admin');
+    await page.waitForURL(/admin\.html/, { timeout: 30_000 });
+    await page.goto('/parking.html');
+    await page.waitForURL(/parking\.html/, { timeout: 10_000 });
+    await waitForAppReady(page, 'renter');
   });
 
   test('admin can open sheet for a free spot and sees Assign button', async ({ page }) => {
