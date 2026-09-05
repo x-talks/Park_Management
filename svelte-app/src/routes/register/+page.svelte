@@ -8,6 +8,10 @@
 	import { submitPendingRegistration } from '$lib/api/endpoints';
 	import { getPaymentFraction } from '$lib/utils/payments';
 	import { LICENSE_PLATE_RE } from '$lib/utils/spots';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import * as Card from '$lib/components/ui/card';
 	import type { Invite } from '$lib/types';
 
 	type Step = 'loading' | 'error' | 'review' | 'register' | 'done';
@@ -15,7 +19,6 @@
 	let errorMsg = $state('');
 	let invite = $state<Invite | null>(null);
 
-	// Form fields
 	let plate = $state('');
 	let password = $state('');
 	let carModel = $state('');
@@ -23,7 +26,6 @@
 	let submitting = $state(false);
 	let formError = $state('');
 
-	// Success state
 	let savedPlate = $state('');
 	let savedPassword = $state('');
 	let copied = $state(false);
@@ -50,7 +52,7 @@
 		if (!invite) return '';
 		const now = new Date().toISOString();
 		const { fraction } = getPaymentFraction(now);
-		const rent = 80; // default; invite doesn't carry monthlyRent
+		const rent = 80;
 		const amount = fraction === 1 ? rent : fraction === 0.5 ? rent / 2 : Math.round(rent / 3);
 		const fracLabel = fraction === 1 ? '100%' : fraction === 0.5 ? '50%' : '33%';
 		return i18n.t('reg.payment.notice', `€${amount}`, fracLabel, `€${rent}/mo`);
@@ -65,24 +67,17 @@
 		submitting = true;
 		try {
 			await submitPendingRegistration({
-				token,
-				licensePlate: finalPlate,
-				password,
-				carModel: carModel.trim() || undefined,
-				carColor: carColor.trim() || undefined,
-				name: invite?.name ?? undefined,
-				lastName: invite?.lastName ?? undefined,
-				phone: invite?.phone ?? undefined,
-				address: invite?.address ?? undefined
+				token, licensePlate: finalPlate, password,
+				carModel: carModel.trim() || undefined, carColor: carColor.trim() || undefined,
+				name: invite?.name ?? undefined, lastName: invite?.lastName ?? undefined,
+				phone: invite?.phone ?? undefined, address: invite?.address ?? undefined
 			});
 			savedPlate = finalPlate;
 			savedPassword = password;
 			step = 'done';
 		} catch (err) {
 			formError = err instanceof Error ? err.message : 'Error';
-		} finally {
-			submitting = false;
-		}
+		} finally { submitting = false; }
 	}
 
 	async function copyCredentials() {
@@ -94,245 +89,141 @@
 </script>
 
 <div class="login-wrap">
-	<div class="login-card reg-card">
+	<Card.Root class="reg-card">
 		{#if step === 'loading'}
-			<p class="subtitle">{i18n.t('reg.loading')}</p>
+			<Card.Content class="py-8 text-center text-sm text-muted-foreground">
+				{i18n.t('reg.loading')}
+			</Card.Content>
 		{:else if step === 'error'}
-			<div class="alert error">{errorMsg}</div>
-			<button class="secondary" onclick={() => goto(base + '/')}>{i18n.t('reg.btn.login')}</button>
+			<Card.Content class="py-6 space-y-4">
+				<p class="text-sm text-destructive">{errorMsg}</p>
+				<Button variant="outline" onclick={() => goto(base + '/')}>{i18n.t('reg.btn.login')}</Button>
+			</Card.Content>
 		{:else if step === 'review'}
-			<div class="step-pills">
-				<span class="step active">{i18n.t('reg.step.review')}</span>
-				<span class="sep">›</span>
-				<span class="step">{i18n.t('reg.step.register')}</span>
-				<span class="sep">›</span>
-				<span class="step">{i18n.t('reg.step.done')}</span>
-			</div>
-
-			<h1>{i18n.t('reg.title')}</h1>
-
-			{#if invite?.spotId}
-				<div class="spot-info card-sm">
-					<strong>{i18n.t('reg.spot.title')}</strong>
-					<span class="spot-badge">Spot {invite.spotId}</span>
-					<p class="notice">{paymentNotice()}</p>
-				</div>
-			{/if}
-
-			<div class="terms-box">
-				<h3>{i18n.t('reg.terms.heading')}</h3>
-				<p>{i18n.t('reg.terms.intro')}</p>
-				<ol>
-					{#each Array.from({length: 8}, (_, i) => i + 1) as n}
-						<li>{i18n.t(`reg.terms.${n}` as Parameters<typeof i18n.t>[0])}</li>
-					{/each}
-					<li><strong>{i18n.t('reg.terms.9.title')}</strong> {i18n.t('reg.terms.9.text')}</li>
-				</ol>
-				<p class="closing">{i18n.t('reg.terms.closing')}</p>
-			</div>
-
-			<button style="width:100%" onclick={() => (step = 'register')}>
-				{i18n.t('reg.btn.agree')}
-			</button>
-		{:else if step === 'register'}
-			<div class="step-pills">
-				<span class="step done">{i18n.t('reg.step.review')}</span>
-				<span class="sep">›</span>
-				<span class="step active">{i18n.t('reg.step.register')}</span>
-				<span class="sep">›</span>
-				<span class="step">{i18n.t('reg.step.done')}</span>
-			</div>
-
-			<h1>{i18n.t('reg.account.title')}</h1>
-			<p class="subtitle">{i18n.t('reg.account.note')}</p>
-
-			<form onsubmit={submit}>
-				<div class="form-group">
-					<label for="r-plate">{i18n.t('reg.label.plate')}</label>
-					<input
-						id="r-plate"
-						bind:value={plate}
-						required
-						style="text-transform:uppercase"
-						placeholder={i18n.t('reg.hint.plate')}
-						readonly={!!invite?.licensePlate}
-					/>
-					{#if invite?.licensePlate}
-						<small>{i18n.t('reg.hint.prefilled')}</small>
-					{/if}
-				</div>
-				<div class="form-group">
-					<label for="r-password">{i18n.t('reg.label.password')}</label>
-					<input id="r-password" type="password" bind:value={password} minlength="8" required autocomplete="new-password" />
-				</div>
-				<div class="form-group">
-					<label for="r-model">{i18n.t('reg.label.model')}</label>
-					<input
-						id="r-model"
-						bind:value={carModel}
-						readonly={!!invite?.carModel}
-						placeholder="e.g. VW Golf"
-					/>
-				</div>
-				<div class="form-group">
-					<label for="r-color">{i18n.t('reg.label.color')}</label>
-					<input
-						id="r-color"
-						bind:value={carColor}
-						readonly={!!invite?.carColor}
-						placeholder="e.g. blue"
-					/>
-				</div>
-				{#if formError}
-					<div class="alert error">{formError}</div>
+			<Card.Header>
+				<div class="flex items-center gap-1.5">{@render StepPills({ step })}</div>
+				<Card.Title class="mt-3">{i18n.t('reg.title')}</Card.Title>
+			</Card.Header>
+			<Card.Content class="space-y-4">
+				{#if invite?.spotId}
+					<div class="rounded-md border border-input bg-muted/30 p-3">
+						<strong class="block text-sm">{i18n.t('reg.spot.title')}</strong>
+						<span class="text-xl font-black">Spot {invite.spotId}</span>
+						<p class="text-xs text-muted-foreground mt-1">{paymentNotice()}</p>
+					</div>
 				{/if}
-				<button type="submit" style="width:100%" disabled={submitting}>
-					{submitting ? i18n.t('reg.btn.loading') : i18n.t('reg.btn.submit')}
-				</button>
-			</form>
+				<div class="rounded-md border border-input bg-muted/20 p-3 max-h-60 overflow-y-auto text-sm leading-relaxed">
+					<h3 class="font-bold text-sm mb-2">{i18n.t('reg.terms.heading')}</h3>
+					<p class="mb-2 text-xs">{i18n.t('reg.terms.intro')}</p>
+					<ol class="list-decimal pl-4 space-y-1 text-xs">
+						{#each Array.from({length: 8}, (_, i) => i + 1) as n}
+							<li>{i18n.t(`reg.terms.${n}` as Parameters<typeof i18n.t>[0])}</li>
+						{/each}
+						<li><strong>{i18n.t('reg.terms.9.title')}</strong> {i18n.t('reg.terms.9.text')}</li>
+					</ol>
+					<p class="text-xs text-muted-foreground mt-2">{i18n.t('reg.terms.closing')}</p>
+				</div>
+				<Button class="w-full" onclick={() => (step = 'register')}>{i18n.t('reg.btn.agree')}</Button>
+			</Card.Content>
+		{:else if step === 'register'}
+			<Card.Header>
+				<div class="flex items-center gap-1.5">{@render StepPills({ step })}</div>
+				<Card.Title class="mt-3">{i18n.t('reg.account.title')}</Card.Title>
+				<Card.Description>{i18n.t('reg.account.note')}</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<form onsubmit={submit} class="space-y-4">
+					<div class="space-y-1.5">
+						<Label for="r-plate">{i18n.t('reg.label.plate')}</Label>
+						<Input id="r-plate" bind:value={plate} required class="uppercase" placeholder={i18n.t('reg.hint.plate')} readonly={!!invite?.licensePlate} />
+						{#if invite?.licensePlate}<p class="text-xs text-muted-foreground">{i18n.t('reg.hint.prefilled')}</p>{/if}
+					</div>
+					<div class="space-y-1.5">
+						<Label for="r-password">{i18n.t('reg.label.password')}</Label>
+						<Input id="r-password" type="password" bind:value={password} minlength="8" required autocomplete="new-password" />
+					</div>
+					<div class="grid grid-cols-2 gap-4">
+						<div class="space-y-1.5">
+							<Label for="r-model">{i18n.t('reg.label.model')}</Label>
+							<Input id="r-model" bind:value={carModel} readonly={!!invite?.carModel} placeholder="e.g. VW Golf" />
+						</div>
+						<div class="space-y-1.5">
+							<Label for="r-color">{i18n.t('reg.label.color')}</Label>
+							<Input id="r-color" bind:value={carColor} readonly={!!invite?.carColor} placeholder="e.g. blue" />
+						</div>
+					</div>
+					{#if formError}
+						<p class="text-sm text-destructive">{formError}</p>
+					{/if}
+					<Button type="submit" class="w-full" disabled={submitting}>
+						{submitting ? i18n.t('reg.btn.loading') : i18n.t('reg.btn.submit')}
+					</Button>
+				</form>
+			</Card.Content>
 		{:else if step === 'done'}
-			<div class="step-pills">
-				<span class="step done">{i18n.t('reg.step.review')}</span>
-				<span class="sep">›</span>
-				<span class="step done">{i18n.t('reg.step.register')}</span>
-				<span class="sep">›</span>
-				<span class="step active">{i18n.t('reg.step.done')}</span>
-			</div>
-
-			<h1>{i18n.t('reg.success.title')}</h1>
-			<p class="subtitle">{i18n.t('reg.success.text')}</p>
-
-			<div class="credentials-box">
-				<strong>{i18n.t('reg.success.credentials.title')}</strong>
-				<p class="cred-note">{i18n.t('reg.success.credentials.note')}</p>
-				<div class="cred-row">
-					<span>{i18n.t('reg.success.credentials.user')}</span>
-					<code>{savedPlate}</code>
+			<Card.Header>
+				<div class="flex items-center gap-1.5">{@render StepPills({ step })}</div>
+				<Card.Title class="mt-3">{i18n.t('reg.success.title')}</Card.Title>
+				<Card.Description>{i18n.t('reg.success.text')}</Card.Description>
+			</Card.Header>
+			<Card.Content class="space-y-4">
+				<div class="rounded-md border border-input bg-muted/20 p-3 space-y-2">
+					<strong class="text-sm">{i18n.t('reg.success.credentials.title')}</strong>
+					<p class="text-xs text-muted-foreground">{i18n.t('reg.success.credentials.note')}</p>
+					<div class="flex justify-between items-center text-sm">
+						<span>{i18n.t('reg.success.credentials.user')}</span>
+						<code class="font-mono bg-background rounded px-2 py-0.5 text-xs">{savedPlate}</code>
+					</div>
+					<div class="flex justify-between items-center text-sm">
+						<span>{i18n.t('reg.success.credentials.pass')}</span>
+						<code class="font-mono bg-background rounded px-2 py-0.5 text-xs">{savedPassword}</code>
+					</div>
+					<Button variant="outline" size="sm" class="w-full" onclick={copyCredentials}>
+						{copied ? i18n.t('reg.success.credentials.copied') : i18n.t('reg.success.credentials.copy')}
+					</Button>
 				</div>
-				<div class="cred-row">
-					<span>{i18n.t('reg.success.credentials.pass')}</span>
-					<code>{savedPassword}</code>
-				</div>
-				<button class="secondary cred-copy" onclick={copyCredentials}>
-					{copied ? i18n.t('reg.success.credentials.copied') : i18n.t('reg.success.credentials.copy')}
-				</button>
-			</div>
-
-			<button style="width:100%;margin-top:1rem" onclick={() => goto(base + '/')}>
-				{i18n.t('reg.btn.login')}
-			</button>
+				<Button class="w-full" onclick={() => goto(base + '/')}>{i18n.t('reg.btn.login')}</Button>
+			</Card.Content>
 		{/if}
-	</div>
+	</Card.Root>
 </div>
 
+{#snippet StepPills({ step: s }: { step: Step })}
+	{#each ([
+		{ key: 'review',   label: i18n.t('reg.step.review')   },
+		{ key: 'register', label: i18n.t('reg.step.register') },
+		{ key: 'done',     label: i18n.t('reg.step.done')     }
+	] as const) as pill, idx}
+		{#if idx > 0}<span class="text-xs text-muted-foreground">›</span>{/if}
+		{@const order = { loading: -1, error: -1, review: 0, register: 1, done: 2 } as Record<Step, number>}
+		{@const current = order[s]}
+		<span class="rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider
+			{idx === current ? 'bg-primary text-primary-foreground' : idx < current ? 'bg-green-500/20 text-green-500' : 'bg-muted text-muted-foreground'}">
+			{pill.label}
+		</span>
+	{/each}
+{/snippet}
+
 <style>
+	.login-wrap {
+		min-height: 100dvh;
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		padding: 2rem 1rem;
+		background: var(--bg-page);
+	}
 	.reg-card {
+		width: 100%;
 		max-width: 480px;
 	}
-	.step-pills {
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-		margin-bottom: 1.25rem;
-		font-size: 0.75rem;
-		font-weight: 700;
+	[data-theme='dark-glass'] .login-wrap {
+		background: linear-gradient(135deg, #0a0a18 0%, #0d1130 30%, #0a1a24 60%, #0a0a18 100%);
 	}
-	.step {
-		padding: 0.2rem 0.7rem;
-		border-radius: 999px;
-		background: var(--bg-card-hover);
-		color: var(--text-secondary);
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-	}
-	.step.active {
-		background: var(--accent);
-		color: var(--accent-text);
-	}
-	.step.done {
-		background: var(--green-bg);
-		color: var(--green);
-	}
-	.sep {
-		color: var(--text-muted);
-	}
-	.spot-info {
-		background: var(--bg-card-hover);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 0.75rem 1rem;
-		margin-bottom: 1rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-	}
-	.spot-badge {
-		font-size: 1.1rem;
-		font-weight: 800;
-	}
-	.notice {
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-		margin: 0;
-	}
-	.terms-box {
-		background: var(--bg-card-hover);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 1rem;
-		margin-bottom: 1rem;
-		max-height: 240px;
-		overflow-y: auto;
-		font-size: 0.85rem;
-		line-height: 1.7;
-	}
-	.terms-box h3 {
-		font-size: 0.9rem;
-		margin: 0 0 0.5rem;
-	}
-	.terms-box ol {
-		margin: 0.5rem 0;
-		padding-left: 1.25rem;
-	}
-	.terms-box li {
-		margin-bottom: 0.25rem;
-	}
-	.closing {
-		font-size: 0.78rem;
-		color: var(--text-muted);
-	}
-	.credentials-box {
-		background: var(--bg-card-hover);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: 1rem;
-		margin: 1rem 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-	.cred-note {
-		font-size: 0.8rem;
-		color: var(--text-secondary);
-		margin: 0;
-	}
-	.cred-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		font-size: 0.85rem;
-		gap: 0.5rem;
-	}
-	.cred-row code {
-		font-family: monospace;
-		font-size: 0.85rem;
-		background: var(--bg-page);
-		border-radius: var(--radius-sm);
-		padding: 0.1rem 0.4rem;
-	}
-	.cred-copy {
-		align-self: flex-end;
-		font-size: 0.8rem;
-		padding: 0.3rem 0.8rem;
+	[data-theme='dark-glass'] .reg-card {
+		background: rgba(255, 255, 255, 0.07);
+		border-color: rgba(255, 255, 255, 0.12);
+		backdrop-filter: blur(24px);
+		-webkit-backdrop-filter: blur(24px);
 	}
 </style>

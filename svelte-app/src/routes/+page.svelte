@@ -6,7 +6,11 @@
 	import { i18n } from '$lib/stores/i18n.svelte';
 	import { login } from '$lib/api/auth';
 	import LangSwitcher from '$lib/components/LangSwitcher.svelte';
-	import { Sun } from 'lucide-svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import * as Card from '$lib/components/ui/card';
+	import { Sun, Moon, ParkingCircle } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 
 	let plate = $state('');
@@ -38,68 +42,106 @@
 	}
 </script>
 
-<button
-	class="icon-btn login-theme-toggle"
-	title="Toggle theme"
+<Button
+	variant="ghost"
+	size="icon"
+	class="fixed top-3 right-3 z-10 h-9 w-9"
 	onclick={() => theme.cycle()}
+	title="Toggle theme"
 >
-	<Sun size={16} />
-</button>
+	{#if theme.current === 'light'}
+		<Sun size={16} />
+	{:else}
+		<Moon size={16} />
+	{/if}
+</Button>
 
 <div class="login-wrap">
-	<div class="login-card">
-		<div class="login-logo">
-			<img src="logo.png" alt="Logo" onerror={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')} />
-		</div>
-		<h1>{i18n.t('app.name')}</h1>
-		<p class="subtitle">{i18n.t('login.subtitle')}</p>
-		<form onsubmit={submit}>
-			<div class="form-group">
-				<label for="username">{i18n.t('login.label.plate')}</label>
-				<input
-					id="username"
-					type="text"
-					autocomplete="username"
-					placeholder={i18n.t('login.placeholder.plate')}
-					bind:value={plate}
-					required
-				/>
+	<Card.Root class="login-card">
+		<Card.Header class="items-center pb-2">
+			<div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+				<ParkingCircle size={36} class="text-primary" />
 			</div>
-			<div class="form-group">
-				<label for="password">{i18n.t('login.label.password')}</label>
-				<input
-					id="password"
-					type="password"
-					autocomplete="current-password"
-					bind:value={password}
-					required
-				/>
-			</div>
-			{#if error}
-				<div class="alert error">{error}</div>
-			{/if}
-			<button type="submit" style="width:100%" disabled={loading}>
-				{loading ? i18n.t('login.btn.loading') : i18n.t('login.btn')}
-			</button>
-		</form>
-		<div class="login-lang">
+			<Card.Title class="text-2xl font-bold tracking-tight" style="font-family: var(--font-heading)">
+				{i18n.t('app.name')}
+			</Card.Title>
+			<Card.Description>{i18n.t('login.subtitle')}</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form onsubmit={submit} class="space-y-4">
+				<div class="space-y-1.5">
+					<Label for="username">{i18n.t('login.label.plate')}</Label>
+					<Input
+						id="username"
+						type="text"
+						autocomplete="username"
+						placeholder={i18n.t('login.placeholder.plate')}
+						bind:value={plate}
+						required
+					/>
+				</div>
+				<div class="space-y-1.5">
+					<Label for="password">{i18n.t('login.label.password')}</Label>
+					<Input
+						id="password"
+						type="password"
+						autocomplete="current-password"
+						bind:value={password}
+						required
+					/>
+				</div>
+				{#if error}
+					<p class="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+						{error}
+					</p>
+				{/if}
+				<Button type="submit" class="w-full" disabled={loading}>
+					{loading ? i18n.t('login.btn.loading') : i18n.t('login.btn')}
+				</Button>
+			</form>
+		</Card.Content>
+		<Card.Footer class="justify-center pt-0">
 			<LangSwitcher />
-		</div>
-	</div>
+		</Card.Footer>
+	</Card.Root>
 </div>
 
 <style>
-	.login-logo {
-		text-align: center;
-		margin-bottom: 1.25rem;
+	.login-wrap {
+		min-height: 100dvh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+		background: var(--bg-page);
 	}
-	.login-logo img {
-		height: 72px;
-		width: auto;
-		object-fit: contain;
+	.login-card {
+		width: 100%;
+		max-width: 380px;
+		animation: card-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 	}
-	.login-lang {
-		margin-top: 1.25rem;
-		text-align: center;
+	@keyframes card-in {
+		from { opacity: 0; transform: translateY(20px) scale(0.97); }
+		to   { opacity: 1; transform: translateY(0) scale(1); }
+	}
+	[data-theme='dark-glass'] .login-wrap {
+		background: linear-gradient(135deg, #0a0a18 0%, #0d1130 30%, #0a1a24 60%, #0a0a18 100%);
+		background-size: 400% 400%;
+		animation: login-gradient 12s ease infinite, card-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+	}
+	[data-theme='dark-glass'] .login-card {
+		background: rgba(255, 255, 255, 0.07);
+		border-color: rgba(255, 255, 255, 0.12);
+		backdrop-filter: blur(24px);
+		-webkit-backdrop-filter: blur(24px);
+		box-shadow:
+			0 8px 40px rgba(0, 0, 0, 0.55),
+			0 0 0 1px rgba(255, 255, 255, 0.08),
+			inset 0 1px 0 rgba(255, 255, 255, 0.1);
+	}
+	@keyframes login-gradient {
+		0%   { background-position: 0% 50%; }
+		50%  { background-position: 100% 50%; }
+		100% { background-position: 0% 50%; }
 	}
 </style>

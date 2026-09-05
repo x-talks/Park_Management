@@ -5,8 +5,10 @@
 	import { i18n } from '$lib/stores/i18n.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { logout } from '$lib/api/auth';
+	import { Button } from '$lib/components/ui/button';
 	import UserChip from './UserChip.svelte';
 	import LangSwitcher from './LangSwitcher.svelte';
+	import { Sun, Moon } from 'lucide-svelte';
 
 	const links = $derived.by(() => {
 		const role = session.user?.role ?? 'renter';
@@ -41,21 +43,27 @@
 				<UserChip name={session.user.name ?? session.user.username} role={session.user.role} />
 			{/if}
 			<LangSwitcher />
-			<button class="theme-toggle secondary" onclick={() => theme.cycle()} title="Toggle theme">
-				{theme.current === 'light' ? '☀️' : '🌙'}
-			</button>
-			<button class="secondary" onclick={logout}>{i18n.t('nav.logout')}</button>
+			<Button
+				variant="ghost"
+				size="icon"
+				class="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+				onclick={() => theme.cycle()}
+				title="Toggle theme"
+			>
+				{#if theme.current === 'light'}
+					<Sun size={15} />
+				{:else}
+					<Moon size={15} />
+				{/if}
+			</Button>
+			<Button
+				variant="ghost"
+				size="sm"
+				class="text-white/70 hover:text-white hover:bg-white/10"
+				onclick={logout}
+			>
+				{i18n.t('nav.logout')}
+			</Button>
 		</div>
 	</nav>
 </header>
-
-<style>
-	.theme-toggle {
-		font-size: 1rem;
-		padding: 0.25rem 0.5rem;
-		border-radius: var(--radius);
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		background: none;
-		cursor: pointer;
-	}
-</style>
