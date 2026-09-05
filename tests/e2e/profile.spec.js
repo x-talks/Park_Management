@@ -114,6 +114,8 @@ test.describe('profile.html — accessible from nav on all pages', () => {
   test('admin top nav has Profile link', async ({ page }) => {
     await loginAs(page, ADMIN_USER, ADMIN_PASS);
     await page.waitForURL(/admin\.html/, { timeout: 30_000 });
+    // Admin navigates to parking map to access profile link (admin.html has no profile link)
+    await page.goto('/parking.html');
     const link = page.locator('.nav-links a[href*="profile.html"]');
     await expect(link).toBeVisible({ timeout: 10_000 });
   });
