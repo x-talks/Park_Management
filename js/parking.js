@@ -308,7 +308,6 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
   const content = document.getElementById('sheet-content');
   if (!sheet || !content) return;
 
-  // Keep #info-panel silently updated for E2E compat
   const panel = document.getElementById('info-panel');
   if (panel) { panel.innerHTML = ''; panel.classList.add('has-content'); }
 
@@ -318,44 +317,117 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
 
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'master';
   const isMySpot = renter && renter.id === currentUser.id;
+  const plate = renter ? (renter.licensePlate || renter.username || '').toUpperCase() : null;
 
-  // Status
   let statusClass = 'free', statusText = 'Free';
-  if (spotData.reserved) { statusClass = 'reserved'; statusText = 'Reserved'; }
-  else if (pendingSpotIds && pendingSpotIds.has(spotData.id)) { statusClass = 'pending'; statusText = 'Pending'; }
-  else if (spotData.state === 'occupied') { statusClass = 'occupied'; statusText = 'Occupied'; }
+  if (spotData.reserved)                                          { statusClass = 'reserved'; statusText = 'Reserved'; }
+  else if (pendingSpotIds && pendingSpotIds.has(spotData.id))    { statusClass = 'pending';  statusText = 'Pending';  }
+  else if (spotData.state === 'occupied')                        { statusClass = 'occupied'; statusText = 'Occupied'; }
 
-  // Title line
   const titleEl = document.createElement('div');
   titleEl.className = 'sheet-title';
-  titleEl.innerHTML = `Spot ${label}` +
-    (isMySpot ? ' <span style="font-size:0.75rem;color:var(--accent)">★ Your spot</span>' : '') +
+  titleEl.innerHTML =
+    `Spot ${label}` +
+    (plate ? ` <span class="sheet-plate">${plate}</span>` : '') +
+    (isMySpot ? ' <span style="font-size:0.75rem;color:var(--accent)">★ Yours</span>' : '') +
     `<span class="sheet-status ${statusClass}">${statusText}</span>`;
 
-  // Meta line
-  const metaEl = document.createElement('div');
-  metaEl.className = 'sheet-meta';
-  if (renter) {
-    const name = isAdmin
-      ? `${renter.name || ''} ${renter.lastName || ''}`.trim() || renter.username
-      : (isMySpot ? 'Assigned to you' : 'Occupied');
-    const plate = (renter.licensePlate || renter.username || '').toUpperCase();
-    metaEl.textContent = `${name} · ${plate}`;
-  } else if (spotData.reserved) {
-    metaEl.textContent = 'External reservation — not available';
-  } else {
-    metaEl.textContent = 'No one assigned';
-  }
-
-  // Actions
   const actionsEl = document.createElement('div');
   actionsEl.className = 'sheet-actions';
 
-  // Reserve — shown to resident if spot is free and they have no assignment yet
+  // ── Own spot ─────────────────────────────────────────────────────────────────
+  if (isMySpot) {
+    // Payment summary (current month + unpaid count)
+    const now = new Date();
+    const payments = (typeof _payments !== 'undefined' ? _payments : []);
+    const unpaidMonths = [];
+    let thisMonthPaid = false;
+
+    // Walk back up to 24 months from registration to now
+    if (renter && renter.assignedSpots) {
+      const spotId = spotData.id;
+      const regDate = renter.registeredAt ? new Date(renter.registeredAt) : null;
+      for (let mo = 0; mo < 24; mo++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - mo, 1);
+        const m = d.getMonth() + 1, y = d.getFullYear();
+        if (regDate && (y < regDate.getFullYear() || (y === regDate.getFullYear() && m < regDate.getMonth() + 1))) break;
+        const paid = payments.find(p => p.spotId === spotId && p.type === 'rent' && p.month === m && p.year === y);
+        if (mo === 0) { thisMonthPaid = !!paid; }
+        if (!paid) unpaidMonths.push({ m, y });
+      }
+    }
+
+    const payRow = document.createElement('div');
+    payRow.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin:0.5rem 0 0.75rem;font-size:0.82rem;flex-wrap:wrap';
+
+    const monthChip = document.createElement('span');
+    monthChip.className = thisMonthPaid ? 'chip paid' : 'chip unpaid';
+    monthChip.textContent = thisMonthPaid ? '✓ This month paid' : '✗ This month unpaid';
+    payRow.appendChild(monthChip);
+
+    if (unpaidMonths.length > 1) {
+      const owed = document.createElement('span');
+      owed.style.cssText = 'font-size:0.78rem;color:var(--red,#ef4444);font-weight:600';
+      owed.textContent = `${unpaidMonths.length} months overdue`;
+      payRow.appendChild(owed);
+    }
+
+    actionsEl.appendChild(payRow);
+
+    // Car info
+    if (renter.carModel || renter.carColor) {
+      const carLine = document.createElement('div');
+      carLine.style.cssText = 'font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem';
+      carLine.textContent = [renter.carModel, renter.carColor].filter(Boolean).join(' · ');
+      actionsEl.appendChild(carLine);
+    }
+
+  // ── Own spot: Report button alongside Pay ─────────────────────────────────────
+  if (isMySpot) {
+    const btnRow = document.createElement('div');
+    btnRow.className = 'sheet-btn-row';
+
+    const payBtn = document.createElement('a');
+    payBtn.href = 'payments.html';
+    payBtn.className = 'sheet-btn secondary';
+    payBtn.textContent = '💳 Payments';
+
+    const reportBtn = document.createElement('button');
+    reportBtn.className = 'sheet-btn warn';
+    reportBtn.textContent = '⚠ Report';
+    reportBtn.onclick = () => { closeBottomSheet(); window.location.href = `incident.html?spot=${spotData.id}`; };
+
+    btnRow.appendChild(payBtn);
+    btnRow.appendChild(reportBtn);
+    actionsEl.appendChild(btnRow);
+  }
+
+  // ── Other occupied spot (renter, not mine) ────────────────────────────────────
+  if (renter && !isMySpot && !isAdmin) {
+    const btnRow = document.createElement('div');
+    btnRow.className = 'sheet-btn-row';
+
+    const infoBtn = document.createElement('button');
+    infoBtn.className = 'sheet-btn secondary';
+    infoBtn.textContent = 'ℹ Information';
+    infoBtn.onclick = () => showSpotOccupantInfo(spotData, label, users, currentUser);
+
+    const reportBtn2 = document.createElement('button');
+    reportBtn2.className = 'sheet-btn warn';
+    reportBtn2.textContent = '⚠ Report';
+    reportBtn2.onclick = () => { closeBottomSheet(); window.location.href = `incident.html?spot=${spotData.id}`; };
+
+    btnRow.appendChild(infoBtn);
+    btnRow.appendChild(reportBtn2);
+    actionsEl.appendChild(btnRow);
+  }
+
+  // ── Free spot: reserve placeholder ───────────────────────────────────────────
   const hasOwnSpot = typeof _users !== 'undefined' && _users
     ? (_users.find(u => u.id === currentUser.id)?.assignedSpots?.length > 0)
     : false;
-  if (!isAdmin && spotData.state === 'free' && !spotData.reserved && !hasOwnSpot && !(pendingSpotIds && pendingSpotIds.has(spotData.id))) {
+  if (!isAdmin && !renter && spotData.state === 'free' && !spotData.reserved &&
+      !hasOwnSpot && !(pendingSpotIds && pendingSpotIds.has(spotData.id))) {
     const btn = document.createElement('button');
     btn.className = 'sheet-btn primary';
     btn.textContent = 'Reserve';
@@ -363,23 +435,7 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
     actionsEl.appendChild(btn);
   }
 
-  // Pay — shown if user is assigned to this spot
-  if (isMySpot) {
-    const btn = document.createElement('button');
-    btn.className = 'sheet-btn secondary';
-    btn.textContent = 'Pay';
-    btn.onclick = () => { closeBottomSheet(); document.getElementById('my-payments-section')?.scrollIntoView({ behavior: 'smooth' }); };
-    actionsEl.appendChild(btn);
-  }
-
-  // Report incident — always shown
-  const reportBtn = document.createElement('button');
-  reportBtn.className = 'sheet-btn warn';
-  reportBtn.textContent = '⚠ Report';
-  reportBtn.onclick = () => { closeBottomSheet(); window.location.href = `incident.html?spot=${spotData.id}`; };
-  actionsEl.appendChild(reportBtn);
-
-  // Admin-only: Release
+  // ── Admin: Release / Assign ───────────────────────────────────────────────────
   if (isAdmin && spotData.state === 'occupied' && spotData.assignedUserId) {
     const btn = document.createElement('button');
     btn.className = 'sheet-btn danger';
@@ -394,8 +450,6 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
     };
     actionsEl.appendChild(btn);
   }
-
-  // Admin-only: Assign
   if (isAdmin && !spotData.assignedUserId && !spotData.reserved) {
     const btn = document.createElement('button');
     btn.className = 'sheet-btn admin';
@@ -406,7 +460,6 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
 
   content.innerHTML = '';
   content.appendChild(titleEl);
-  content.appendChild(metaEl);
   content.appendChild(actionsEl);
 
   sheet.classList.add('open');
@@ -419,6 +472,44 @@ function closeBottomSheet() {
   if (sheet) sheet.classList.remove('open');
   if (backdrop) backdrop.classList.remove('open');
   document.querySelectorAll('#parking-svg .spot.selected').forEach(el => el.classList.remove('selected'));
+}
+
+function showSpotOccupantInfo(spotData, label, users, currentUser) {
+  const content = document.getElementById('sheet-content');
+  if (!content) return;
+
+  const renter = users.find(u => u.id === spotData.assignedUserId);
+  if (!renter) return;
+
+  const name = `${renter.name || ''} ${renter.lastName || ''}`.trim() || renter.username;
+  const plate = (renter.licensePlate || renter.username || '').toUpperCase();
+
+  content.innerHTML = '';
+
+  const back = document.createElement('button');
+  back.className = 'sheet-btn secondary';
+  back.style.marginBottom = '0.75rem';
+  back.textContent = '← Back';
+  back.onclick = () => openBottomSheet(spotData, label, users, currentUser, new Set());
+  content.appendChild(back);
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'sheet-title';
+  titleEl.textContent = `Spot ${label} — Occupant`;
+  content.appendChild(titleEl);
+
+  function row(icon, val) {
+    if (!val) return;
+    const d = document.createElement('div');
+    d.style.cssText = 'display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;font-size:0.88rem;border-bottom:1px solid var(--border)';
+    d.innerHTML = `<span style="font-size:1rem;min-width:1.4rem;text-align:center">${icon}</span><span>${val}</span>`;
+    content.appendChild(d);
+  }
+
+  row('🪪', plate);
+  row('👤', name);
+  if (renter.phone) row('📞', renter.phone);
+  if (renter.carModel) row('🚗', [renter.carModel, renter.carColor].filter(Boolean).join(' · '));
 }
 
 function showAssignModal(spotId, users, refreshFn) {

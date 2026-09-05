@@ -209,23 +209,18 @@ document.getElementById('logout-link').addEventListener('click', () => logout())
 (function buildBottomNav() {
   const nav = document.getElementById('bottom-nav');
   const tabs = [
-    { href: 'parking.html',  icon: '🗺',  labelKey: 'nav.map' },
-    { href: 'payments.html', icon: '💳',  labelKey: 'nav.payments' },
-    { href: 'incident.html', icon: '⚠️',  labelKey: 'nav.incidents' },
-    { href: 'profile.html',  icon: '👤',  labelKey: 'nav.profile' },
+    { href: 'parking.html',  icon: '🗺',  label: 'Map' },
+    { href: 'admin.html',    icon: '⚙️',  label: 'Admin',     active: true },
+    { href: 'incident.html', icon: '⚠️',  label: 'Incidents' },
+    { href: 'profile.html',  icon: '👤',  label: 'Profile' },
   ];
   tabs.forEach(tab => {
     const a = document.createElement('a');
     a.href = tab.href;
-    a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span data-i18n="${tab.labelKey}">${tab.labelKey}</span>`;
+    if (tab.active) a.className = 'active';
+    a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span>${tab.label}</span>`;
     nav.appendChild(a);
   });
-  // Admin tab injected extra
-  const adminA = document.createElement('a');
-  adminA.href = 'admin.html';
-  adminA.className = 'active';
-  adminA.innerHTML = `<span class="bn-icon">⚙️</span><span data-i18n="nav.admin">Admin</span>`;
-  nav.insertBefore(adminA, nav.children[1]);
 })();
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────

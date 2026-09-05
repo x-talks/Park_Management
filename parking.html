@@ -75,10 +75,6 @@
   </div>
 
   <!-- My Spots & Payments -->
-  <div id="my-payments-section"></div>
-
-  <!-- Profile edit -->
-  <div id="profile-edit-section"></div>
 
 </div>
 
@@ -109,21 +105,22 @@ document.getElementById('logout-link').addEventListener('click', () => logout())
   document.addEventListener('click', () => wrap.classList.remove('open'));
 })();
 
-// Build role-aware bottom nav (Map / [Admin] / Payments / Incident / Profile)
+// Build role-aware bottom nav: Map(active) / [Admin] / Payments / Incidents / Profile
 (function buildBottomNav() {
   const nav = document.getElementById('bottom-nav');
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'master';
   const tabs = [
-    { href: 'parking.html',  icon: '🗺',  labelKey: 'nav.map',      active: true },
-    { href: 'incident.html', icon: '⚠️',  labelKey: 'nav.incidents', active: false },
-    { href: 'profile.html',  icon: '👤',  labelKey: 'nav.profile',   active: false },
+    { href: 'parking.html',  icon: '🗺',  label: 'Map',       active: true  },
+    { href: 'payments.html', icon: '💳',  label: 'Payments',  active: false },
+    { href: 'incident.html', icon: '⚠️',  label: 'Incidents', active: false },
+    { href: 'profile.html',  icon: '👤',  label: 'Profile',   active: false },
   ];
-  if (isAdmin) tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', labelKey: 'nav.admin', active: false });
+  if (isAdmin) tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', label: 'Admin', active: false });
   tabs.forEach(tab => {
     const a = document.createElement('a');
     a.href = tab.href;
     if (tab.active) a.className = 'active';
-    a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span data-i18n="${tab.labelKey}">${tab.labelKey}</span>`;
+    a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span>${tab.label}</span>`;
     nav.appendChild(a);
   });
 })();
@@ -144,293 +141,13 @@ async function refresh() {
   await loadAll();
   const pendingSpotIds = new Set(_pendingRegs.map(pr => pr.spotId));
   buildSVG(_spots, _users, currentUser, pendingSpotIds);
-  renderMyPayments();
-  renderProfile();
 }
 
 // Poll every 30 s + refresh on tab focus
 refresh();
 setInterval(refresh, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
-window.addEventListener('langchange', () => { applyPage(); renderMyPayments(); renderProfile(); });
-
-// ── My Payments ───────────────────────────────────────────────────────────────
-let _paymentYear = new Date().getFullYear();
-
-function renderMyPayments() {
-  const section = document.getElementById('my-payments-section');
-  section.innerHTML = '';
-
-  const me = _users.find(u => u.id === currentUser.id);
-  if (!me || !me.assignedSpots || me.assignedSpots.length === 0) return;
-
-  const card = document.createElement('div');
-  card.className = 'card';
-
-  const header = document.createElement('div');
-  header.className = 'card-header';
-  const h2 = document.createElement('h2'); h2.textContent = t('pay.title');
-  header.appendChild(h2);
-
-  // Year selector
-  const yw = document.createElement('div');
-  yw.style.cssText = 'display:flex;align-items:center;gap:0.5rem;font-size:0.85rem';
-  const ylbl = document.createElement('label');
-  ylbl.style.cssText = 'font-weight:600;color:var(--gray-600);font-size:0.75rem;text-transform:uppercase;letter-spacing:.04em';
-  ylbl.textContent = t('pay.year');
-  const ysel = document.createElement('select');
-  ysel.style.width = 'auto';
-  const thisYear = new Date().getFullYear();
-  for (let y = thisYear; y >= thisYear - 4; y--) {
-    const opt = document.createElement('option');
-    opt.value = y; opt.textContent = y;
-    if (y === _paymentYear) opt.selected = true;
-    ysel.appendChild(opt);
-  }
-  ysel.addEventListener('change', () => { _paymentYear = parseInt(ysel.value); renderMyPayments(); });
-  yw.appendChild(ylbl); yw.appendChild(ysel);
-  header.appendChild(yw);
-  card.appendChild(header);
-
-  // Termination notice
-  if (me.terminationDate) {
-    const notice = document.createElement('div');
-    notice.className = 'alert warn';
-    notice.style.marginBottom = '0.75rem';
-    notice.textContent = `⏹ ${t('pay.termination.notice', me.terminationDate)}`;
-    card.appendChild(notice);
-  }
-
-  me.assignedSpots.forEach(sid => {
-    const spot = _spots.find(s => s.id === sid);
-    if (!spot) return;
-
-    const regDate = me.registeredAt ? new Date(me.registeredAt) : null;
-
-    const spotTitle = document.createElement('h3');
-    spotTitle.textContent = `Spot ${spot.label}`;
-    card.appendChild(spotTitle);
-
-    const wrap = document.createElement('div');
-    wrap.className = 'table-wrap';
-    const table = document.createElement('table');
-
-    const thead = document.createElement('tr');
-    ['Month / Type', 'Amount Due', 'Status'].forEach(h => {
-      const th = document.createElement('th'); th.textContent = t({'Month / Type':'pay.col.month','Amount Due':'pay.col.amount','Status':'pay.col.status'}[h]); thead.appendChild(th);
-    });
-    table.appendChild(thead);
-
-    // Commission row — use rent effective at contract start
-    const commRent = getRentForMonth(spot, regDate ? regDate.getFullYear() : _paymentYear, regDate ? regDate.getMonth()+1 : 1);
-    const commPaid = _payments.find(p => p.spotId === sid && p.type === 'commission' && p.year === _paymentYear);
-    const commTr = document.createElement('tr');
-    commTr.style.background = 'var(--blue-bg)';
-    const commMonthTd = document.createElement('td');
-    commMonthTd.innerHTML = `<strong>${t('pay.commission')}</strong> <span style="font-size:0.72rem;color:var(--blue)">${t('pay.commission.desc')}</span>`;
-    const commAmtTd = document.createElement('td'); commAmtTd.textContent = `€${commRent.toFixed(2)}`;
-    const commStatusTd = document.createElement('td');
-    const commChip = document.createElement('span');
-    commChip.className = commPaid ? 'chip paid' : 'chip unpaid';
-    commChip.textContent = commPaid ? t('pay.status.paid', commPaid.paidDate) : t('pay.status.pending');
-    commStatusTd.appendChild(commChip);
-    commTr.appendChild(commMonthTd); commTr.appendChild(commAmtTd); commTr.appendChild(commStatusTd);
-    table.appendChild(commTr);
-
-    // Monthly rent rows for selected year
-    const months = getPaymentMonthsForYear(regDate, _paymentYear, me.terminationDate);
-
-    months.forEach(({ month, year, label: mLabel, isFirst, isFuture }) => {
-      const paid = _payments.find(p => p.spotId === sid && p.month === month && p.year === year && p.type === 'rent');
-      const fraction = isFirst && regDate ? getPaymentFraction(regDate) : { fraction: 1, label: 'Full', desc: '' };
-      const monthRent = getRentForMonth(spot, year, month);
-      const amount = (monthRent * fraction.fraction).toFixed(2);
-
-      const tr = document.createElement('tr');
-
-      const tdMonth = document.createElement('td');
-      tdMonth.textContent = mLabel;
-      if (isFirst && fraction.fraction < 1) {
-        const note = document.createElement('span');
-        note.className = 'pay-fraction';
-        note.textContent = ` (${t('pay.fraction.' + fraction.key)})`;
-        tdMonth.appendChild(note);
-      }
-
-      const tdAmt = document.createElement('td'); tdAmt.textContent = `€${amount}`;
-
-      const tdStatus = document.createElement('td');
-      if (isFuture) {
-        const c = document.createElement('span'); c.className = 'chip inactive'; c.textContent = t('pay.status.future');
-        tdStatus.appendChild(c);
-      } else if (paid) {
-        const c = document.createElement('span'); c.className = 'chip paid';
-        c.textContent = t('pay.status.paid', paid.paidDate); tdStatus.appendChild(c);
-      } else {
-        const c = document.createElement('span'); c.className = 'chip unpaid'; c.textContent = t('pay.status.pending');
-        tdStatus.appendChild(c);
-      }
-
-      tr.appendChild(tdMonth); tr.appendChild(tdAmt); tr.appendChild(tdStatus);
-      table.appendChild(tr);
-    });
-
-    wrap.appendChild(table);
-    card.appendChild(wrap);
-  });
-
-  section.appendChild(card);
-}
-
-function getPaymentMonthsForYear(regDate, year, terminationDate) {
-  const now = new Date();
-  const termDate = terminationDate ? new Date(terminationDate) : null;
-  const months = [];
-
-  for (let m = 1; m <= 12; m++) {
-    // Skip months before registration
-    if (regDate) {
-      const rYear = regDate.getFullYear(), rMonth = regDate.getMonth() + 1;
-      if (year < rYear || (year === rYear && m < rMonth)) continue;
-    }
-    // Skip months after termination
-    if (termDate) {
-      const tYear = termDate.getFullYear(), tMonth = termDate.getMonth() + 1;
-      if (year > tYear || (year === tYear && m > tMonth)) continue;
-    }
-    const d = new Date(year, m - 1, 1);
-    const isFuture = year > now.getFullYear() || (year === now.getFullYear() && m > now.getMonth() + 1);
-    const isFirst = regDate
-      ? (year === regDate.getFullYear() && m === regDate.getMonth() + 1)
-      : false;
-    months.push({
-      month: m, year,
-      label: d.toLocaleString('default', { month: 'long' }),
-      isFirst, isFuture
-    });
-  }
-  return months;
-}
-
-function getPaymentFraction(regDate) {
-  const day = new Date(regDate).getDate();
-  if (day <= 10) return { fraction: 1,   key: 'full',  label: 'Full',    desc: t('pay.fraction.full.desc') };
-  if (day <= 20) return { fraction: 0.5, key: 'half',  label: '½ month', desc: t('pay.fraction.half.desc') };
-  return             { fraction: 1/3, key: 'third', label: '⅓ month', desc: t('pay.fraction.third.desc') };
-}
-
-function getRentForMonth(spot, year, month) {
-  const history = spot.rentHistory;
-  if (history && history.length > 0) {
-    const key = `${year}-${String(month).padStart(2,'0')}`;
-    const applicable = history
-      .filter(h => h.from <= key)
-      .sort((a, b) => b.from.localeCompare(a.from));
-    if (applicable.length > 0) return applicable[0].rent;
-  }
-  return spot.monthlyRent || 80;
-}
-
-// ── Profile edit ──────────────────────────────────────────────────────────────
-function renderProfile() {
-  const section = document.getElementById('profile-edit-section');
-  section.innerHTML = '';
-
-  // Add anchor for Profile tab scroll target
-  const profileAnchor = document.createElement('div');
-  profileAnchor.id = 'profile';
-  section.appendChild(profileAnchor);
-
-  // Scroll to profile if navigated via #profile hash (clear hash after so repeat polls don't re-scroll)
-  if (window.location.hash === '#profile') {
-    setTimeout(() => {
-      profileAnchor.scrollIntoView({ behavior: 'smooth' });
-      history.replaceState(null, '', location.pathname);
-    }, 50);
-  }
-
-  const me = _users.find(u => u.id === currentUser.id);
-  if (!me || me.role !== 'renter') return;
-
-  const card = document.createElement('div');
-  card.className = 'card';
-
-  const header = document.createElement('div');
-  header.className = 'card-header';
-  const h2 = document.createElement('h2');
-  h2.textContent = t('profile.title');
-  header.appendChild(h2);
-  card.appendChild(header);
-
-  if (me.pendingEdits) {
-    const alert = document.createElement('div');
-    alert.className = 'alert info';
-    alert.textContent = t('profile.pending');
-    card.appendChild(alert);
-    section.appendChild(card);
-    return;
-  }
-
-  const form = document.createElement('form');
-
-  function addField(label, id, value, readOnly) {
-    const group = document.createElement('div');
-    group.className = 'form-group';
-    const lbl = document.createElement('label'); lbl.textContent = label;
-    const input = document.createElement('input');
-    input.id = id; input.value = value || '';
-    if (readOnly) input.readOnly = true;
-    group.appendChild(lbl); group.appendChild(input);
-    return group;
-  }
-
-  const grid = document.createElement('div');
-  grid.className = 'grid-2';
-  grid.appendChild(addField(t('profile.label.plate'), 'p-plate', me.licensePlate || me.username, true));
-  grid.appendChild(addField(t('profile.label.phone'), 'p-phone', me.phone, false));
-  grid.appendChild(addField(t('profile.label.carmodel'), 'p-carmodel', me.carModel, false));
-  grid.appendChild(addField(t('profile.label.carcolor'), 'p-carcolor', me.carColor, false));
-  form.appendChild(grid);
-
-  const btnRow = document.createElement('div');
-  btnRow.className = 'btn-row';
-  btnRow.style.marginTop = '0.5rem';
-  const submitBtn = document.createElement('button');
-  submitBtn.type = 'submit';
-  submitBtn.textContent = t('profile.btn.submit');
-  btnRow.appendChild(submitBtn);
-  form.appendChild(btnRow);
-
-  const note = document.createElement('p');
-  note.style.cssText = 'font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem';
-  note.textContent = t('profile.note');
-  form.appendChild(note);
-
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    const changes = {};
-    const phone    = document.getElementById('p-phone').value.trim();
-    const carModel = document.getElementById('p-carmodel').value.trim();
-    const carColor = document.getElementById('p-carcolor').value.trim();
-    if (phone    !== (me.phone    || '')) changes.phone    = phone;
-    if (carModel !== (me.carModel || '')) changes.carModel = carModel;
-    if (carColor !== (me.carColor || '')) changes.carColor = carColor;
-    if (!Object.keys(changes).length) {
-      toast(t('profile.warn.nochange'), 'warn'); return;
-    }
-    try {
-      await workerRequest('PATCH', `/users/${me.id}`, {
-        pendingEdits: { ...changes, requestedAt: new Date().toISOString() }
-      });
-      toast(t('profile.success'), 'success');
-      submitBtn.disabled = true;
-      refresh();
-    } catch(err) { toast(err.message, 'error'); }
-  });
-
-  card.appendChild(form);
-  section.appendChild(card);
-}
+window.addEventListener('langchange', () => applyPage());
 </script>
 <script type="module">
   import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';

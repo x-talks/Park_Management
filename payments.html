@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#818cf8"/>
+<title data-i18n="pay.title">My Payments</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css"/>
+<script>!function(){var t=localStorage.getItem("pm-theme");if(t&&t!=="light")document.documentElement.dataset.theme=t==="dark-deep"?"dark-glass":t}()</script>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="parking.html" class="logo-link" style="flex-shrink:0">
+    <img src="logo.png" alt="" style="height:28px;width:auto;filter:invert(1);opacity:0.9" onerror="this.style.display='none'"/>
+  </a>
+  <span id="header-section-name" class="header-section-name">Payments</span>
+  <div class="header-controls">
+    <div id="user-chip-nav"></div>
+    <div class="hamburger-wrap" id="hamburger-wrap">
+      <button class="icon-btn hamburger-btn" id="hamburger-btn" title="Menu" aria-label="Menu">
+        <i data-lucide="menu"></i>
+      </button>
+      <div class="hamburger-menu" id="hamburger-menu">
+        <div id="lang-switcher-nav"></div>
+        <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
+        <button id="logout-link" class="icon-btn" title="Logout" style="font-size:1.1rem">⎋</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrap">
+  <div id="payments-content"></div>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/i18n/en.js"></script>
+<script src="js/i18n/de.js"></script>
+<script src="js/i18n/tr.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/toast.js"></script>
+<script>
+buildSwitcher('lang-switcher-nav');
+applyPage();
+const currentUser = requireAuth('renter');
+buildUserChip('user-chip-nav', currentUser);
+document.getElementById('logout-link').addEventListener('click', () => logout());
+
+(function() {
+  const btn = document.getElementById('hamburger-btn');
+  const wrap = document.getElementById('hamburger-wrap');
+  btn.addEventListener('click', e => { e.stopPropagation(); wrap.classList.toggle('open'); });
+  document.addEventListener('click', () => wrap.classList.remove('open'));
+})();
+
+(function buildBottomNav() {
+  const nav = document.getElementById('bottom-nav');
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'master';
+  const tabs = [
+    { href: 'parking.html',  icon: '🗺',  label: 'Map',       active: false },
+    { href: 'payments.html', icon: '💳',  label: 'Payments',  active: true  },
+    { href: 'incident.html', icon: '⚠️',  label: 'Incidents', active: false },
+    { href: 'profile.html',  icon: '👤',  label: 'Profile',   active: false },
+  ];
+  if (isAdmin) tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', label: 'Admin', active: false });
+  tabs.forEach(tab => {
+    const a = document.createElement('a');
+    a.href = tab.href;
+    if (tab.active) a.className = 'active';
+    a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span>${tab.label}</span>`;
+    nav.appendChild(a);
+  });
+})();
+
+let _spots = [], _users = [], _payments = [];
+let _paymentYear = new Date().getFullYear();
+
+async function load() {
+  [_spots, _users, _payments] = await Promise.all([
+    readFile('data/spots.json'),
+    readFile('data/users.json'),
+    readFile('data/payments.json'),
+  ]);
+  render();
+}
+
+function render() {
+  const section = document.getElementById('payments-content');
+  section.innerHTML = '';
+
+  const me = _users.find(u => u.id === currentUser.id);
+  if (!me || !me.assignedSpots || me.assignedSpots.length === 0) {
+    const msg = document.createElement('div');
+    msg.className = 'card';
+    msg.style.cssText = 'text-align:center;color:var(--text-secondary);padding:2rem';
+    msg.textContent = 'No assigned spots found.';
+    section.appendChild(msg);
+    return;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  const h2 = document.createElement('h2'); h2.textContent = t('pay.title');
+  header.appendChild(h2);
+
+  const yw = document.createElement('div');
+  yw.style.cssText = 'display:flex;align-items:center;gap:0.5rem';
+  const ylbl = document.createElement('label');
+  ylbl.style.cssText = 'font-weight:600;color:var(--text-secondary);font-size:0.75rem;text-transform:uppercase;letter-spacing:.04em';
+  ylbl.textContent = t('pay.year');
+  const ysel = document.createElement('select');
+  ysel.style.width = 'auto';
+  const thisYear = new Date().getFullYear();
+  for (let y = thisYear; y >= thisYear - 4; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    if (y === _paymentYear) opt.selected = true;
+    ysel.appendChild(opt);
+  }
+  ysel.addEventListener('change', () => { _paymentYear = parseInt(ysel.value); render(); });
+  yw.appendChild(ylbl); yw.appendChild(ysel);
+  header.appendChild(yw);
+  card.appendChild(header);
+
+  if (me.terminationDate) {
+    const notice = document.createElement('div');
+    notice.className = 'alert warn';
+    notice.style.marginBottom = '0.75rem';
+    notice.textContent = `⏹ ${t('pay.termination.notice', me.terminationDate)}`;
+    card.appendChild(notice);
+  }
+
+  me.assignedSpots.forEach(sid => {
+    const spot = _spots.find(s => s.id === sid);
+    if (!spot) return;
+
+    const regDate = me.registeredAt ? new Date(me.registeredAt) : null;
+    const h3 = document.createElement('h3');
+    h3.textContent = `Spot ${spot.label}`;
+    card.appendChild(h3);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    const table = document.createElement('table');
+
+    const thead = document.createElement('tr');
+    [t('pay.col.month'), t('pay.col.amount'), t('pay.col.status')].forEach(h => {
+      const th = document.createElement('th'); th.textContent = h; thead.appendChild(th);
+    });
+    table.appendChild(thead);
+
+    const commRent = getRentForMonth(spot, regDate ? regDate.getFullYear() : _paymentYear, regDate ? regDate.getMonth() + 1 : 1);
+    const commPaid = _payments.find(p => p.spotId === sid && p.type === 'commission' && p.year === _paymentYear);
+    const commTr = document.createElement('tr');
+    commTr.style.background = 'var(--blue-bg)';
+    const commMonthTd = document.createElement('td');
+    commMonthTd.innerHTML = `<strong>${t('pay.commission')}</strong> <span style="font-size:0.72rem;color:var(--blue)">${t('pay.commission.desc')}</span>`;
+    const commAmtTd = document.createElement('td'); commAmtTd.textContent = `€${commRent.toFixed(2)}`;
+    const commStatusTd = document.createElement('td');
+    const commChip = document.createElement('span');
+    commChip.className = commPaid ? 'chip paid' : 'chip unpaid';
+    commChip.textContent = commPaid ? t('pay.status.paid', commPaid.paidDate) : t('pay.status.pending');
+    commStatusTd.appendChild(commChip);
+    commTr.appendChild(commMonthTd); commTr.appendChild(commAmtTd); commTr.appendChild(commStatusTd);
+    table.appendChild(commTr);
+
+    getPaymentMonthsForYear(regDate, _paymentYear, me.terminationDate).forEach(({ month, year, label: mLabel, isFirst, isFuture }) => {
+      const paid = _payments.find(p => p.spotId === sid && p.month === month && p.year === year && p.type === 'rent');
+      const fraction = isFirst && regDate ? getPaymentFraction(regDate) : { fraction: 1, key: 'full' };
+      const monthRent = getRentForMonth(spot, year, month);
+      const amount = (monthRent * fraction.fraction).toFixed(2);
+
+      const tr = document.createElement('tr');
+      const tdMonth = document.createElement('td');
+      tdMonth.textContent = mLabel;
+      if (isFirst && fraction.fraction < 1) {
+        const note = document.createElement('span');
+        note.className = 'pay-fraction';
+        note.textContent = ` (${t('pay.fraction.' + fraction.key)})`;
+        tdMonth.appendChild(note);
+      }
+      const tdAmt = document.createElement('td'); tdAmt.textContent = `€${amount}`;
+      const tdStatus = document.createElement('td');
+      if (isFuture) {
+        const c = document.createElement('span'); c.className = 'chip inactive'; c.textContent = t('pay.status.future');
+        tdStatus.appendChild(c);
+      } else if (paid) {
+        const c = document.createElement('span'); c.className = 'chip paid';
+        c.textContent = t('pay.status.paid', paid.paidDate); tdStatus.appendChild(c);
+      } else {
+        const c = document.createElement('span'); c.className = 'chip unpaid'; c.textContent = t('pay.status.pending');
+        tdStatus.appendChild(c);
+      }
+      tr.appendChild(tdMonth); tr.appendChild(tdAmt); tr.appendChild(tdStatus);
+      table.appendChild(tr);
+    });
+
+    wrap.appendChild(table);
+    card.appendChild(wrap);
+  });
+
+  section.appendChild(card);
+}
+
+function getPaymentMonthsForYear(regDate, year, terminationDate) {
+  const now = new Date();
+  const termDate = terminationDate ? new Date(terminationDate) : null;
+  const months = [];
+  for (let m = 1; m <= 12; m++) {
+    if (regDate) {
+      const rYear = regDate.getFullYear(), rMonth = regDate.getMonth() + 1;
+      if (year < rYear || (year === rYear && m < rMonth)) continue;
+    }
+    if (termDate) {
+      const tYear = termDate.getFullYear(), tMonth = termDate.getMonth() + 1;
+      if (year > tYear || (year === tYear && m > tMonth)) continue;
+    }
+    const d = new Date(year, m - 1, 1);
+    const isFuture = year > now.getFullYear() || (year === now.getFullYear() && m > now.getMonth() + 1);
+    const isFirst = regDate ? (year === regDate.getFullYear() && m === regDate.getMonth() + 1) : false;
+    months.push({ month: m, year, label: d.toLocaleString('default', { month: 'long' }), isFirst, isFuture });
+  }
+  return months;
+}
+
+function getPaymentFraction(regDate) {
+  const day = new Date(regDate).getDate();
+  if (day <= 10) return { fraction: 1,   key: 'full'  };
+  if (day <= 20) return { fraction: 0.5, key: 'half'  };
+  return             { fraction: 1/3, key: 'third' };
+}
+
+function getRentForMonth(spot, year, month) {
+  const history = spot.rentHistory;
+  if (history && history.length > 0) {
+    const key = `${year}-${String(month).padStart(2, '0')}`;
+    const applicable = history.filter(h => h.from <= key).sort((a, b) => b.from.localeCompare(a.from));
+    if (applicable.length > 0) return applicable[0].rent;
+  }
+  return spot.monthlyRent || 80;
+}
+
+load();
+window.addEventListener('langchange', () => { applyPage(); render(); });
+</script>
+<script type="module">
+  import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
+  import { initTheme, cycleTheme } from './js/theme.js';
+  window.lucide = { createIcons: () => createIcons({ icons }) };
+  initTheme();
+  window.lucide.createIcons();
+  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>

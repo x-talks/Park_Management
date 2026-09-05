@@ -146,16 +146,17 @@ document.getElementById('logout-link').addEventListener('click', () => logout())
   const nav = document.getElementById('bottom-nav');
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'master';
   const tabs = [
-    { href: 'parking.html',  icon: '🗺',  labelKey: 'nav.map',       active: false },
-    { href: 'incident.html', icon: '⚠️', labelKey: 'nav.incidents', active: false },
-    { href: 'profile.html',  icon: '👤', labelKey: 'nav.profile',   active: true  },
+    { href: 'parking.html',  icon: '🗺',  label: 'Map',       active: false },
+    { href: 'payments.html', icon: '💳',  label: 'Payments',  active: false },
+    { href: 'incident.html', icon: '⚠️',  label: 'Incidents', active: false },
+    { href: 'profile.html',  icon: '👤',  label: 'Profile',   active: true  },
   ];
-  if (isAdmin) tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', labelKey: 'nav.admin', active: false });
+  if (isAdmin) tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', label: 'Admin', active: false });
   tabs.forEach(tab => {
     const a = document.createElement('a');
     a.href = tab.href;
     if (tab.active) a.className = 'active';
-    a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span data-i18n="${tab.labelKey}">${tab.labelKey}</span>`;
+    a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span>${tab.label}</span>`;
     nav.appendChild(a);
   });
 })();
