@@ -6,6 +6,9 @@
 	import { patchSpot, assignSpot, releaseSpot } from '$lib/api/endpoints';
 	import { sortSpots } from '$lib/utils/spots';
 	import Chip, { type Variant as ChipVariant } from '$lib/components/Chip.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import * as Table from '$lib/components/ui/table';
 	import type { Spot, User } from '$lib/types';
 
 	interface Props {
@@ -19,9 +22,7 @@
 	const sortedSpots = $derived(sortSpots(spots));
 	const activeRenters = $derived(users.filter((u) => u.active && u.role === 'renter'));
 
-	// Per-row state: selected user ID for assign dropdown
 	let assignSelect = $state<Record<string, string>>({});
-	// Per-row inline rent input value
 	let rentInputs = $state<Record<string, string>>({});
 
 	function renterFor(spot: Spot): User | undefined {
@@ -106,7 +107,6 @@
 		if (isNaN(val) || val < 0) { await modalAlert(i18n.t('admin.alert.invalidrent')); return; }
 		const current = s.monthlyRent != null ? s.monthlyRent : 80;
 		if (Math.abs(val - current) < 0.001) return;
-		// Store rent change with from = current month
 		const now = new Date();
 		const fromMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 		const newEntry = { from: fromMonth, rent: val };
@@ -127,125 +127,84 @@
 		}
 	}
 
-	// Master can see all; admin can see and edit non-master spots
 	const canEdit = $derived(session.hasRole('admin'));
+
+	const selectClass = "flex h-8 rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring";
 </script>
 
-<div id="spot-list" class="card">
-	<div class="table-wrap">
-		<table>
-			<thead>
-				<tr>
-					<th>{i18n.t('admin.spots.col.spot')}</th>
-					<th>{i18n.t('admin.spots.col.owned')}</th>
-					<th>{i18n.t('admin.spots.col.state')}</th>
-					<th>{i18n.t('admin.spots.col.user')}</th>
-					<th>{i18n.t('admin.spots.col.plate')}</th>
-					<th>{i18n.t('admin.spots.col.rent')}</th>
-					<th>{i18n.t('admin.spots.col.actions')}</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each sortedSpots as s (s.id)}
-					{@const renter = renterFor(s)}
-					{@const rentVal = getRentDisplay(s)}
-					{@const _ = initRentInput(s.id, rentVal)}
-					<tr>
-						<td>{s.label}</td>
-						<td class="cell-center">
-							{#if canEdit}
-								<button
-									class="owned-btn"
-									class:active={s.owned}
-									title={s.owned ? 'Mark as not mine' : 'Mark as mine'}
-									onclick={() => toggleOwned(s)}
-								>{s.owned ? '★' : '☆'}</button>
-							{:else}
-								{s.owned ? '★' : '☆'}
-							{/if}
-						</td>
-						<td><Chip label={spotChipLabel(s)} variant={spotChipVariant(s)} /></td>
-						<td>{renter ? `${renter.name ?? ''} ${renter.lastName ?? ''}`.trim() || renter.username : '—'}</td>
-						<td>{renter ? (renter.licensePlate ?? renter.username) : '—'}</td>
-						<td>€{rentVal}</td>
-						<td>
-							{#if canEdit}
-								<div class="btn-row">
-									{#if s.reserved}
-										<button class="success-btn icon-sm" title={i18n.t('admin.btn.unreserve')} onclick={() => unreserve(s)}>▶</button>
-									{:else if !s.assignedUserId}
-										<select
-											class="assign-sel"
-											bind:value={assignSelect[s.id]}
-										>
-											<option value="">{i18n.t('admin.spots.user.default')}</option>
-											{#each activeRenters as u (u.id)}
-												<option value={u.id}>{`${u.name ?? ''} (${u.licensePlate ?? u.username})`.trim()}</option>
-											{/each}
-										</select>
-										<button class="success-btn icon-sm" title={i18n.t('admin.btn.assign')} onclick={() => assign(s)}>✓</button>
-										<button class="secondary icon-sm" title={i18n.t('admin.btn.reserve')} onclick={() => reserve(s)}>⛔</button>
-									{:else}
-										<button class="secondary icon-sm" title={i18n.t('admin.btn.unassign')} onclick={() => unassign(s)}>👤</button>
-									{/if}
-									{#if !s.reserved}
-										<input
-											type="number"
-											min="0"
-											step="0.01"
-											class="rent-inp"
-											bind:value={rentInputs[s.id]}
-											title={i18n.t('admin.btn.setrent')}
-											onblur={() => saveRent(s)}
-											onkeydown={(e) => onRentKeydown(e, s)}
-										/>
-									{/if}
-								</div>
-							{/if}
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
-</div>
-
-<style>
-	.cell-center {
-		text-align: center;
-		vertical-align: middle;
-	}
-	.owned-btn {
-		background: none;
-		border: none;
-		font-size: 1rem;
-		padding: 0.15rem 0.4rem;
-		cursor: pointer;
-		line-height: 1;
-		min-height: 0;
-		min-width: 0;
-		color: var(--text-primary);
-		border-radius: var(--radius-sm);
-	}
-	.owned-btn.active {
-		color: var(--green);
-	}
-	.assign-sel {
-		width: auto;
-		font-size: 0.8rem;
-		padding: 0.2rem 0.4rem;
-	}
-	.rent-inp {
-		width: 70px;
-		font-size: 0.8rem;
-		padding: 0.15rem 0.3rem;
-		display: inline-block;
-	}
-	.icon-sm {
-		font-size: 0.85rem;
-		padding: 0.2rem 0.45rem;
-		min-height: 0;
-		min-width: 0;
-		line-height: 1;
-	}
-</style>
+<Card.Root id="spot-list">
+	<Card.Content class="p-0">
+		<div class="overflow-x-auto">
+			<Table.Root>
+				<Table.Header>
+					<Table.Row>
+						<Table.Head>{i18n.t('admin.spots.col.spot')}</Table.Head>
+						<Table.Head>{i18n.t('admin.spots.col.owned')}</Table.Head>
+						<Table.Head>{i18n.t('admin.spots.col.state')}</Table.Head>
+						<Table.Head>{i18n.t('admin.spots.col.user')}</Table.Head>
+						<Table.Head>{i18n.t('admin.spots.col.plate')}</Table.Head>
+						<Table.Head>{i18n.t('admin.spots.col.rent')}</Table.Head>
+						<Table.Head>{i18n.t('admin.spots.col.actions')}</Table.Head>
+					</Table.Row>
+				</Table.Header>
+				<Table.Body>
+					{#each sortedSpots as s (s.id)}
+						{@const renter = renterFor(s)}
+						{@const rentVal = getRentDisplay(s)}
+						{@const _ = initRentInput(s.id, rentVal)}
+						<Table.Row>
+							<Table.Cell class="font-bold">{s.label}</Table.Cell>
+							<Table.Cell class="text-center">
+								{#if canEdit}
+									<button
+										class="bg-none border-none text-base px-1.5 py-0.5 cursor-pointer rounded leading-none {s.owned ? 'text-green-500' : 'text-muted-foreground'}"
+										title={s.owned ? 'Mark as not mine' : 'Mark as mine'}
+										onclick={() => toggleOwned(s)}
+									>{s.owned ? '★' : '☆'}</button>
+								{:else}
+									<span class={s.owned ? 'text-green-500' : 'text-muted-foreground'}>{s.owned ? '★' : '☆'}</span>
+								{/if}
+							</Table.Cell>
+							<Table.Cell><Chip label={spotChipLabel(s)} variant={spotChipVariant(s)} /></Table.Cell>
+							<Table.Cell class="text-sm">{renter ? `${renter.name ?? ''} ${renter.lastName ?? ''}`.trim() || renter.username : '—'}</Table.Cell>
+							<Table.Cell class="font-mono text-xs">{renter ? (renter.licensePlate ?? renter.username) : '—'}</Table.Cell>
+							<Table.Cell>€{rentVal}</Table.Cell>
+							<Table.Cell>
+								{#if canEdit}
+									<div class="flex flex-wrap gap-1 items-center">
+										{#if s.reserved}
+											<Button size="sm" class="h-7 px-2 text-xs" title={i18n.t('admin.btn.unreserve')} onclick={() => unreserve(s)}>▶</Button>
+										{:else if !s.assignedUserId}
+											<select class={selectClass} bind:value={assignSelect[s.id]}>
+												<option value="">{i18n.t('admin.spots.user.default')}</option>
+												{#each activeRenters as u (u.id)}
+													<option value={u.id}>{`${u.name ?? ''} (${u.licensePlate ?? u.username})`.trim()}</option>
+												{/each}
+											</select>
+											<Button size="sm" class="h-7 px-2 text-xs" title={i18n.t('admin.btn.assign')} onclick={() => assign(s)}>✓</Button>
+											<Button size="sm" variant="outline" class="h-7 px-2 text-xs" title={i18n.t('admin.btn.reserve')} onclick={() => reserve(s)}>⛔</Button>
+										{:else}
+											<Button size="sm" variant="outline" class="h-7 px-2 text-xs" title={i18n.t('admin.btn.unassign')} onclick={() => unassign(s)}>👤</Button>
+										{/if}
+										{#if !s.reserved}
+											<input
+												type="number"
+												min="0"
+												step="0.01"
+												class="w-[70px] h-8 rounded-md border border-input bg-transparent px-2 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50"
+												bind:value={rentInputs[s.id]}
+												title={i18n.t('admin.btn.setrent')}
+												onblur={() => saveRent(s)}
+												onkeydown={(e) => onRentKeydown(e, s)}
+											/>
+										{/if}
+									</div>
+								{/if}
+							</Table.Cell>
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		</div>
+	</Card.Content>
+</Card.Root>

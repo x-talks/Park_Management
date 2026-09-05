@@ -22,15 +22,24 @@
 	}
 </script>
 
-<nav class="bottom-nav">
+<nav class="fixed bottom-0 left-0 right-0 z-50 flex h-[60px] items-stretch border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
 	{#each tabs as tab}
-		<a href={tab.href} class:active={isActive(tab.href)}>
-			<span class="bn-icon">{tab.icon}</span>
+		<a
+			href={tab.href}
+			class="flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors
+				{isActive(tab.href)
+					? 'text-primary'
+					: 'text-muted-foreground hover:text-foreground'}"
+		>
+			<span class="text-lg leading-none">{tab.icon}</span>
 			<span>{i18n.t(tab.key)}</span>
 		</a>
 	{/each}
-	<button onclick={logout}>
-		<span class="bn-icon">🚪</span>
+	<button
+		onclick={logout}
+		class="flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+	>
+		<span class="text-lg leading-none">🚪</span>
 		<span>{i18n.t('nav.logout')}</span>
 	</button>
 </nav>

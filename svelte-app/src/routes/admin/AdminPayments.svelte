@@ -7,6 +7,8 @@
 	import { getRentForMonth, getPaymentFraction } from '$lib/utils/payments';
 	import { sortSpots } from '$lib/utils/spots';
 	import { exportPaymentsCsv } from '$lib/utils/csv';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
 	import type { Spot, User, Payment } from '$lib/types';
 
 	interface Props {
@@ -24,13 +26,10 @@
 
 	let selectedYear = $state(currentYear);
 
-	const yearOptions = $derived(
-		Array.from({ length: 5 }, (_, i) => currentYear - i)
-	);
+	const yearOptions = $derived(Array.from({ length: 5 }, (_, i) => currentYear - i));
 
 	const months = $derived.by(() => {
-		const maxMonth =
-			selectedYear < currentYear ? 12 : selectedYear === currentYear ? currentMonth : 0;
+		const maxMonth = selectedYear < currentYear ? 12 : selectedYear === currentYear ? currentMonth : 0;
 		return Array.from({ length: maxMonth }, (_, i) => {
 			const d = new Date(selectedYear, i, 1);
 			return {
@@ -43,13 +42,10 @@
 
 	const assignedSpots = $derived(sortSpots(spots).filter((s) => s.assignedUserId));
 
-	// Per-spot rent input values (for the inline rent editor in the matrix renter column)
 	let rentInputs = $state<Record<string, string>>({});
 
 	function initRentInput(s: Spot) {
-		if (!(s.id in rentInputs)) {
-			rentInputs[s.id] = (s.monthlyRent ?? 80).toFixed(2);
-		}
+		if (!(s.id in rentInputs)) rentInputs[s.id] = (s.monthlyRent ?? 80).toFixed(2);
 	}
 
 	function renterFor(s: Spot): User | undefined {
@@ -57,9 +53,7 @@
 	}
 
 	function isPaid(spotId: string, month: number, year: number, type: string): Payment | undefined {
-		return payments.find(
-			(p) => p.spotId === spotId && p.month === month && p.year === year && p.type === type
-		);
+		return payments.find((p) => p.spotId === spotId && p.month === month && p.year === year && p.type === type);
 	}
 
 	function commissionPaid(spotId: string): Payment | undefined {
@@ -125,13 +119,10 @@
 		} catch (err) { toast(err instanceof Error ? err.message : 'Error', 'error'); }
 	}
 
-	// Inline commission amount per spot
 	let commInputs = $state<Record<string, string>>({});
 
 	function initCommInput(s: Spot) {
-		if (!(s.id in commInputs)) {
-			commInputs[s.id] = getRentForMonth(s, selectedYear, 1).toFixed(2);
-		}
+		if (!(s.id in commInputs)) commInputs[s.id] = getRentForMonth(s, selectedYear, 1).toFixed(2);
 	}
 
 	async function saveRent(s: Spot) {
@@ -151,200 +142,107 @@
 		exportPaymentsCsv(spots, users, payments, selectedYear);
 		toast(i18n.t('admin.csv.export') + ' ✓', 'success');
 	}
+
+	const selectClass = "h-8 rounded-md border border-input bg-transparent px-2 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50";
+	const inputSmClass = "w-[70px] h-7 rounded border border-input bg-transparent px-1.5 text-xs focus-visible:ring-[2px] focus-visible:ring-ring/50";
 </script>
 
-<div class="card">
-	<div class="card-header">
-		<h2>{i18n.t('admin.pay.title')}</h2>
-		<div class="header-actions">
-			<select id="payment-year" bind:value={selectedYear} class="year-sel">
+<Card.Root>
+	<Card.Header class="flex-row items-center justify-between space-y-0 pb-3">
+		<Card.Title>{i18n.t('admin.pay.title')}</Card.Title>
+		<div class="flex items-center gap-2">
+			<select id="payment-year" bind:value={selectedYear} class={selectClass}>
 				{#each yearOptions as y}
 					<option value={y}>{y}</option>
 				{/each}
 			</select>
-			<button id="csv-export-btn" class="secondary" onclick={doExportCsv}>{i18n.t('admin.csv.export')}</button>
+			<Button id="csv-export-btn" variant="outline" size="sm" onclick={doExportCsv}>{i18n.t('admin.csv.export')}</Button>
 		</div>
-	</div>
+	</Card.Header>
 
-	<div class="legend">
-		<span class="legend-item paid-sample">✓ {i18n.t('admin.pay.legend.paid')}</span>
-		<span class="legend-item unpaid-sample">— {i18n.t('admin.pay.legend.pending')}</span>
-		<span class="legend-item comm-sample">{i18n.t('admin.pay.legend.commission')}</span>
-	</div>
+	<Card.Content class="p-0">
+		<div class="flex gap-3 px-4 pb-3 text-xs">
+			<span class="rounded px-2 py-0.5 font-semibold bg-green-500/15 text-green-500">✓ {i18n.t('admin.pay.legend.paid')}</span>
+			<span class="rounded px-2 py-0.5 font-semibold bg-muted text-muted-foreground">— {i18n.t('admin.pay.legend.pending')}</span>
+			<span class="rounded px-2 py-0.5 font-semibold bg-primary/10 text-primary">{i18n.t('admin.pay.legend.commission')}</span>
+		</div>
 
-	<div id="payment-matrix" class="table-wrap">
-		<table class="payment-matrix">
-			<thead>
-				<tr>
-					<th>{i18n.t('admin.pay.col.spot')}</th>
-					<th>{i18n.t('admin.pay.col.renter')}</th>
-					<th class="pay-col">{i18n.t('admin.pay.col.commission')}</th>
-					{#each months as m}
-						<th class="pay-col">{m.label}</th>
-					{/each}
-				</tr>
-			</thead>
-			<tbody>
-				{#each assignedSpots as s (s.id)}
-					{@const renter = renterFor(s)}
-					{@const _ = initRentInput(s)}
-					{@const _c = initCommInput(s)}
-					{@const commPaid = commissionPaid(s.id)}
-					<tr>
-						<!-- Spot label -->
-						<td>Spot {s.label}</td>
-
-						<!-- Renter + inline rent editor -->
-						<td class="renter-cell">
-							<span>{renter ? `${renter.name ?? ''} ${renter.lastName ?? ''}`.trim() || renter.username : '—'}</span>
-							{#if renter?.terminationDate}
-								<span class="termination-chip">{i18n.t('admin.users.termination.chip', renter.terminationDate)}</span>
-							{/if}
-							<div class="rent-editor">
-								<span class="rent-lbl">€/mo:</span>
-								<input
-									type="number" min="1" step="0.01"
-									class="rent-inp-sm"
-									bind:value={rentInputs[s.id]}
-									title="Edit monthly rent"
-									onblur={() => saveRent(s)}
-									onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void saveRent(s); } }}
-								/>
-							</div>
-						</td>
-
-						<!-- Commission cell -->
-						<td class="pay-col" class:payment-cell-paid={commPaid} class:payment-cell-unpaid={!commPaid}>
-							{#if commPaid}
-								✓ {commPaid.paidDate}
-								<button class="secondary icon-xs" title={i18n.t('admin.btn.revert')} onclick={() => doRevertCommission(commPaid)}>↩</button>
-							{:else}
-								<input
-									type="number" min="0" step="0.01"
-									class="rent-inp-sm"
-									bind:value={commInputs[s.id]}
-									title="Commission amount"
-									style="margin-bottom:0.2rem"
-								/>
-								<br />
-								<button class="success-btn icon-xs" title={i18n.t('admin.btn.markpaid')} onclick={() => doMarkCommission(s, parseFloat(commInputs[s.id]) || 0)}>✓</button>
-							{/if}
-						</td>
-
-						<!-- Monthly cells -->
+		<div id="payment-matrix" class="overflow-x-auto">
+			<table class="w-full min-w-[600px] border-collapse text-sm">
+				<thead>
+					<tr class="border-b border-border bg-muted/30">
+						<th class="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{i18n.t('admin.pay.col.spot')}</th>
+						<th class="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{i18n.t('admin.pay.col.renter')}</th>
+						<th class="px-3 py-2 text-center text-xs font-medium text-muted-foreground min-w-[72px]">{i18n.t('admin.pay.col.commission')}</th>
 						{#each months as m}
-							{@const before = isBefore(renter, m.month, m.year)}
-							{@const after = isAfterTermination(renter, m.month, m.year)}
-							{@const paid = isPaid(s.id, m.month, m.year, 'rent')}
-							{@const monthRent = getRentForMonth(s, m.year, m.month)}
-							{@const { fraction, label: fracLabel } = fractionForCell(renter, m.month, m.year)}
-							{@const amount = (monthRent * fraction).toFixed(2)}
-							<td
-								class="pay-col"
-								class:payment-cell-paid={paid}
-								class:payment-cell-unpaid={!paid && !before && !after}
-							>
-								{#if before || after}
-									—
-								{:else if paid}
-									✓ {paid.paidDate}
-									<button class="secondary icon-xs" title={i18n.t('admin.btn.revert')} onclick={() => doRevertRent(paid, m.label, m.year)}>↩</button>
-								{:else}
-									<div class="amount-hint">€{amount}{fracLabel}</div>
-									<button
-										class="success-btn icon-xs"
-										title={i18n.t('admin.btn.markpaid')}
-										onclick={() => doMarkPaid(s, m.month, m.year, parseFloat(amount))}
-									>✓</button>
-								{/if}
-							</td>
+							<th class="px-2 py-2 text-center text-xs font-medium text-muted-foreground min-w-[72px]">{m.label}</th>
 						{/each}
 					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
-</div>
+				</thead>
+				<tbody>
+					{#each assignedSpots as s (s.id)}
+						{@const renter = renterFor(s)}
+						{@const _ = initRentInput(s)}
+						{@const _c = initCommInput(s)}
+						{@const commPaid = commissionPaid(s.id)}
+						<tr class="border-b border-border/50 hover:bg-muted/20">
+							<td class="px-3 py-2 font-bold text-sm">Spot {s.label}</td>
 
-<style>
-	.header-actions {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-	}
-	.year-sel {
-		width: auto;
-		font-size: 0.85rem;
-		padding: 0.25rem 0.5rem;
-	}
-	.legend {
-		display: flex;
-		gap: 1rem;
-		margin-bottom: 0.75rem;
-		font-size: 0.78rem;
-	}
-	.legend-item {
-		padding: 0.15rem 0.5rem;
-		border-radius: var(--radius-sm);
-		font-weight: 600;
-	}
-	.paid-sample { background: var(--green-bg); color: var(--green); }
-	.unpaid-sample { background: var(--bg-card-hover); color: var(--text-secondary); }
-	.comm-sample { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+							<td class="px-3 py-2 text-xs min-w-[140px]">
+								<span>{renter ? `${renter.name ?? ''} ${renter.lastName ?? ''}`.trim() || renter.username : '—'}</span>
+								{#if renter?.terminationDate}
+									<span class="inline-block text-[0.65rem] bg-amber-500/15 text-amber-500 rounded px-1 ml-1">{i18n.t('admin.users.termination.chip', renter.terminationDate)}</span>
+								{/if}
+								<div class="flex items-center gap-1 mt-1 text-[0.7rem] text-muted-foreground">
+									<span>€/mo:</span>
+									<input
+										type="number" min="1" step="0.01"
+										class={inputSmClass}
+										bind:value={rentInputs[s.id]}
+										title="Edit monthly rent"
+										onblur={() => saveRent(s)}
+										onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void saveRent(s); } }}
+									/>
+								</div>
+							</td>
 
-	.payment-matrix {
-		min-width: 600px;
-	}
-	.pay-col {
-		text-align: center;
-		min-width: 72px;
-		font-size: 0.78rem;
-	}
-	.payment-cell-paid {
-		background: var(--green-bg);
-		color: var(--green);
-	}
-	.payment-cell-unpaid {
-		background: var(--bg-card-hover);
-	}
-	.amount-hint {
-		font-size: 0.72rem;
-		color: var(--text-secondary);
-		margin-bottom: 0.2rem;
-	}
-	.renter-cell {
-		font-size: 0.82rem;
-		min-width: 140px;
-	}
-	.termination-chip {
-		display: inline-block;
-		font-size: 0.65rem;
-		background: var(--amber-bg);
-		color: var(--amber);
-		border-radius: var(--radius-sm);
-		padding: 0.1rem 0.3rem;
-		margin-left: 0.25rem;
-	}
-	.rent-editor {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		margin-top: 0.25rem;
-		font-size: 0.72rem;
-	}
-	.rent-lbl {
-		color: var(--text-secondary);
-	}
-	.rent-inp-sm {
-		width: 70px;
-		font-size: 0.75rem;
-		padding: 0.1rem 0.25rem;
-	}
-	.icon-xs {
-		font-size: 0.75rem;
-		padding: 0.1rem 0.3rem;
-		min-height: 0;
-		min-width: 0;
-		line-height: 1;
-	}
-</style>
+							<td class="px-2 py-2 text-center text-xs {commPaid ? 'bg-green-500/10 text-green-600' : 'bg-muted/30'}">
+								{#if commPaid}
+									✓ {commPaid.paidDate}
+									<button class="text-[0.65rem] ml-1 opacity-60 hover:opacity-100" title={i18n.t('admin.btn.revert')} onclick={() => doRevertCommission(commPaid)}>↩</button>
+								{:else}
+									<input type="number" min="0" step="0.01" class="{inputSmClass} mb-1" bind:value={commInputs[s.id]} title="Commission amount" /><br />
+									<button class="text-[0.7rem] bg-green-500/20 text-green-600 rounded px-1.5 py-0.5 hover:bg-green-500/30" title={i18n.t('admin.btn.markpaid')} onclick={() => doMarkCommission(s, parseFloat(commInputs[s.id]) || 0)}>✓</button>
+								{/if}
+							</td>
+
+							{#each months as m}
+								{@const before = isBefore(renter, m.month, m.year)}
+								{@const after = isAfterTermination(renter, m.month, m.year)}
+								{@const paid = isPaid(s.id, m.month, m.year, 'rent')}
+								{@const monthRent = getRentForMonth(s, m.year, m.month)}
+								{@const { fraction, label: fracLabel } = fractionForCell(renter, m.month, m.year)}
+								{@const amount = (monthRent * fraction).toFixed(2)}
+								<td class="px-2 py-2 text-center text-xs {paid ? 'bg-green-500/10 text-green-600' : !before && !after ? 'bg-muted/20' : ''}">
+									{#if before || after}
+										—
+									{:else if paid}
+										✓ {paid.paidDate}
+										<button class="text-[0.65rem] ml-1 opacity-60 hover:opacity-100" title={i18n.t('admin.btn.revert')} onclick={() => doRevertRent(paid, m.label, m.year)}>↩</button>
+									{:else}
+										<div class="text-[0.7rem] text-muted-foreground mb-0.5">€{amount}{fracLabel}</div>
+										<button
+											class="text-[0.7rem] bg-green-500/20 text-green-600 rounded px-1.5 py-0.5 hover:bg-green-500/30"
+											title={i18n.t('admin.btn.markpaid')}
+											onclick={() => doMarkPaid(s, m.month, m.year, parseFloat(amount))}
+										>✓</button>
+									{/if}
+								</td>
+							{/each}
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
+	</Card.Content>
+</Card.Root>
