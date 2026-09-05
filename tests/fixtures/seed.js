@@ -137,14 +137,17 @@ async function seed() {
   if (usersErr) throw new Error(`users upsert: ${usersErr.message}`);
   console.log('  ✓ users');
 
-  // Payments
+  // Payments — delete ALL first so no stale rows from previous runs survive
+  const { error: payDelErr } = await supa.from('payments').delete().neq('id', '__none__');
+  if (payDelErr) throw new Error(`payments delete: ${payDelErr.message}`);
+
   const { year: pmYear, month: pmMonth } = prevMonthYear();
+  // Seed state that satisfies all tests deterministically:
+  //   - s1 current-month rent is paid   → admin-payments "s1 row has ✓" and acceptance-admin pass
+  //   - s1 commission is NOT seeded     → "mark commission as paid" always finds an unpaid button
+  //   - s2 current-month is NOT seeded  → "mark s2 current month as paid" always finds an unpaid button
+  //   - s2 prev-month rent is paid      → admin-payments read tests pass
   const payments = [
-    {
-      id: 'pay-s1-commission', spotId: 's1', userId: 'u-renter-a',
-      month: 1, year, type: 'commission',
-      paidDate: firstOfMonth(), markedByAdminId: 'u-admin',
-    },
     {
       id: 'pay-s1-current', spotId: 's1', userId: 'u-renter-a',
       month, year, type: 'rent',
