@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { session } from '$lib/stores/session.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { i18n } from '$lib/stores/i18n.svelte';
@@ -15,7 +16,7 @@
 
 	onMount(() => {
 		if (session.user) {
-			const dest = session.hasRole('admin') ? '/admin' : '/parking';
+			const dest = session.hasRole('admin') ? base + '/admin' : base + '/parking';
 			void goto(dest, { replaceState: true });
 		}
 	});
@@ -27,7 +28,7 @@
 		error = '';
 		try {
 			const data = await login(plate, password);
-			const dest = data.user.role === 'admin' || data.user.role === 'master' ? '/admin' : '/parking';
+			const dest = data.user.role === 'admin' || data.user.role === 'master' ? base + '/admin' : base + '/parking';
 			void goto(dest, { replaceState: true });
 		} catch (err) {
 			error = err instanceof Error ? err.message : i18n.t('login.error.failed');

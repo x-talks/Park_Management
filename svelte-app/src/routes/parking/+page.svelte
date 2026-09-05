@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { session } from '$lib/stores/session.svelte';
 	import { i18n } from '$lib/stores/i18n.svelte';
 	import { toast } from '$lib/stores/toast.svelte';
@@ -82,7 +83,7 @@
 	const poll = new PollStore();
 
 	onMount(async () => {
-		if (!session.user) { void goto('/'); return; }
+		if (!session.user) { void goto(base + '/'); return; }
 		await loadAll();
 		poll.start(loadAll);
 	});
@@ -190,7 +191,7 @@
 						{#if isMySpot}
 							<button class="sheet-btn secondary" onclick={scrollToPayments}>{i18n.t('map.pay')}</button>
 						{/if}
-						<button class="sheet-btn warn" onclick={() => { closeSheet(); void goto(`/incident?spot=${selectedSpot.id}`); }}>
+						<button class="sheet-btn warn" onclick={() => { closeSheet(); void goto(`${base}/incident?spot=${selectedSpot.id}`); }}>
 							⚠ {i18n.t('map.report')}
 						</button>
 						{#if isAdmin && selectedSpot.state === 'occupied' && selectedSpot.assignedUserId}

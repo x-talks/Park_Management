@@ -6,6 +6,7 @@
 	import { patchUser, setPassword } from '$lib/api/endpoints';
 	import { toast } from '$lib/stores/toast.svelte';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import type { User } from '$lib/types';
 
 	let me = $state<User | null>(null);
@@ -24,7 +25,7 @@
 
 	onMount(async () => {
 		const uid = session.user?.id;
-		if (!uid) { void goto('/', { replaceState: true }); return; }
+		if (!uid) { void goto(base + '/', { replaceState: true }); return; }
 		const users = await getUsers();
 		const found = users.find((u) => u.id === uid) ?? null;
 		me = found;

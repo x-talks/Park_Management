@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { session } from '$lib/stores/session.svelte';
 	import { i18n } from '$lib/stores/i18n.svelte';
 	import { getSpots, getUsers, getPayments, getInvites, getPendingRegistrations } from '$lib/api/supabase';
@@ -37,7 +38,7 @@
 	const poll = new PollStore();
 
 	onMount(async () => {
-		if (!session.hasRole('admin')) { void goto('/parking'); return; }
+		if (!session.hasRole('admin')) { void goto(base + '/parking'); return; }
 		await loadAll();
 		poll.start(loadAll);
 	});

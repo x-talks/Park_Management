@@ -1,6 +1,8 @@
 // Auth — login/logout, JWT refresh scheduling, and 401 re-auth handlers.
 // Mirrors js/auth.js + the refresh/re-auth logic in js/api.js.
 import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
+import { base } from '$app/paths';
 import { config } from '$lib/config';
 import { session } from '$lib/stores/session.svelte';
 import { setAuthHandlers, fetchWithTimeout } from './client';
@@ -81,7 +83,7 @@ export async function logout(): Promise<void> {
 	}
 	if (refreshTimer) clearTimeout(refreshTimer);
 	session.clear();
-	if (browser) window.location.href = '/';
+	if (browser) void goto(base + '/', { replaceState: true });
 }
 
 // The re-auth modal resolves this when the user re-enters their password.

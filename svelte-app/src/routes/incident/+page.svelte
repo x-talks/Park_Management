@@ -9,6 +9,7 @@
 	import { modalConfirm } from '$lib/stores/modal.svelte';
 	import type { Spot, Incident, User } from '$lib/types';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 
 	let spots = $state<Spot[]>([]);
 	let incidents = $state<Incident[]>([]);
@@ -26,7 +27,7 @@
 	let lightboxOpen = $state(false);
 
 	onMount(async () => {
-		if (!session.user) { void goto('/', { replaceState: true }); return; }
+		if (!session.user) { void goto(base + '/', { replaceState: true }); return; }
 		[spots, incidents, users] = await Promise.all([getSpots(), getIncidents(), getUsers()]);
 		spots = sortSpots(spots);
 		// Pre-select user's own spot

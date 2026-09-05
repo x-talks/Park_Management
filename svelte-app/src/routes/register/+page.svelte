@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { i18n } from '$lib/stores/i18n.svelte';
 	import { getInviteByToken } from '$lib/api/supabase';
 	import { submitPendingRegistration } from '$lib/api/endpoints';
@@ -98,7 +99,7 @@
 			<p class="subtitle">{i18n.t('reg.loading')}</p>
 		{:else if step === 'error'}
 			<div class="alert error">{errorMsg}</div>
-			<button class="secondary" onclick={() => goto('/')}>{i18n.t('reg.btn.login')}</button>
+			<button class="secondary" onclick={() => goto(base + '/')}>{i18n.t('reg.btn.login')}</button>
 		{:else if step === 'review'}
 			<div class="step-pills">
 				<span class="step active">{i18n.t('reg.step.review')}</span>
@@ -217,7 +218,7 @@
 				</button>
 			</div>
 
-			<button style="width:100%;margin-top:1rem" onclick={() => goto('/')}>
+			<button style="width:100%;margin-top:1rem" onclick={() => goto(base + '/')}>
 				{i18n.t('reg.btn.login')}
 			</button>
 		{/if}
