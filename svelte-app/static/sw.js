@@ -1,6 +1,6 @@
 // sw.js — network-first PWA shell cache for the SvelteKit build
 // Bump CACHE on every meaningful deploy so `activate` purges stale caches.
-const CACHE = 'pm-svelte-2026-09-04-a';
+const CACHE = 'pm-svelte-2026-09-05-a';
 
 // SvelteKit SPA: only the root entry points need explicit pre-caching.
 // Hashed JS/CSS chunks are auto-cached by the fetch handler on first visit.
