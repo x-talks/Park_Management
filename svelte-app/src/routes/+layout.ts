@@ -1,7 +1,7 @@
 // Pure client-rendered SPA for GitHub Pages.
-// ssr:false renders every route in the browser (data is fetched client-side with
-// the user's JWT). The adapter-static `fallback: index.html` serves the shell for
-// all routes, so we do NOT prerender individual routes.
-export const prerender = false;
+// ssr:false + prerender:true generates a static HTML shell for every route,
+// so GitHub Pages can serve /parking, /admin etc. as physical files without
+// needing a 404.html redirect hack (which only works at the domain root).
+export const prerender = true;
 export const ssr = false;
 
