@@ -95,28 +95,26 @@ test.describe('profile.html — password change validation', () => {
   });
 });
 
-test.describe('profile.html — accessible from nav on all pages', () => {
-  test('parking.html top nav has Profile link pointing to profile.html', async ({ page }) => {
+test.describe('profile.html — accessible from bottom nav on all pages', () => {
+  test('parking.html bottom nav has Profile link pointing to profile.html', async ({ page }) => {
     await loginAs(page, RENTER_USER, RENTER_PASS);
     await page.waitForURL(/parking\.html/, { timeout: 30_000 });
-    const link = page.locator('.nav-links a[href*="profile.html"]');
+    const link = page.locator('.bottom-nav a[href="profile.html"]');
     await expect(link).toBeVisible({ timeout: 10_000 });
   });
 
-  test('incident.html top nav has Profile link pointing to profile.html', async ({ page }) => {
+  test('incident.html bottom nav has Profile link pointing to profile.html', async ({ page }) => {
     await loginAs(page, RENTER_USER, RENTER_PASS);
     await page.waitForURL(/parking\.html/, { timeout: 30_000 });
     await page.goto('/incident.html');
-    const link = page.locator('.nav-links a[href*="profile.html"]');
+    const link = page.locator('.bottom-nav a[href="profile.html"]');
     await expect(link).toBeVisible({ timeout: 10_000 });
   });
 
-  test('admin top nav has Profile link', async ({ page }) => {
+  test('admin bottom nav has Profile link', async ({ page }) => {
     await loginAs(page, ADMIN_USER, ADMIN_PASS);
     await page.waitForURL(/admin\.html/, { timeout: 30_000 });
-    // Admin navigates to parking map to access profile link (admin.html has no profile link)
-    await page.goto('/parking.html');
-    const link = page.locator('.nav-links a[href*="profile.html"]');
+    const link = page.locator('.bottom-nav a[href="profile.html"]');
     await expect(link).toBeVisible({ timeout: 10_000 });
   });
 });

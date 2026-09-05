@@ -255,16 +255,90 @@ a:hover { text-decoration: underline; }
   z-index: 100;
   padding: 0 clamp(0.75rem, 4vw, 1.5rem);
   margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   min-height: 56px;
   gap: 1rem;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  /* New 3-column layout: logo | section name | controls */
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
 }
+
 .site-header h1 { color: var(--header-text); font-size: 1.1rem; }
+
+.header-section-name {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--header-text);
+  letter-spacing: -0.01em;
+  pointer-events: none;
+  padding: 0 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.site-header .logo-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+  flex-shrink: 0;
+}
+.site-header .logo-link:hover { opacity: 0.85; }
+
+/* ── Hamburger menu ───────────────────────────────────────────────────────── */
+.hamburger-wrap { position: relative; }
+
+.hamburger-btn {
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.15);
+  color: rgba(255,255,255,.85);
+}
+.hamburger-btn:hover { background: rgba(255,255,255,.20); opacity: 1; }
+
+.hamburger-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 9999;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 0.5rem;
+  min-width: 160px;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.hamburger-wrap.open .hamburger-menu { display: flex; }
+
+.hamburger-menu .lang-globe-wrap { width: 100%; }
+.hamburger-menu .lang-globe-btn {
+  width: 100%; text-align: left; justify-content: flex-start;
+  background: none; border-color: transparent; color: var(--text-primary);
+}
+.hamburger-menu .lang-globe-btn:hover { background: var(--bg-card-hover); border-color: var(--border); opacity: 1; }
+.hamburger-menu .icon-btn {
+  width: 100%; justify-content: flex-start; text-align: left; gap: 0.5rem;
+  background: none; border-color: transparent; color: var(--text-primary);
+  border-radius: var(--radius); padding: 0.4rem 0.5rem; height: auto; min-height: 2rem;
+}
+.hamburger-menu .icon-btn:hover { background: var(--bg-card-hover); border-color: var(--border); opacity: 1; }
+
+/* Legacy .site-nav / .nav-links retained for other pages */
 .site-nav { display: flex; gap: 0.25rem; align-items: center; flex-wrap: nowrap; flex: 1; }
 .nav-links { display: flex; gap: 0.15rem; align-items: center; flex: 1; }
 .nav-controls { display: flex; gap: 0.25rem; align-items: center; flex-shrink: 0; padding-left: 0.5rem; border-left: 1px solid rgba(255,255,255,0.1); margin-left: 0.25rem; }
@@ -281,14 +355,6 @@ a:hover { text-decoration: underline; }
 .site-nav a:hover { background: rgba(255,255,255,.12); color: #fff; }
 .site-nav a.active { background: rgba(255,255,255,.18); color: #fff; }
 .site-nav .nav-sep { color: rgba(255,255,255,0.3); padding: 0 0.1rem; }
-.site-header .logo-link {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  text-decoration: none;
-  color: inherit;
-}
-.site-header .logo-link:hover { opacity: 0.85; }
 
 /* ── Cards ────────────────────────────────────────────────────────────────── */
 .card {
@@ -1159,17 +1225,61 @@ tr:hover td { background: var(--bg-card-hover); }
 .skeleton-line.wide  { width: 75%; }
 .skeleton-line.short { width: 40%; }
 
-/* ── Bottom nav (mobile renter pages) ────────────────────────────────────── */
+/* ── Bottom nav ───────────────────────────────────────────────────────────── */
 .bottom-nav {
-  display: none; /* hidden by default — shown only on mobile */
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: rgba(15, 15, 20, 0.97);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 4px 6px;
+  min-height: 52px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: color var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav a:hover,
+.bottom-nav a.active {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.bottom-nav .bn-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+/* Push page content up above fixed bottom nav */
+.page-wrap {
+  padding-bottom: calc(52px + env(safe-area-inset-bottom) + 1.5rem);
 }
 
 @media (max-width: 640px) {
-  /* Hide page nav links on mobile — bottom nav takes over */
+  /* Hide top nav links on mobile — bottom nav handles navigation */
   .nav-links, .nav-controls .nav-sep {
     display: none;
   }
-  /* Separator not needed on mobile */
   .nav-controls {
     border-left: none;
     padding-left: 0;
@@ -1181,85 +1291,6 @@ tr:hover td { background: var(--bg-card-hover); }
     padding-left: 0;
     padding-right: 0;
     overflow: visible;
-  }
-
-  /* Show bottom nav */
-  .bottom-nav {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 200;
-    background: rgba(15, 15, 20, 0.97);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .bottom-nav a {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    padding: 8px 4px 6px;
-    min-height: 52px;
-    color: rgba(255, 255, 255, 0.45);
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    transition: color var(--transition);
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .bottom-nav a:hover,
-  .bottom-nav a.active {
-    color: var(--accent);
-    text-decoration: none;
-  }
-
-  .bottom-nav .bn-icon {
-    font-size: 1.3rem;
-    line-height: 1;
-  }
-
-  /* button inside bottom-nav (logout) — reset button styles, match link style */
-  .bottom-nav button {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    padding: 8px 4px 6px;
-    min-height: 52px;
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.45);
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: color var(--transition);
-    -webkit-tap-highlight-color: transparent;
-    border-radius: 0;
-  }
-
-  .bottom-nav button:hover {
-    background: none;
-    color: var(--accent);
-  }
-
-  /* Push page content up so it doesn't hide behind the fixed nav (≈56px) + the
-     bottom sheet peek (48px sitting above the nav) */
-  .page-wrap {
-    padding-bottom: calc(56px + 48px + env(safe-area-inset-bottom) + 1rem);
   }
 }
 
@@ -1333,7 +1364,7 @@ tr:hover td { background: var(--bg-card-hover); }
 
 .spot-sheet {
   position: fixed;
-  bottom: 0;
+  bottom: calc(52px + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   z-index: 300;

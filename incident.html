@@ -112,24 +112,23 @@
 <body>
 
 <header class="site-header">
-  <a href="parking.html" class="logo-link">
+  <a href="parking.html" class="logo-link" style="flex-shrink:0">
     <img src="logo.png" alt="" style="height:28px;width:auto;filter:invert(1);opacity:0.9" onerror="this.style.display='none'"/>
-    <h1 data-i18n="inc.title">Park Management — Report Incident</h1>
   </a>
-  <nav class="site-nav">
-    <div class="nav-links">
-      <a href="parking.html" data-i18n="nav.map">Map</a>
-      <span id="admin-link" style="display:none"><a href="admin.html" data-i18n="nav.admin">Admin</a></span>
-      <a href="incident.html" class="active" data-i18n="nav.incidents">Incidents</a>
-      <a href="profile.html" data-i18n="nav.profile">Profile</a>
+  <span id="header-section-name" class="header-section-name" data-i18n="nav.incidents">Incidents</span>
+  <div class="header-controls">
+    <div id="user-chip-nav"></div>
+    <div class="hamburger-wrap" id="hamburger-wrap">
+      <button class="icon-btn hamburger-btn" id="hamburger-btn" title="Menu" aria-label="Menu">
+        <i data-lucide="menu"></i>
+      </button>
+      <div class="hamburger-menu" id="hamburger-menu">
+        <div id="lang-switcher-nav"></div>
+        <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
+        <button id="logout-link" class="icon-btn" title="Logout" data-i18n-title="nav.logout" style="font-size:1.1rem">⎋</button>
+      </div>
     </div>
-    <div class="nav-controls">
-      <div id="user-chip-nav"></div>
-      <div id="lang-switcher-nav"></div>
-      <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
-      <button id="logout-link" class="icon-btn" title="Logout" data-i18n-title="nav.logout" style="font-size:1.1rem">⎋</button>
-    </div>
-  </nav>
+  </div>
 </header>
 
 <div class="page-wrap">
@@ -200,20 +199,7 @@
 
 </div>
 
-<nav class="bottom-nav">
-  <a href="parking.html">
-    <span class="bn-icon">🗺</span>
-    <span data-i18n="nav.map">Map</span>
-  </a>
-  <a href="incident.html" class="active">
-    <span class="bn-icon">⚠️</span>
-    <span data-i18n="nav.incidents">Incidents</span>
-  </a>
-  <a href="profile.html">
-    <span class="bn-icon">👤</span>
-    <span data-i18n="nav.profile">Profile</span>
-  </a>
-</nav>
+<nav class="bottom-nav" id="bottom-nav"></nav>
 
 <!-- Lightbox -->
 <div id="lightbox">
@@ -236,10 +222,34 @@ const currentUser = requireAuth('renter');
 buildUserChip('user-chip-nav', currentUser);
 if (!currentUser) throw new Error('not authed');
 
-if (currentUser.role === 'admin' || currentUser.role === 'master') {
-  document.getElementById('admin-link').style.display = 'inline';
-}
 document.getElementById('logout-link').addEventListener('click', () => logout());
+
+// ── Hamburger menu ────────────────────────────────────────────────────────────
+(function() {
+  const btn = document.getElementById('hamburger-btn');
+  const wrap = document.getElementById('hamburger-wrap');
+  btn.addEventListener('click', e => { e.stopPropagation(); wrap.classList.toggle('open'); });
+  document.addEventListener('click', () => wrap.classList.remove('open'));
+})();
+
+// ── Bottom nav (role-aware) ───────────────────────────────────────────────────
+(function buildBottomNav() {
+  const nav = document.getElementById('bottom-nav');
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'master';
+  const tabs = [
+    { href: 'parking.html',  icon: '🗺',  labelKey: 'nav.map',       active: false },
+    { href: 'incident.html', icon: '⚠️',  labelKey: 'nav.incidents', active: true  },
+    { href: 'profile.html',  icon: '👤',  labelKey: 'nav.profile',   active: false },
+  ];
+  if (isAdmin) tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', labelKey: 'nav.admin', active: false });
+  tabs.forEach(tab => {
+    const a = document.createElement('a');
+    a.href = tab.href;
+    if (tab.active) a.className = 'active';
+    a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span data-i18n="${tab.labelKey}">${tab.labelKey}</span>`;
+    nav.appendChild(a);
+  });
+})();
 
 // ── Spot dropdown ──────────────────────────────────────────────────────────────
 async function loadSpots() {

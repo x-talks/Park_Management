@@ -1,6 +1,6 @@
 // tests/e2e/journey.spec.js
 // Full click-through journey test covering all pages and nav for both admin and renter.
-// Catches regressions like: missing map on admin nav, missing Admin link, broken bottom nav.
+// Catches regressions like: missing map on admin nav, missing Admin tab, broken bottom nav.
 import { test, expect } from './fixtures.js';
 import { loginAs, waitForAppReady } from './helpers.js';
 
@@ -16,7 +16,7 @@ const RENTER_PASS = 'TestPass123!';
 
 // ── Admin journey ─────────────────────────────────────────────────────────────
 
-test('Admin journey: login → lands on admin.html → nav to Map → Admin link visible → nav to Incidents → Admin link visible → back to Admin', async ({ page }) => {
+test('Admin journey: login → lands on admin.html → nav to Map → Admin tab visible → nav to Incidents → nav back to Admin', async ({ page }) => {
   await loginAs(page, ADMIN_USER, ADMIN_PASS);
   await page.waitForURL(/admin\.html/, { timeout: 20_000 });
   await waitForAppReady(page, 'admin');
@@ -24,46 +24,39 @@ test('Admin journey: login → lands on admin.html → nav to Map → Admin link
   // User chip visible in header
   await expect(page.locator('.user-chip')).toBeVisible({ timeout: 5_000 });
 
-  // Globe lang switcher present
+  // Globe lang switcher present in hamburger menu
   await expect(page.locator('.lang-globe-btn')).toBeVisible();
 
-  // ── Navigate to Map ──────────────────────────────────────────────────────
-  await page.locator('nav.site-nav a[href="parking.html"]').click();
+  // ── Navigate to Map via bottom nav ───────────────────────────────────────
+  await page.locator('.bottom-nav a[href="parking.html"]').click();
   await page.waitForURL(/parking\.html/, { timeout: 10_000 });
   await waitForAppReady(page, 'renter');
 
   // Map SVG rendered with spots
   await expect(page.locator('#parking-svg g[data-id]').first()).toBeVisible({ timeout: 10_000 });
 
-  // Admin link must be visible in top nav for admin users
-  await expect(page.locator('nav.site-nav #admin-link')).toBeVisible({ timeout: 5_000 });
-  await expect(page.locator('nav.site-nav #admin-link a')).toBeVisible();
-
-  // On mobile viewport, bottom nav has Admin tab
-  await page.setViewportSize({ width: 390, height: 844 });
+  // Admin tab must be visible in bottom nav for admin users
   await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeVisible({ timeout: 5_000 });
-  await page.setViewportSize({ width: 1280, height: 720 });
 
   // User chip still visible
   await expect(page.locator('.user-chip')).toBeVisible();
 
-  // ── Navigate to Incidents ────────────────────────────────────────────────
-  await page.locator('nav.site-nav a[href="incident.html"]').click();
+  // ── Navigate to Incidents via bottom nav ─────────────────────────────────
+  await page.locator('.bottom-nav a[href="incident.html"]').click();
   await page.waitForURL(/incident\.html/, { timeout: 10_000 });
   await page.waitForLoadState('domcontentloaded');
 
-  // Admin link must be visible on incidents page too
-  await expect(page.locator('nav.site-nav #admin-link')).toBeVisible({ timeout: 5_000 });
-  await expect(page.locator('nav.site-nav #admin-link a')).toBeVisible();
+  // Admin tab must be visible on incidents page too
+  await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeVisible({ timeout: 5_000 });
 
-  // Logout icon button present (⎋)
+  // Logout icon button present
   await expect(page.locator('#logout-link')).toBeVisible();
 
   // User chip still visible
   await expect(page.locator('.user-chip')).toBeVisible();
 
-  // ── Navigate back to Admin ───────────────────────────────────────────────
-  await page.locator('nav.site-nav #admin-link a').click();
+  // ── Navigate back to Admin via bottom nav ────────────────────────────────
+  await page.locator('.bottom-nav a[href="admin.html"]').click();
   await page.waitForURL(/admin\.html/, { timeout: 10_000 });
   await waitForAppReady(page, 'admin');
   await expect(page.locator('#user-list table tr').first()).toBeVisible();
@@ -71,7 +64,7 @@ test('Admin journey: login → lands on admin.html → nav to Map → Admin link
 
 // ── Master journey ────────────────────────────────────────────────────────────
 
-test('Master journey: login → admin page → map shows → admin link visible → globe dropdown switches language', async ({ page }) => {
+test('Master journey: login → admin page → map shows → admin tab visible → globe dropdown switches language', async ({ page }) => {
   await loginAs(page, MASTER_USER, MASTER_PASS);
   await page.waitForURL(/admin\.html/, { timeout: 20_000 });
   await waitForAppReady(page, 'admin');
@@ -79,13 +72,13 @@ test('Master journey: login → admin page → map shows → admin link visible 
   // Master chip has amber/gold color class
   await expect(page.locator('.user-chip.chip-master')).toBeVisible({ timeout: 5_000 });
 
-  // Navigate to Map
-  await page.locator('nav.site-nav a[href="parking.html"]').click();
+  // Navigate to Map via bottom nav
+  await page.locator('.bottom-nav a[href="parking.html"]').click();
   await page.waitForURL(/parking\.html/, { timeout: 10_000 });
   await waitForAppReady(page, 'renter');
 
   await expect(page.locator('#parking-svg g[data-id]').first()).toBeVisible({ timeout: 10_000 });
-  await expect(page.locator('nav.site-nav #admin-link')).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeVisible({ timeout: 5_000 });
 
   // Globe dropdown: open → pick DE → label updates → pick EN → label updates
   const globeBtn = page.locator('.lang-globe-btn').first();
@@ -102,7 +95,7 @@ test('Master journey: login → admin page → map shows → admin link visible 
 
 // ── Renter journey ────────────────────────────────────────────────────────────
 
-test('Renter journey: login → lands on parking.html → map visible → no Admin link → profile tab → logout button visible', async ({ page }) => {
+test('Renter journey: login → lands on parking.html → map visible → no Admin tab → profile tab → logout button visible', async ({ page }) => {
   await loginAs(page, RENTER_USER, RENTER_PASS);
   await page.waitForURL(/parking\.html/, { timeout: 20_000 });
   await waitForAppReady(page, 'renter');
@@ -110,16 +103,14 @@ test('Renter journey: login → lands on parking.html → map visible → no Adm
   // Map rendered
   await expect(page.locator('#parking-svg g[data-id]').first()).toBeVisible({ timeout: 10_000 });
 
-  // Admin link must NOT be visible for renter
-  await expect(page.locator('nav.site-nav #admin-link')).toBeHidden({ timeout: 3_000 });
+  // Admin tab must NOT be visible for renter
+  await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeHidden({ timeout: 3_000 });
 
   // Renter chip visible
   await expect(page.locator('.user-chip.chip-renter')).toBeVisible({ timeout: 5_000 });
 
-  // Switch to mobile viewport for bottom nav interactions
+  // Bottom nav has no Admin tab (also on wider viewport)
   await page.setViewportSize({ width: 390, height: 844 });
-
-  // Bottom nav has no Admin tab
   await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeHidden();
 
   // Navigate to profile via bottom nav
@@ -129,13 +120,14 @@ test('Renter journey: login → lands on parking.html → map visible → no Adm
   // Profile card rendered
   await expect(page.locator('#profile-card')).toBeVisible({ timeout: 5_000 });
 
-  // Logout button always in nav controls (not in profile card anymore)
+  // Logout button present in header controls
   await expect(page.locator('#logout-link')).toBeVisible({ timeout: 3_000 });
 
   // Incidents nav works
   await page.locator('.bottom-nav a[href="incident.html"]').click();
   await page.waitForURL(/incident\.html/, { timeout: 10_000 });
   await page.waitForLoadState('domcontentloaded');
-  // No Admin link for renter on incidents page
-  await expect(page.locator('nav.site-nav #admin-link')).toBeHidden({ timeout: 3_000 });
+
+  // No Admin tab for renter on incidents page
+  await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeHidden({ timeout: 3_000 });
 });

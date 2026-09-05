@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS payments (
   year                INTEGER NOT NULL,
   type                TEXT NOT NULL,
   "paidDate"          DATE NOT NULL,
-  "markedByAdminId"   TEXT NOT NULL
+  "markedByAdminId"   TEXT NOT NULL,
+  amount              NUMERIC(10,2)
 );
 
 CREATE TABLE IF NOT EXISTS invites (
