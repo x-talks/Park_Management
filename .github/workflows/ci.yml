@@ -234,10 +234,41 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Svelte app dependencies
+        run: npm ci
+        working-directory: svelte-app
+
+      - name: Build Svelte app
+        run: npm run build
+        working-directory: svelte-app
+        env:
+          BASE_PATH: /Park_Management/svelte
+          VITE_SUPABASE_URL:      ${{ secrets.PROD_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+          VITE_WORKER_URL:        ${{ secrets.PROD_WORKER_URL }}
+
+      - name: Assemble deploy artifact
+        run: |
+          mkdir -p _site
+          # Copy vanilla app (everything except node_modules, .git, svelte-app, tests, docs)
+          rsync -a --exclude=node_modules --exclude=.git --exclude=svelte-app \
+            --exclude=tests --exclude=coverage --exclude=docs --exclude=_site \
+            --exclude='.github' --exclude='.superpowers' \
+            . _site/
+          # Copy Svelte build under /svelte/
+          mkdir -p _site/svelte
+          cp -r svelte-app/build/. _site/svelte/
+
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: '_site'
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
