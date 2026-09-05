@@ -1,15 +1,18 @@
 // playwright.config.js
 import { defineConfig, devices } from '@playwright/test';
 
+// Mutation specs share staging DB rows — they must run serially and in a fixed order.
+// Read-heavy specs only read data or use isolated rows — they can run in parallel.
+const MUTATION_SPECS = [
+  'tests/e2e/acceptance-admin.spec.js',
+  'tests/e2e/admin-mutations.spec.js',
+  'tests/e2e/admin-payments-mutations.spec.js',
+  'tests/e2e/sync.spec.js',
+];
+
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: false,
-  workers: 1,
-  // 1 retry on CI to handle worker cold-start flakiness (15-25s delays can exceed timeout).
-  // No retries locally — a failing test should be visible immediately.
   retries: process.env.CI ? 1 : 0,
-  // Stop the whole run on the first failure so CI gives immediate feedback.
-  // In local runs there is no limit (run everything to see all issues at once).
   maxFailures: process.env.CI ? 1 : 0,
   timeout: 60_000,
   reporter: [
@@ -30,7 +33,19 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      // Serial project: mutation specs that share DB rows — run one at a time, fixed order.
+      name: 'serial',
+      testMatch: MUTATION_SPECS,
+      fullyParallel: false,
+      workers: 1,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // Parallel project: read-heavy specs — run up to 4 at once.
+      name: 'parallel',
+      testIgnore: MUTATION_SPECS,
+      fullyParallel: true,
+      workers: 4,
       use: { ...devices['Desktop Chrome'] },
     },
   ],
