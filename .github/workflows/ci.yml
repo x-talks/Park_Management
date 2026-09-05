@@ -264,8 +264,12 @@ jobs:
           # Copy Svelte build under /svelte/
           mkdir -p _site/svelte
           cp -r svelte-app/build/. _site/svelte/
-          # GitHub Pages uses 404.html as SPA fallback — copy index.html so client-side routing works
-          cp _site/svelte/index.html _site/svelte/404.html
+          # GitHub Pages SPA fallback: copy index.html into each route directory so
+          # direct navigation to /svelte/admin, /svelte/parking etc. finds a real file.
+          for route in admin parking incident profile register; do
+            mkdir -p _site/svelte/$route
+            cp _site/svelte/index.html _site/svelte/$route/index.html
+          done
 
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
