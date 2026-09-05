@@ -87,7 +87,7 @@ test.describe('register.html — step progression', () => {
 
   // Bug 5 fix: step 3 credentials box shows plate as username
   test('step 3 credentials box shows plate and non-empty password', async ({ page }) => {
-    await page.goto('/register.html?token=valid-token-s7');
+    await page.goto('/register.html?token=valid-token-s7b');
     await page.locator('#agree-btn').click();
     await expect(page.locator('#step-register')).toBeVisible({ timeout: 5_000 });
     await page.locator('#r-password').fill('CredCheck9!');

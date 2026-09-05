@@ -189,6 +189,13 @@ async function seed() {
       name: 'David', lastName: 'Prospect', phone: '+49300000007', address: 'Test Street 7',
       licensePlate: 'HD-GG-007', carModel: 'Audi A4', carColor: 'silver',
     },
+    // Second valid s7 invite — used by register.spec.js "step 3 credentials" test (first one is consumed by "submit registration" test)
+    {
+      id: 'inv-valid-s7b', token: 'valid-token-s7b',
+      spotId: 's7', expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), usedBy: null,
+      name: 'David', lastName: 'Prospect', phone: '+49300000007', address: 'Test Street 7',
+      licensePlate: 'HD-GG-007', carModel: 'Audi A4', carColor: 'silver',
+    },
     // expired invite (lowercase token for register.spec.js)
     {
       id: 'inv-expired-lc', token: 'expired-token',
