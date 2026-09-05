@@ -381,6 +381,7 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
       carLine.textContent = [renter.carModel, renter.carColor].filter(Boolean).join(' · ');
       actionsEl.appendChild(carLine);
     }
+  }
 
   // ── Own spot: Report button alongside Pay ─────────────────────────────────────
   if (isMySpot) {

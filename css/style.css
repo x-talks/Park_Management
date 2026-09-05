@@ -1359,7 +1359,10 @@ tr:hover td { background: var(--bg-card-hover); }
 .sheet-backdrop {
   display: none;
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(56px + env(safe-area-inset-bottom));
   z-index: 290;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(2px);
