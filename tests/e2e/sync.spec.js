@@ -40,8 +40,9 @@ test.describe('Multi-user sync (L6)', () => {
     await adminPage.waitForTimeout(2000);
 
     await renterPage.waitForURL(/parking\.html/, { timeout: 30_000 });
-    await renterPage.reload();
-    await expect(renterPage.locator('#my-payments-section')).toContainText(/paid|✓/i, { timeout: 10_000 });
+    await renterPage.goto('/payments.html');
+    await renterPage.waitForURL(/payments\.html/, { timeout: 10_000 });
+    await expect(renterPage.locator('#payments-content')).toContainText(/paid|✓/i, { timeout: 10_000 });
 
     await adminCtx.close();
     await renterCtx.close();

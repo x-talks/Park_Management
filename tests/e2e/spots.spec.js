@@ -92,9 +92,11 @@ test.describe('My payments section', () => {
     await waitForAppReady(page, 'renter');
   });
 
-  test('payments section shows current year', async ({ page }) => {
-    await expect(page.locator('#my-payments-section')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('#my-payments-section')).toContainText(String(new Date().getFullYear()));
+  test('payments page shows current year', async ({ page }) => {
+    await page.goto('/payments.html');
+    await page.waitForURL(/payments\.html/, { timeout: 10_000 });
+    await expect(page.locator('#payments-content')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#payments-content')).toContainText(String(new Date().getFullYear()));
   });
 });
 

@@ -28,10 +28,12 @@ test('Full renter journey: login → view map → click own spot → view paymen
   await page.locator('#sheet-backdrop').click();
   await expect(page.locator('#spot-sheet')).not.toHaveClass(/open/, { timeout: 5_000 });
 
-  // Step 4: My payments section is visible
-  await expect(page.locator('#my-payments-section')).toBeVisible({ timeout: 10_000 });
+  // Step 4: Navigate to Payments page via bottom nav
+  await page.locator('.bottom-nav a[href="payments.html"]').click();
+  await page.waitForURL(/payments\.html/, { timeout: 10_000 });
   const currentYear = String(new Date().getFullYear());
-  await expect(page.locator('#my-payments-section')).toContainText(currentYear);
+  await expect(page.locator('#payments-content')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('#payments-content')).toContainText(currentYear);
 
   // Step 5: Profile page is a separate page (Bug 9 fix). Navigate directly.
   await page.goto('/profile.html');
