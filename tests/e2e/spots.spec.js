@@ -134,18 +134,14 @@ test.describe('Admin map assign — Bug 1 fix: assign/release via new routes', (
     await expect(assignBtn).toBeVisible({ timeout: 5_000 });
     await assignBtn.click();
 
-    // Assign modal should appear with a user select
-    await expect(page.locator('#assign-modal, [id*="assign"]').first()).toBeVisible({ timeout: 5_000 });
-
-    // Pick first available renter from select
-    const userSelect = page.locator('select[id*="assign-user"], #assign-user-select, select').last();
-    await userSelect.selectOption({ index: 1 });
-
-    const confirmBtn = page.locator('button').filter({ hasText: /confirm|assign/i }).last();
-    await confirmBtn.click();
+    // Assign UI shows renter buttons inline in the sheet — pick the first renter
+    await expect(page.locator('#sheet-content .sheet-title')).toContainText(/assign renter/i, { timeout: 5_000 });
+    const renterBtn = page.locator('#sheet-content button.sheet-btn').filter({ hasNotText: /cancel/i }).first();
+    await expect(renterBtn).toBeVisible({ timeout: 5_000 });
+    await renterBtn.click();
     await page.waitForTimeout(2000);
 
     // No error toast
-    await expect(page.locator('.toast-error, [class*="toast"][class*="error"]')).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator('.pm-toast-error')).not.toBeVisible({ timeout: 3_000 });
   });
 });
