@@ -7,6 +7,10 @@ const base = raw === '' ? '' : raw.startsWith('/') ? raw : `/${raw}`;
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	preprocess: vitePreprocess(),
+	compilerOptions: {
+		runes: ({ filename }) =>
+			filename.split(/[/\\]/).includes('node_modules') ? undefined : true
+	},
 	kit: {
 		adapter: adapter({ fallback: 'index.html' }),
 		paths: { base }
