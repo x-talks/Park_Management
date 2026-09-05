@@ -115,8 +115,11 @@ document.getElementById('logout-link').addEventListener('click', () => logout())
     { href: 'incident.html', icon: '⚠️',  label: 'Incidents', active: false },
     { href: 'profile.html',  icon: '👤',  label: 'Profile',   active: false },
   ];
-  if (isAdmin) tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', label: 'Admin', active: false });
-  tabs.forEach(tab => {
+  if (isAdmin) {
+    tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', label: 'Admin', active: false });
+    const pi = tabs.findIndex(t => t.href === 'payments.html');
+    if (pi !== -1) tabs.splice(pi, 1);
+  }  tabs.forEach(tab => {
     const a = document.createElement('a');
     a.href = tab.href;
     if (tab.active) a.className = 'active';
