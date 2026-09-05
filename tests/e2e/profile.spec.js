@@ -48,6 +48,7 @@ test.describe('profile.html — page structure', () => {
   });
 
   test('bottom nav contains profile link marked active', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     const activeLink = page.locator('.bottom-nav a.active');
     await expect(activeLink).toBeVisible({ timeout: 5_000 });
     const href = await activeLink.getAttribute('href');
