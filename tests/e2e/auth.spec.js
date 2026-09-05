@@ -60,7 +60,9 @@ test.describe('Logout', () => {
     await page.locator('#password').fill(ADMIN_PASS);
     await page.click('button[type="submit"]');
     await page.waitForURL(/admin\.html/, { timeout: 30_000 });
-    await page.locator('#logout-link, [data-i18n="nav.logout"], button:has-text("Logout"), a:has-text("Logout")').first().click();
+    // Logout is inside the hamburger menu — open it first
+    await page.locator('#hamburger-btn').click();
+    await page.locator('#logout-link').click();
     await expect(page).toHaveURL(/index\.html|^http:\/\/localhost:3000\/?$/, { timeout: 10_000 });
     await page.goto('/admin.html');
     await expect(page).toHaveURL(/index\.html|^http:\/\/localhost:3000\/?$/, { timeout: 10_000 });

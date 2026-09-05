@@ -24,8 +24,10 @@ test('Admin journey: login → lands on admin.html → nav to Map → Admin tab 
   // User chip visible in header
   await expect(page.locator('.user-chip')).toBeVisible({ timeout: 5_000 });
 
-  // Globe lang switcher present in hamburger menu
-  await expect(page.locator('.lang-globe-btn')).toBeVisible();
+  // Globe lang switcher present in hamburger menu — open hamburger to verify
+  await page.locator('#hamburger-btn').click();
+  await expect(page.locator('.lang-globe-btn')).toBeVisible({ timeout: 5_000 });
+  await page.locator('#hamburger-btn').click(); // close it again
 
   // ── Navigate to Map via bottom nav ───────────────────────────────────────
   await page.locator('.bottom-nav a[href="parking.html"]').click();
@@ -49,8 +51,10 @@ test('Admin journey: login → lands on admin.html → nav to Map → Admin tab 
   // Admin tab must be visible on incidents page too
   await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeVisible({ timeout: 5_000 });
 
-  // Logout icon button present
-  await expect(page.locator('#logout-link')).toBeVisible();
+  // Logout icon button present in hamburger menu
+  await page.locator('#hamburger-btn').click();
+  await expect(page.locator('#logout-link')).toBeVisible({ timeout: 3_000 });
+  await page.locator('#hamburger-btn').click(); // close
 
   // User chip still visible
   await expect(page.locator('.user-chip')).toBeVisible();
@@ -80,9 +84,10 @@ test('Master journey: login → admin page → map shows → admin tab visible �
   await expect(page.locator('#parking-svg g[data-id]').first()).toBeVisible({ timeout: 10_000 });
   await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeVisible({ timeout: 5_000 });
 
-  // Globe dropdown: open → pick DE → label updates → pick EN → label updates
+  // Globe dropdown: open hamburger → find globe btn → pick DE → pick EN
+  await page.locator('#hamburger-btn').click();
   const globeBtn = page.locator('.lang-globe-btn').first();
-  await expect(globeBtn).toBeVisible();
+  await expect(globeBtn).toBeVisible({ timeout: 3_000 });
   await globeBtn.click();
   await expect(page.locator('.lang-globe-dropdown')).toBeVisible({ timeout: 3_000 });
   await page.locator('.lang-globe-dropdown button[data-lang="de"]').click();
@@ -120,8 +125,10 @@ test('Renter journey: login → lands on parking.html → map visible → no Adm
   // Profile card rendered
   await expect(page.locator('#profile-card')).toBeVisible({ timeout: 5_000 });
 
-  // Logout button present in header controls
+  // Logout button present in header hamburger menu
+  await page.locator('#hamburger-btn').click();
   await expect(page.locator('#logout-link')).toBeVisible({ timeout: 3_000 });
+  await page.locator('#hamburger-btn').click(); // close
 
   // Incidents nav works
   await page.locator('.bottom-nav a[href="incident.html"]').click();
