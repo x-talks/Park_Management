@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 	import { session } from '$lib/stores/session.svelte';
 	import { i18n } from '$lib/stores/i18n.svelte';
 	import { logout } from '$lib/api/auth';
@@ -8,10 +9,10 @@
 		const role = session.user?.role ?? 'renter';
 		const ROLE_ORDER = { renter: 0, admin: 1, master: 2 };
 		const all = [
-			{ href: '/parking', icon: '🗺', key: 'nav.map' as const },
-			{ href: '/admin', icon: '⚙️', key: 'nav.admin' as const, minRole: 'admin' as const },
-			{ href: '/incident', icon: '⚠️', key: 'nav.incidents' as const },
-			{ href: '/profile', icon: '👤', key: 'nav.profile' as const }
+			{ href: base + '/parking', icon: '🗺', key: 'nav.map' as const },
+			{ href: base + '/admin', icon: '⚙️', key: 'nav.admin' as const, minRole: 'admin' as const },
+			{ href: base + '/incident', icon: '⚠️', key: 'nav.incidents' as const },
+			{ href: base + '/profile', icon: '👤', key: 'nav.profile' as const }
 		];
 		return all.filter((t) => !t.minRole || ROLE_ORDER[role] >= ROLE_ORDER[t.minRole]);
 	});

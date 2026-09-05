@@ -2,6 +2,7 @@
 	import '$lib/styles/tokens.css';
 	import '$lib/styles/app.css';
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 	import { session } from '$lib/stores/session.svelte';
 	import { initAuth } from '$lib/api/auth';
 	import { browser } from '$app/environment';
@@ -21,7 +22,9 @@
 	}
 
 	const isAuthPage = $derived(
-		$page.url.pathname === '/' || $page.url.pathname.startsWith('/register')
+		$page.url.pathname === base + '/' ||
+		$page.url.pathname === base ||
+		$page.url.pathname.startsWith(base + '/register')
 	);
 	const showChrome = $derived(!isAuthPage && !!session.user);
 </script>

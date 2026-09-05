@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 	import { session } from '$lib/stores/session.svelte';
 	import { i18n } from '$lib/stores/i18n.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
@@ -10,10 +11,10 @@
 	const links = $derived.by(() => {
 		const role = session.user?.role ?? 'renter';
 		const all = [
-			{ href: '/parking', key: 'nav.map' as const },
-			{ href: '/admin', key: 'nav.admin' as const, minRole: 'admin' as const },
-			{ href: '/incident', key: 'nav.incidents' as const },
-			{ href: '/profile', key: 'nav.profile' as const }
+			{ href: base + '/parking', key: 'nav.map' as const },
+			{ href: base + '/admin', key: 'nav.admin' as const, minRole: 'admin' as const },
+			{ href: base + '/incident', key: 'nav.incidents' as const },
+			{ href: base + '/profile', key: 'nav.profile' as const }
 		];
 		const ROLE_ORDER = { renter: 0, admin: 1, master: 2 };
 		return all.filter((l) => !l.minRole || ROLE_ORDER[role] >= ROLE_ORDER[l.minRole]);
@@ -25,7 +26,7 @@
 </script>
 
 <header class="site-header">
-	<a href="/parking" class="logo-link">
+	<a href="{base}/parking" class="logo-link">
 		<span style="font-size:1.4rem">🅿</span>
 		<h1>{i18n.t('app.name')}</h1>
 	</a>
