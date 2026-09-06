@@ -41,11 +41,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      // Parallel project: read-heavy specs — run up to 4 at once.
+      // Parallel project: read-heavy specs — 2 workers on CI (2-core runner), 4 locally.
       name: 'parallel',
       testIgnore: MUTATION_SPECS,
       fullyParallel: true,
-      workers: 4,
+      workers: process.env.CI ? 2 : 4,
       use: { ...devices['Desktop Chrome'] },
     },
   ],
