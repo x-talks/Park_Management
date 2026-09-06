@@ -231,6 +231,16 @@ test.describe('Spot reserve/unreserve', () => {
     await page.locator('#pm-modal-confirm').click();
     await page.waitForTimeout(1500);
     await expect(s5Row.locator('.chip.inactive')).toBeVisible({ timeout: 5_000 });
+
+    // ── Restore state: unreserve s5 ──
+    try {
+      const unreserveBtn = s5Row.locator('button[title="Unreserve"]');
+      await expect(unreserveBtn).toBeVisible({ timeout: 5_000 });
+      await unreserveBtn.click();
+      await page.waitForTimeout(1500);
+    } catch (e) {
+      console.warn('State restore for s5 failed:', e.message);
+    }
   });
 
   test('unreserve s3 → spot no longer shows Reserved chip', async ({ page }) => {

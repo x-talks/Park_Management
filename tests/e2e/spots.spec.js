@@ -78,8 +78,8 @@ test.describe('Bottom sheet content', () => {
   });
 
   test('clicking free spot shows "Free" status in sheet', async ({ page }) => {
-    await page.waitForSelector('svg g[data-id="s5"]', { timeout: 10_000 });
-    await page.locator('svg g[data-id="s5"]').click();
+    await page.waitForSelector('svg g[data-id="s7"]', { timeout: 10_000 });
+    await page.locator('svg g[data-id="s7"]').click();
     await expect(page.locator('#spot-sheet')).toHaveClass(/open/, { timeout: 10_000 });
     await expect(page.locator('#sheet-content')).toContainText(/free/i, { timeout: 10_000 });
   });
