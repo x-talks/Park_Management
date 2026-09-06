@@ -84,20 +84,21 @@ test('Master journey: login → admin page → map shows → admin tab visible �
   await expect(page.locator('#parking-svg g[data-id]').first()).toBeVisible({ timeout: 10_000 });
   await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeVisible({ timeout: 5_000 });
 
-  // Flag dropdown: open hamburger → find flag trigger → pick DE → pick EN
+  // Flag dropdown: open hamburger → find flag trigger → verify dropdown works → switch back to EN
   await page.locator('#hamburger-btn').click();
   const flagTrigger = page.locator('.flag-trigger').first();
   await expect(flagTrigger).toBeVisible({ timeout: 3_000 });
   await flagTrigger.click();
-  await expect(page.locator('.flag-dropdown')).toBeVisible({ timeout: 3_000 });
+  const dropdown = page.locator('.flag-dropdown');
+  await expect(dropdown).toBeVisible({ timeout: 3_000 });
+  // Switch to DE
   await page.locator('.flag-dropdown button[data-lang="de"]').click();
-  // Trigger still visible after selecting DE
-  await expect(flagTrigger).toBeVisible({ timeout: 3_000 });
-
+  // Dropdown closes and hamburger closes — reopen hamburger to switch back
   await page.locator('#hamburger-btn').click();
-  await flagTrigger.click();
-  await page.locator('.flag-dropdown button[data-lang="en"]').click();
   await expect(flagTrigger).toBeVisible({ timeout: 3_000 });
+  await flagTrigger.click();
+  await expect(dropdown).toBeVisible({ timeout: 3_000 });
+  await page.locator('.flag-dropdown button[data-lang="en"]').click();
 });
 
 // ── Renter journey ────────────────────────────────────────────────────────────

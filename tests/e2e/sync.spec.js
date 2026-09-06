@@ -76,12 +76,11 @@ test.describe('Multi-user sync (L6)', () => {
     }
 
     // Now assign s8 to HD-BB-002 (Bob — active renter, shown as "Bob (HD-BB-002)" in dropdown)
+    // Selecting from the dropdown fires assignSpot directly — no Assign button needed
     const s8RowFresh = adminPage.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     const assignSelect = s8RowFresh.locator('select').first();
     await expect(assignSelect).toBeVisible({ timeout: 10_000 });
     await assignSelect.selectOption({ label: 'Bob (HD-BB-002)' });
-    // iconBtn uses title="Assign"
-    await s8RowFresh.locator('button[title="Assign"]').first().click();
     await adminPage.waitForTimeout(2000);
 
     await renterPage.waitForURL(/parking\.html/, { timeout: 30_000 });

@@ -5,6 +5,9 @@ import { loginAs, waitForAppReady } from './helpers.js';
 const ADMIN_USER = 'TEST-ADMIN';
 const ADMIN_PASS = process.env.STAGING_ADMIN_PASSWORD || 'TestAdmin123!';
 
+// Worker cold-start adds 15-25s — extend timeout beyond the 60s default
+test.setTimeout(90_000);
+
 test('Full admin journey: login → generate invite → approve pending registration → mark payment paid', async ({ page }) => {
   // Step 1: Login as admin
   await loginAs(page, ADMIN_USER, ADMIN_PASS);
@@ -26,8 +29,10 @@ test('Full admin journey: login → generate invite → approve pending registra
   await page.locator('#cu-carmodel').fill('Test Model');
   await page.locator('#cu-carcolor').fill('red');
   await page.locator('#create-user-form button[type=submit]').click();
-  // Worker cold-start can take 15-25s — give the invite call up to 30s to complete
-  await expect(page.locator('#invite-result-box')).toBeVisible({ timeout: 30_000 });
+  // Worker cold-start can take 15-25s — wait up to 45s for the invite call to complete.
+  // The submit button is re-enabled (finally block) when done, regardless of success/failure.
+  await expect(page.locator('#create-user-form button[type=submit]')).toBeEnabled({ timeout: 45_000 });
+  await expect(page.locator('#invite-result-box')).toBeVisible({ timeout: 5_000 });
   const inviteUrl = await page.locator('#invite-url-text').textContent();
   expect(inviteUrl).toBeTruthy();
 
