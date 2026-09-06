@@ -278,7 +278,7 @@ async function refreshAll() {
     renderSpots(),
     renderPayments(),
     loadFreeSpots(),
-    renderSessions(),
+    ...(activeTab === 'sessions' ? [renderSessions()] : []),
   ]);
 }
 

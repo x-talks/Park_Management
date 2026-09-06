@@ -35,6 +35,9 @@ test('Full admin journey: login → generate invite → approve pending registra
   // Step 4: Approve HD-DD-004 only if it is still pending AND not yet a user.
   // admin-mutations.spec.js may have already approved it — attempting a second approve
   // returns 400 "License plate already registered" which opens a modal and blocks the tab.
+  // Switch back to Renters tab first — pending-reg-list and user-list live there.
+  await page.locator('#tab-btn-renters').click();
+  await expect(page.locator('#user-list')).toBeVisible({ timeout: 10_000 });
   const alreadyUser = await page.locator('#user-list').evaluate(
     el => el.textContent.includes('HD-DD-004')
   );
