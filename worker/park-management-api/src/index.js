@@ -160,10 +160,14 @@ function parseUA(ua) {
   if (!ua) ua = '';
   const mobile  = /Mobile|Android|iPhone|iPad/.test(ua);
   const tablet  = /iPad|Tablet/.test(ua);
-  const browser = /Edg/.test(ua)     ? 'Edge'
-    : /Chrome/.test(ua)  ? 'Chrome'
-    : /Firefox/.test(ua) ? 'Firefox'
-    : /Safari/.test(ua)  ? 'Safari'
+  // Order matters: OPR/Opera must come before Chrome (Opera includes Chrome in UA)
+  // Samsung Internet includes Chrome too, check SamsungBrowser first
+  const browser = /OPR\/|Opera/.test(ua)    ? 'Opera'
+    : /SamsungBrowser/.test(ua) ? 'Samsung'
+    : /Edg\//.test(ua)          ? 'Edge'
+    : /Chrome/.test(ua)         ? 'Chrome'
+    : /Firefox/.test(ua)        ? 'Firefox'
+    : /Safari/.test(ua)         ? 'Safari'
     : 'Unknown';
   const os = /iPhone|iPad/.test(ua) ? 'iOS'
     : /Android/.test(ua)   ? 'Android'
@@ -253,6 +257,36 @@ export default {
             await sb(env).patch('sessions', `id=eq.${encodeURIComponent(sid)}`,
               { revokedAt: new Date().toISOString() });
           }
+        } catch (_) {}
+        return json({ ok: true });
+      }
+
+      // POST /auth/session-sync — called after a silent token refresh to keep sessions table current
+      if (method === 'POST' && path === '/auth/session-sync') {
+        try {
+          const syncPayload = await verifyJWT(request, env);
+          const sid = syncPayload.session_id || syncPayload.sid;
+          if (!sid) return json({ ok: true });
+          const client = sb(env);
+          // Find userId from users table via authId
+          const userRows = await client.get('users', `authId=eq.${encodeURIComponent(syncPayload.sub)}&limit=1&select=id`);
+          if (!userRows.length) return json({ ok: true });
+          const ua = request.headers.get('User-Agent') || '';
+          const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || '';
+          const { deviceType, browser, os } = parseUA(ua);
+          const now = new Date().toISOString();
+          await client.post('sessions', {
+            id: sid,
+            userId: userRows[0].id,
+            createdAt: now,
+            lastSeenAt: now,
+            userAgent: ua.slice(0, 512),
+            ipAddress: ip,
+            deviceType,
+            browser,
+            os,
+            revokedAt: null,
+          }, 'resolution=merge-duplicates,return=representation');
         } catch (_) {}
         return json({ ok: true });
       }

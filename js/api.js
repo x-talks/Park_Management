@@ -67,6 +67,7 @@ function _headers() {
 
 // ── Proactive refresh timer ───────────────────────────────────────────────────
 let _refreshTimer = null;
+let _refreshInFlight = null; // singleton promise — prevents race between tabs/pages
 
 function _cancelRefreshTimer() {
   if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
@@ -77,7 +78,7 @@ function scheduleRefresh(accessToken) {
   try {
     const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
     const expiresAt = payload.exp * 1000; // ms
-    const refreshAt = expiresAt - 60_000; // 60 s before expiry
+    const refreshAt = expiresAt - 90_000; // refresh 90 s before expiry (was 60 s)
     const delay = refreshAt - Date.now();
     if (delay <= 0) {
       // Already expired or about to — refresh immediately
@@ -103,27 +104,39 @@ function scheduleRefresh(accessToken) {
 })();
 
 async function _tryRefresh() {
+  // Singleton: if already in-flight, return the same promise to avoid racing
+  if (_refreshInFlight) return _refreshInFlight;
   const refreshToken = localStorage.getItem('pm_refresh_token');
   if (!refreshToken) return false;
-  try {
-    const res = await fetchWithTimeout(`${CONFIG.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
-      method: 'POST',
-      headers: {
-        'apikey': CONFIG.supabaseKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-    if (!res.ok) return false;
-    const data = await res.json();
-    if (!data.access_token) return false;
-    localStorage.setItem('pm_access_token', data.access_token);
-    if (data.refresh_token) localStorage.setItem('pm_refresh_token', data.refresh_token);
-    scheduleRefresh(data.access_token);
-    return true;
-  } catch (_) {
-    return false;
-  }
+  _refreshInFlight = (async () => {
+    try {
+      const res = await fetchWithTimeout(`${CONFIG.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: {
+          'apikey': CONFIG.supabaseKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (!data.access_token) return false;
+      localStorage.setItem('pm_access_token', data.access_token);
+      if (data.refresh_token) localStorage.setItem('pm_refresh_token', data.refresh_token);
+      scheduleRefresh(data.access_token);
+      // Keep sessions table in sync — fire-and-forget, best-effort
+      fetchWithTimeout(`${CONFIG.workerUrl}/auth/session-sync`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + data.access_token, 'Content-Type': 'application/json' },
+      }).catch(() => {});
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      _refreshInFlight = null;
+    }
+  })();
+  return _refreshInFlight;
 }
 
 function _clearSession() {
