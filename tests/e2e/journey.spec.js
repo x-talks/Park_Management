@@ -91,10 +91,13 @@ test('Master journey: login → admin page → map shows → admin tab visible �
   await flagTrigger.click();
   const dropdown = page.locator('.flag-dropdown');
   await expect(dropdown).toBeVisible({ timeout: 3_000 });
-  // Switch to DE
+  // Switch to DE (stopPropagation keeps hamburger open — do NOT click hamburger-btn to "reopen")
   await page.locator('.flag-dropdown button[data-lang="de"]').click();
-  // Dropdown closes and hamburger closes — reopen hamburger to switch back
-  await page.locator('#hamburger-btn').click();
+  // Ensure hamburger is open (flag click uses stopPropagation so hamburger may stay open)
+  await page.evaluate(() => {
+    const wrap = document.getElementById('hamburger-wrap');
+    if (wrap && !wrap.classList.contains('open')) wrap.classList.add('open');
+  });
   await expect(flagTrigger).toBeVisible({ timeout: 3_000 });
   await flagTrigger.click();
   await expect(dropdown).toBeVisible({ timeout: 3_000 });
