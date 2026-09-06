@@ -110,6 +110,8 @@ test.describe('Generate invite', () => {
       () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
       { timeout: 30_000 }
     );
+    await page.locator('#tab-btn-create').click();
+    await expect(page.locator('#cu-name')).toBeVisible({ timeout: 5_000 });
     await page.locator('#cu-name').fill('Test');
     await page.locator('#cu-lastname').fill('Invitee');
     await page.locator('#cu-phone').fill('+49300000099');
@@ -130,6 +132,7 @@ test.describe('Generate invite', () => {
       () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
       { timeout: 30_000 }
     );
+    await page.locator('#tab-btn-create').click();
     const spotSelect = page.locator('#cu-spot');
     const rentField  = page.locator('#cu-rent');
     await expect(rentField).toBeVisible({ timeout: 10_000 });

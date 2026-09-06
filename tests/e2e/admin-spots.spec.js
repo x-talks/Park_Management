@@ -80,10 +80,19 @@ test.describe('Rent editing', () => {
   test('change rent on s1 to 95 → value saved', async ({ page }) => {
     // s1 has plate HD-AA-001 — use that to identify the row
     const s1Row = page.locator('#spot-list table tr').filter({ hasText: 'HD-AA-001' }).first();
-    const rentInput = s1Row.locator('input[type="number"], input.rent-input, input[name="rent"]').first();
+    // Click Edit to enter edit mode — rent input only exists in edit mode
+    await s1Row.locator('button[title="Edit"]').first().click();
+    const rentInput = s1Row.locator('input[type="number"]').first();
+    await expect(rentInput).toBeVisible({ timeout: 5_000 });
     await rentInput.fill('95');
-    await rentInput.press('Enter');
+    // Save via Save button (💾)
+    await s1Row.locator('button[title="Save"]').first().click();
     await page.waitForTimeout(1500);
-    await expect(rentInput).toHaveValue('95');
+    // Re-enter edit mode to verify the saved value
+    await s1Row.locator('button[title="Edit"]').first().click();
+    const rentInputAfter = s1Row.locator('input[type="number"]').first();
+    await expect(rentInputAfter).toHaveValue('95');
+    // Cancel edit to leave table clean
+    await s1Row.locator('button[title="Cancel"]').first().click();
   });
 });
