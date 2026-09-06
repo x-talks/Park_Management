@@ -112,7 +112,7 @@ SECURITY DEFINER
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM users
-    WHERE users."authId" = auth.uid()
+    WHERE users."authId" = auth.uid()::text
     AND users.role IN ('admin', 'master')
   )
 $$;
