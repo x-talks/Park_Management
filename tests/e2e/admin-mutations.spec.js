@@ -106,6 +106,7 @@ test.describe('User activate/deactivate', () => {
 
 test.describe('Generate invite', () => {
   test('fill invite form → invite URL is displayed', async ({ page }) => {
+    test.setTimeout(90_000); // worker cold-start can add 15-25s to invite POST
     await page.waitForFunction(
       () => document.getElementById('user-list') && document.getElementById('user-list').querySelector('table tr'),
       { timeout: 30_000 }
@@ -121,8 +122,9 @@ test.describe('Generate invite', () => {
     await page.locator('#cu-carmodel').fill('Test Car');
     await page.locator('#cu-carcolor').fill('white');
     await page.locator('#create-user-form button[type=submit]').click();
-    await page.waitForTimeout(2000);
-    await expect(page.locator('#invite-result-box')).toBeVisible({ timeout: 10_000 });
+    // Worker cold-start can take 15-25s — wait for submit button re-enable (finally block), then check result
+    await expect(page.locator('#create-user-form button[type=submit]')).toBeEnabled({ timeout: 45_000 });
+    await expect(page.locator('#invite-result-box')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('#invite-url-text')).not.toBeEmpty();
   });
 

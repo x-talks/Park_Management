@@ -32,7 +32,7 @@ test('Full admin journey: login → generate invite → approve pending registra
   // Worker cold-start can take 15-25s — wait up to 45s for the invite call to complete.
   // The submit button is re-enabled (finally block) when done, regardless of success/failure.
   await expect(page.locator('#create-user-form button[type=submit]')).toBeEnabled({ timeout: 45_000 });
-  await expect(page.locator('#invite-result-box')).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator('#invite-result-box')).toBeVisible({ timeout: 15_000 });
   const inviteUrl = await page.locator('#invite-url-text').textContent();
   expect(inviteUrl).toBeTruthy();
 
