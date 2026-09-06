@@ -63,13 +63,19 @@ test.describe('Pending registrations', () => {
 // Bug 7 fix: admin can directly create a user without invite flow
 test.describe('Direct create user', () => {
   test('direct create form is visible in the UI', async ({ page }) => {
-    // The direct-create section must be rendered (added in Bug 7 fix)
+    // Direct create section lives in tab-create — must navigate there first
+    await page.locator('#tab-btn-create').click();
+    await expect(page.locator('#cu-name')).toBeVisible({ timeout: 5_000 });
     const section = page.locator('#direct-create-section, [id*="direct"], .direct-create-card').first();
     await expect(section).toBeVisible({ timeout: 10_000 });
   });
 
   test('direct create — fills form and submits, user appears in list', async ({ page }) => {
     const plate = `HD-ZZ-${Date.now().toString().slice(-3)}`;
+
+    // Navigate to Create tab — direct-create form lives there
+    await page.locator('#tab-btn-create').click();
+    await expect(page.locator('#cu-name')).toBeVisible({ timeout: 5_000 });
 
     // Fill direct create form fields
     const dc = (id) => page.locator(`#dc-${id}, [id*="dc-${id}"]`).first();

@@ -219,43 +219,47 @@ test.describe('Spot assign/unassign', () => {
 // ── Spot reserve/unreserve ─────────────────────────────────────────────────────
 
 test.describe('Spot reserve/unreserve', () => {
-  test('reserve free spot s5 → spot shows Reserved', async ({ page }) => {
+  test('reserve free spot s5 → spot shows Reserved chip', async ({ page }) => {
     await page.locator('#tab-btn-spots').click();
     await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 30_000 });
     const s5Row = page.locator('#spot-list table tr').filter({ hasText: /^5[^0-9]/ }).first();
     await expect(s5Row).toBeVisible({ timeout: 10_000 });
-    const reserveBtn = s5Row.locator('button[title="Mark reserved"]').first();
-    await reserveBtn.click();
-    await page.waitForTimeout(2000);
-    await expect(page.locator('#spot-list table tr').filter({ hasText: /reserved/i }).first()).toBeVisible({ timeout: 10_000 });
+    // If s5 is already reserved, unreserve first so we can test reserving
+    const alreadyReserved = await s5Row.locator('.chip.inactive').count();
+    if (alreadyReserved > 0) {
+      await s5Row.locator('button[title="Unreserve"]').first().click();
+      await page.waitForTimeout(1500);
+      await expect(s5Row.locator('.chip.inactive')).not.toBeVisible({ timeout: 5_000 });
+    }
+    // Reserve via assign dropdown: select Extern option
+    const asgSel = s5Row.locator('select').first();
+    await expect(asgSel).toBeVisible({ timeout: 5_000 });
+    await asgSel.selectOption('__extern__');
+    await page.locator('#pm-modal-confirm').click();
+    await page.waitForTimeout(1500);
+    await expect(s5Row.locator('.chip.inactive')).toBeVisible({ timeout: 5_000 });
   });
 
-  test('unreserve s3 → spot no longer shows Reserved', async ({ page }) => {
+  test('unreserve s3 → spot no longer shows Reserved chip', async ({ page }) => {
     await page.locator('#tab-btn-spots').click();
     await expect(page.locator('#spot-list table tr').nth(1)).toBeVisible({ timeout: 30_000 });
-    // Target s3 by its spot label number, not by "Reserved" text, to avoid ambiguity
-    // when multiple spots are reserved (e.g. s4 was just reserved by the previous test).
     const s3Row = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
     await expect(s3Row).toBeVisible({ timeout: 10_000 });
-    // s3 should have an Unreserve button; if it was already unreserved, skip
+    // s3 should have an Unreserve button; if already unreserved, skip
     const unreserveBtn = s3Row.locator('button[title="Unreserve"]');
-    if (await unreserveBtn.count() === 0) return; // already unreserved
+    if (await unreserveBtn.count() === 0) return;
     await unreserveBtn.first().click();
-    await page.waitForTimeout(2000);
-    // Verify s3 is no longer reserved
-    const s3RowAfter = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
-    await expect(s3RowAfter).not.toContainText(/reserved/i);
+    await page.waitForTimeout(1500);
+    await expect(s3Row.locator('.chip.inactive')).not.toBeVisible({ timeout: 5_000 });
+    await expect(s3Row.locator('.chip.free')).toBeVisible({ timeout: 5_000 });
 
-    // ── Restore state: re-reserve s3 so later tests (28, 66) work ──
-    // "Mark reserved" triggers modalConfirm — must click #pm-modal-confirm to proceed.
+    // ── Restore state: re-reserve s3 via assign dropdown ──
     try {
-      const s3FreshRow = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
-      const reReserveBtn = s3FreshRow.locator('button[title="Mark reserved"]').first();
-      await expect(reReserveBtn).toBeVisible({ timeout: 10_000 });
-      await reReserveBtn.click();
+      const asgSel = s3Row.locator('select').first();
+      await expect(asgSel).toBeVisible({ timeout: 5_000 });
+      await asgSel.selectOption('__extern__');
       await page.locator('#pm-modal-confirm').click();
-      // Wait until the DOM confirms s3 is reserved (not just a timeout)
-      await expect(s3FreshRow).toContainText(/reserved/i, { timeout: 10_000 });
+      await expect(s3Row.locator('.chip.inactive')).toBeVisible({ timeout: 10_000 });
     } catch (e) {
       console.warn('State restore for s3 failed:', e.message);
     }
