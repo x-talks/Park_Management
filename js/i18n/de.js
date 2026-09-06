@@ -4,6 +4,7 @@ const LANG_DE = {
   'nav.map':       'Karte',
   'nav.admin':     'Admin',
   'nav.incidents': 'Vorfälle',
+  'nav.payments':  'Zahlungen',
   'nav.logout':    'Abmelden',
   'nav.profile':   'Profil',
 

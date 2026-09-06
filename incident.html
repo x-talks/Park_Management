@@ -233,18 +233,19 @@ document.getElementById('logout-link').addEventListener('click', () => logout())
 })();
 
 // ── Bottom nav (role-aware) ───────────────────────────────────────────────────
-(function buildBottomNav() {
+function buildBottomNav() {
   const nav = document.getElementById('bottom-nav');
+  nav.innerHTML = '';
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'master';
   const tabs = [
-    { href: 'parking.html',  icon: '🗺',  label: 'Map',       active: false },
-    { href: 'payments.html', icon: '💳',  label: 'Payments',  active: false },
-    { href: 'incident.html', icon: '⚠️',  label: 'Incidents', active: true  },
-    { href: 'profile.html',  icon: '👤',  label: 'Profile',   active: false },
+    { href: 'parking.html',  icon: '🗺',  label: t('nav.map'),       active: false },
+    { href: 'payments.html', icon: '💳',  label: t('nav.payments'),  active: false },
+    { href: 'incident.html', icon: '⚠️',  label: t('nav.incidents'), active: true  },
+    { href: 'profile.html',  icon: '👤',  label: t('nav.profile'),   active: false },
   ];
   if (isAdmin) {
-    tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', label: 'Admin', active: false });
-    const pi = tabs.findIndex(t => t.href === 'payments.html');
+    tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', label: t('nav.admin'), active: false });
+    const pi = tabs.findIndex(tb => tb.href === 'payments.html');
     if (pi !== -1) tabs.splice(pi, 1);
   }
   tabs.forEach(tab => {
@@ -254,7 +255,8 @@ document.getElementById('logout-link').addEventListener('click', () => logout())
     a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span>${tab.label}</span>`;
     nav.appendChild(a);
   });
-})();
+}
+buildBottomNav();
 
 // ── Spot dropdown ──────────────────────────────────────────────────────────────
 async function loadSpots() {
@@ -454,7 +456,7 @@ document.getElementById('lightbox').addEventListener('click', e => {
 // ── Init ───────────────────────────────────────────────────────────────────────
 loadSpots();
 loadLog();
-window.addEventListener('langchange', () => applyPage());
+window.addEventListener('langchange', () => { applyPage(); buildBottomNav(); });
 </script>
 
 <script type="module">

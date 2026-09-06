@@ -218,13 +218,14 @@ document.getElementById('logout-link').addEventListener('click', () => logout())
 })();
 
 // ── Bottom nav ────────────────────────────────────────────────────────────────
-(function buildBottomNav() {
+function buildBottomNav() {
   const nav = document.getElementById('bottom-nav');
+  nav.innerHTML = '';
   const tabs = [
-    { href: 'parking.html',  icon: '🗺',  label: 'Map' },
-    { href: 'admin.html',    icon: '⚙️',  label: 'Admin',     active: true },
-    { href: 'incident.html', icon: '⚠️',  label: 'Incidents' },
-    { href: 'profile.html',  icon: '👤',  label: 'Profile' },
+    { href: 'parking.html',  icon: '🗺',  label: t('nav.map') },
+    { href: 'admin.html',    icon: '⚙️',  label: t('nav.admin'),     active: true },
+    { href: 'incident.html', icon: '⚠️',  label: t('nav.incidents') },
+    { href: 'profile.html',  icon: '👤',  label: t('nav.profile') },
   ];
   tabs.forEach(tab => {
     const a = document.createElement('a');
@@ -233,7 +234,8 @@ document.getElementById('logout-link').addEventListener('click', () => logout())
     a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span>${tab.label}</span>`;
     nav.appendChild(a);
   });
-})();
+}
+buildBottomNav();
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 let activeTab = 'renters';
@@ -269,6 +271,8 @@ async function refreshAll() {
 setInterval(refreshAll, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAll(); });
 window.addEventListener('langchange', () => {
+  applyPage();
+  buildBottomNav();
   if (activeTab === 'renters')  renderUsers();
   if (activeTab === 'spots')    renderSpots();
   if (activeTab === 'payments') renderPayments();

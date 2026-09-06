@@ -4,6 +4,7 @@ const LANG_TR = {
   'nav.map':       'Harita',
   'nav.admin':     'Yönetici',
   'nav.incidents': 'Olaylar',
+  'nav.payments':  'Ödemeler',
   'nav.logout':    'Çıkış',
   'nav.profile':   'Profil',
 

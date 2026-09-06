@@ -39,12 +39,10 @@
   <!-- Map card -->
   <div class="card" style="padding:1rem">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;margin-bottom:0.75rem;flex-wrap:wrap">
-      <span style="font-size:0.8rem;color:var(--gray-600)">📍 Kaiser-Wilhelm-Straße 63, 67059 Ludwigshafen</span>
       <a href="https://maps.google.com/?q=Kaiser-Wilhelm-Stra%C3%9Fe+63,+67059+Ludwigshafen"
          target="_blank" rel="noopener"
-         class="maps-btn" data-i18n="map.openMaps">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        Open in Maps
+         style="font-size:0.8rem;color:var(--text-secondary);text-decoration:none;display:flex;align-items:center;gap:0.3rem">
+        📍 Kaiser-Wilhelm-Straße 63, 67059 Ludwigshafen
       </a>
     </div>
       <!-- padding makes room for axis labels that sit in the SVG viewBox overflow space -->
@@ -106,27 +104,30 @@ document.getElementById('logout-link').addEventListener('click', () => logout())
 })();
 
 // Build role-aware bottom nav: Map(active) / [Admin] / Payments / Incidents / Profile
-(function buildBottomNav() {
+function buildBottomNav() {
   const nav = document.getElementById('bottom-nav');
+  nav.innerHTML = '';
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'master';
   const tabs = [
-    { href: 'parking.html',  icon: '🗺',  label: 'Map',       active: true  },
-    { href: 'payments.html', icon: '💳',  label: 'Payments',  active: false },
-    { href: 'incident.html', icon: '⚠️',  label: 'Incidents', active: false },
-    { href: 'profile.html',  icon: '👤',  label: 'Profile',   active: false },
+    { href: 'parking.html',  icon: '🗺',  label: t('nav.map'),       active: true  },
+    { href: 'payments.html', icon: '💳',  label: t('nav.payments'),  active: false },
+    { href: 'incident.html', icon: '⚠️',  label: t('nav.incidents'), active: false },
+    { href: 'profile.html',  icon: '👤',  label: t('nav.profile'),   active: false },
   ];
   if (isAdmin) {
-    tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', label: 'Admin', active: false });
-    const pi = tabs.findIndex(t => t.href === 'payments.html');
+    tabs.splice(1, 0, { href: 'admin.html', icon: '⚙️', label: t('nav.admin'), active: false });
+    const pi = tabs.findIndex(tb => tb.href === 'payments.html');
     if (pi !== -1) tabs.splice(pi, 1);
-  }  tabs.forEach(tab => {
+  }
+  tabs.forEach(tab => {
     const a = document.createElement('a');
     a.href = tab.href;
     if (tab.active) a.className = 'active';
     a.innerHTML = `<span class="bn-icon">${tab.icon}</span><span>${tab.label}</span>`;
     nav.appendChild(a);
   });
-})();
+}
+buildBottomNav();
 
 // ── Init & real-time refresh ──────────────────────────────────────────────────
 let _spots = [], _users = [], _payments = [], _pendingRegs = [];
@@ -150,7 +151,7 @@ async function refresh() {
 refresh();
 setInterval(refresh, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
-window.addEventListener('langchange', () => applyPage());
+window.addEventListener('langchange', () => { applyPage(); buildBottomNav(); });
 </script>
 <script type="module">
   import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
