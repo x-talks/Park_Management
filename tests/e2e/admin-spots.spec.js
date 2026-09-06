@@ -31,10 +31,10 @@ test.describe('Spots table', () => {
   });
 
   test('s3 shows reserved indicator', async ({ page }) => {
-    // State chip for reserved spots shows "Extern"
+    // State chip for reserved spots has class "chip inactive" and shows "Extern"
     const s3Row = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
     await expect(s3Row).toBeVisible({ timeout: 10_000 });
-    await expect(s3Row).toContainText(/extern/i);
+    await expect(s3Row.locator('.chip.inactive')).toBeVisible({ timeout: 5_000 });
   });
 });
 
@@ -44,29 +44,33 @@ test.describe('Reserve/unreserve toggle', () => {
     const s3Row = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
     await expect(s3Row).toBeVisible({ timeout: 10_000 });
 
-    // Buttons are rendered via iconBtn(): the label lives in the `title`
-    // attribute, and the visible content is a Lucide icon — NOT text. So we
-    // must target buttons by [title=...], not by hasText.
+    // Step 1: ensure spot starts reserved — if already free, re-reserve it first
+    const alreadyFree = await s3Row.locator('button[title="Mark reserved"]').count();
+    if (alreadyFree > 0) {
+      await s3Row.locator('button[title="Mark reserved"]').first().click();
+      await page.locator('#pm-modal-confirm').click();
+      await page.waitForTimeout(1500);
+    }
 
-    // Step 1: spot starts reserved — click Unreserve button (title="Unreserve")
+    // Now click Unreserve
     const unreserveBtn = s3Row.locator('button[title="Unreserve"]').first();
-    await expect(unreserveBtn).toBeVisible();
+    await expect(unreserveBtn).toBeVisible({ timeout: 5_000 });
     await unreserveBtn.click();
     await page.waitForTimeout(1500);
 
-    // After unreserving, spot should no longer show "Extern" chip; state chip should show Free
-    await expect(s3Row).not.toContainText(/extern/i);
+    // After unreserving, the reserved chip (.chip.inactive) should be gone; Free chip visible
+    await expect(s3Row.locator('.chip.inactive')).not.toBeVisible({ timeout: 5_000 });
+    await expect(s3Row.locator('.chip.free')).toBeVisible({ timeout: 5_000 });
 
-    // Step 2: re-reserve — "Mark reserved" button (title="Mark reserved") should now appear
+    // Step 2: re-reserve
     const reserveBtn = s3Row.locator('button[title="Mark reserved"]').first();
     await expect(reserveBtn).toBeVisible({ timeout: 5_000 });
     await reserveBtn.click();
-    // Confirm the modal dialog (confirm button has id="pm-modal-confirm")
     await page.locator('#pm-modal-confirm').click();
     await page.waitForTimeout(1500);
 
-    // Spot should be reserved again
-    await expect(s3Row).toContainText(/extern/i);
+    // Spot should be reserved again — reserved chip (.chip.inactive) back
+    await expect(s3Row.locator('.chip.inactive')).toBeVisible({ timeout: 5_000 });
   });
 });
 
