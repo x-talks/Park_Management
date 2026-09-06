@@ -23,7 +23,7 @@ ALTER TABLE spots ADD COLUMN IF NOT EXISTS "rentHistory" JSONB;
 CREATE TABLE IF NOT EXISTS users (
   id                TEXT PRIMARY KEY,
   username          TEXT UNIQUE NOT NULL,
-  "authId"          UUID,
+  "authId"          TEXT,
   name              TEXT,
   "lastName"        TEXT,
   "licensePlate"    TEXT,
@@ -149,7 +149,7 @@ DROP POLICY IF EXISTS "Users can read own row" ON users;
 CREATE POLICY "Users can read own row" ON users
   FOR SELECT TO authenticated
   USING (
-    "authId" = auth.uid()
+    "authId" = auth.uid()::text
     OR is_admin_or_master()
   );
 
