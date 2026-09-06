@@ -83,8 +83,15 @@ const LANG_DE = {
   'profile.readonly':"Nur lesbar — bitte Admin kontaktieren.",
 
   'admin.tab.users':    'Nutzer',
+  'admin.tab.renters':  'Mieter',
   'admin.tab.spots':    'Plätze',
   'admin.tab.payments': 'Zahlungen',
+  'admin.tab.sessions': 'Sitzungen',
+
+  'admin.sessions.kick':      'Trennen',
+  'admin.sessions.revokeAll': 'Alle trennen',
+  'admin.sessions.empty':     'Keine aktiven Sitzungen.',
+  'admin.sessions.confirm':   'Alle Sitzungen für {0} trennen?',
 
   'admin.chart.title':        'Belegungsübersicht',
   'admin.stat.renters':       'Aktive Mieter',

@@ -83,8 +83,15 @@ const LANG_TR = {
   'profile.readonly':"Salt okunur — değiştirmek için admin ile iletişime geç.",
 
   'admin.tab.users':    'Kullanıcılar',
+  'admin.tab.renters':  'Kiracılar',
   'admin.tab.spots':    'Yerler',
   'admin.tab.payments': 'Ödemeler',
+  'admin.tab.sessions': 'Oturumlar',
+
+  'admin.sessions.kick':      'Kes',
+  'admin.sessions.revokeAll': 'Tümünü kes',
+  'admin.sessions.empty':     'Aktif oturum yok.',
+  'admin.sessions.confirm':   '{0} için tüm oturumlar kesilsin mi?',
 
   'admin.chart.title':        'Doluluk Özeti',
   'admin.stat.renters':       'Aktif Kiracılar',

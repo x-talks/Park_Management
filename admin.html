@@ -50,15 +50,16 @@
 <div class="page-wrap">
 
   <div class="tab-bar">
-    <button class="tab-btn" id="tab-btn-users">
-      <span data-i18n="admin.tab.users">Users</span> <span id="pending-badge" class="badge" style="display:none">0</span>
+    <button class="tab-btn" id="tab-btn-renters">
+      <span data-i18n="admin.tab.renters">Renters</span> <span id="pending-badge" class="badge" style="display:none">0</span>
     </button>
     <button class="tab-btn" id="tab-btn-spots" data-i18n="admin.tab.spots">Spots</button>
     <button class="tab-btn" id="tab-btn-payments" data-i18n="admin.tab.payments">Payments</button>
+    <button class="tab-btn" id="tab-btn-sessions" data-i18n="admin.tab.sessions">Sessions</button>
   </div>
 
-  <!-- ── Users tab ── -->
-  <div id="tab-users" class="tab-panel">
+  <!-- ── Renters tab ── -->
+  <div id="tab-renters" class="tab-panel">
 
     <!-- Stat cards -->
     <div id="stat-cards" class="stat-grid"></div>
@@ -144,7 +145,7 @@
       <div id="direct-result-box" style="display:none;margin-top:0.75rem" class="alert success"></div>
     </div>
 
-  </div><!-- end tab-users -->
+  </div><!-- end tab-renters -->
 
   <!-- ── Spots tab ── -->
   <div id="tab-spots" class="tab-panel" style="display:none">
@@ -173,6 +174,17 @@
         <span style="display:inline-block;width:10px;height:10px;background:var(--red-bg);border:1px solid #f5c6c2;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.pending">Pending</span>
       </div>
       <div id="payment-matrix"></div>
+    </div>
+  </div>
+
+  <!-- ── Sessions tab ── -->
+  <div id="tab-sessions" class="tab-panel" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <h2 data-i18n="admin.tab.sessions">Sessions</h2>
+        <span style="font-size:0.75rem;color:var(--text-secondary)" id="sessions-refresh-time"></span>
+      </div>
+      <div id="sessions-list"></div>
     </div>
   </div>
 
@@ -224,21 +236,22 @@ document.getElementById('logout-link').addEventListener('click', () => logout())
 })();
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
-let activeTab = 'users';
+let activeTab = 'renters';
 function showTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).style.display = 'block';
   document.getElementById('tab-btn-' + name).classList.add('active');
   activeTab = name;
-  if (name === 'users')    { renderUsers(); loadFreeSpots(); }
+  if (name === 'renters')  { renderUsers(); loadFreeSpots(); }
   if (name === 'spots')    renderSpots();
   if (name === 'payments') renderPayments();
+  if (name === 'sessions') renderSessions();
 }
-['users','spots','payments'].forEach(t =>
+['renters','spots','payments','sessions'].forEach(t =>
   document.getElementById('tab-btn-' + t).addEventListener('click', () => showTab(t))
 );
-showTab('users');
+showTab('renters');
 
 // Refresh ALL tabs after any mutation so cross-tab data is always in sync.
 // Inactive tab panels are hidden but their render functions still run and
@@ -249,15 +262,17 @@ async function refreshAll() {
     renderSpots(),
     renderPayments(),
     loadFreeSpots(),
+    renderSessions(),
   ]);
 }
 
 setInterval(refreshAll, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAll(); });
 window.addEventListener('langchange', () => {
-  if (activeTab === 'users')    renderUsers();
+  if (activeTab === 'renters')  renderUsers();
   if (activeTab === 'spots')    renderSpots();
   if (activeTab === 'payments') renderPayments();
+  if (activeTab === 'sessions') renderSessions();
 });
 
 // ── DOM helpers ───────────────────────────────────────────────────────────────
@@ -1040,6 +1055,138 @@ async function renderPayments() {
   wrap.appendChild(table);
   container.appendChild(wrap);
   if (window.lucide) window.lucide.createIcons();
+}
+
+// ── Sessions tab ──────────────────────────────────────────────────────────────
+
+function timeAgo(iso) {
+  const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (s < 60)    return s + 's ago';
+  if (s < 3600)  return Math.floor(s / 60) + 'min ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+async function renderSessions() {
+  const container = document.getElementById('sessions-list');
+  container.innerHTML = '';
+  const tsEl = document.getElementById('sessions-refresh-time');
+
+  let sessions;
+  try {
+    sessions = await workerRequest('GET', '/sessions');
+  } catch (e) {
+    container.innerHTML = `<p style="color:var(--red);font-size:0.85rem">${e.message}</p>`;
+    return;
+  }
+
+  if (tsEl) tsEl.textContent = t('admin.users.updated', new Date().toLocaleTimeString());
+
+  if (!sessions.length) {
+    const p = document.createElement('p');
+    p.style.cssText = 'color:var(--text-secondary);font-size:0.85rem;margin:0.5rem 0';
+    p.textContent = t('admin.sessions.empty');
+    container.appendChild(p);
+    return;
+  }
+
+  // Group sessions by userId
+  const byUser = {};
+  sessions.forEach(s => {
+    if (!byUser[s.userId]) byUser[s.userId] = [];
+    byUser[s.userId].push(s);
+  });
+
+  Object.values(byUser).forEach(userSessions => {
+    const u = userSessions[0].user;
+    const displayName = u ? (`${u.name || ''} ${u.lastName || ''}`).trim() || u.username : userSessions[0].userId;
+    const plate = u ? u.username : '';
+    const sessionCount = userSessions.length;
+
+    const userCard = document.createElement('div');
+    userCard.style.cssText = 'border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.75rem;overflow:hidden';
+
+    // User header row
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.85rem;background:var(--bg-card-hover);gap:0.5rem;flex-wrap:wrap';
+    const left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap';
+    const dot = document.createElement('span');
+    dot.textContent = '🟢';
+    const nameEl = document.createElement('span');
+    nameEl.style.cssText = 'font-weight:700;font-size:0.9rem';
+    nameEl.textContent = plate ? `${plate} · ${displayName}` : displayName;
+    const roleChip = document.createElement('span');
+    roleChip.className = 'chip ' + (u?.role === 'admin' || u?.role === 'master' ? 'active' : 'inactive');
+    roleChip.style.cssText = 'font-size:0.7rem';
+    roleChip.textContent = u?.role || 'renter';
+    const countEl = document.createElement('span');
+    countEl.style.cssText = 'font-size:0.78rem;color:var(--text-secondary)';
+    countEl.textContent = sessionCount === 1 ? '1 session' : sessionCount + ' sessions';
+    left.appendChild(dot); left.appendChild(nameEl); left.appendChild(roleChip); left.appendChild(countEl);
+
+    const revokeAllBtn = document.createElement('button');
+    revokeAllBtn.className = 'secondary';
+    revokeAllBtn.style.cssText = 'font-size:0.78rem;padding:0.2rem 0.6rem;min-height:0';
+    revokeAllBtn.textContent = t('admin.sessions.revokeAll');
+    revokeAllBtn.addEventListener('click', async () => {
+      if (!confirm(t('admin.sessions.confirm', displayName))) return;
+      revokeAllBtn.disabled = true;
+      try {
+        await Promise.all(userSessions.map(s => workerRequest('DELETE', `/sessions/${s.id}`)));
+        renderSessions();
+      } catch (e) { toast(e.message, 'error'); revokeAllBtn.disabled = false; }
+    });
+
+    header.appendChild(left);
+    header.appendChild(revokeAllBtn);
+    userCard.appendChild(header);
+
+    // Session rows
+    const sessionsWrap = document.createElement('div');
+    sessionsWrap.style.cssText = 'padding:0.25rem 0';
+
+    userSessions.forEach(s => {
+      const deviceIcon = s.deviceType === 'desktop' ? '💻' : '📱';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:0.75rem;padding:0.45rem 0.85rem;border-top:1px solid var(--border);flex-wrap:wrap';
+
+      const device = document.createElement('span');
+      device.style.cssText = 'font-size:1rem;flex-shrink:0';
+      device.textContent = deviceIcon;
+
+      const info = document.createElement('div');
+      info.style.cssText = 'flex:1;min-width:0;font-size:0.82rem;line-height:1.6';
+      const osLine = document.createElement('span');
+      osLine.style.fontWeight = '600';
+      osLine.textContent = `${s.os || '?'} · ${s.browser || '?'}`;
+      const meta = document.createElement('span');
+      meta.style.cssText = 'color:var(--text-secondary);margin-left:0.5rem;font-size:0.75rem';
+      meta.textContent = `last seen ${timeAgo(s.lastSeenAt)}  ·  ${s.ipAddress || '—'}`;
+      info.appendChild(osLine);
+      info.appendChild(meta);
+
+      const kickBtn = document.createElement('button');
+      kickBtn.className = 'secondary';
+      kickBtn.style.cssText = 'font-size:0.75rem;padding:0.15rem 0.55rem;min-height:0;white-space:nowrap;color:var(--red)';
+      kickBtn.textContent = t('admin.sessions.kick');
+      kickBtn.addEventListener('click', async () => {
+        kickBtn.disabled = true;
+        try {
+          await workerRequest('DELETE', `/sessions/${s.id}`);
+          renderSessions();
+        } catch (e) { toast(e.message, 'error'); kickBtn.disabled = false; }
+      });
+
+      row.appendChild(device);
+      row.appendChild(info);
+      row.appendChild(kickBtn);
+      sessionsWrap.appendChild(row);
+    });
+
+    userCard.appendChild(sessionsWrap);
+    container.appendChild(userCard);
+  });
 }
 
 // ── CSV Export ─────────────────────────────────────────────────────────────────

@@ -90,8 +90,16 @@ const LANG_EN = {
 
   // ── Admin — tabs ──────────────────────────────────────────────────────────
   'admin.tab.users':    'Users',
+  'admin.tab.renters':  'Renters',
   'admin.tab.spots':    'Spots',
   'admin.tab.payments': 'Payments',
+  'admin.tab.sessions': 'Sessions',
+
+  // ── Admin — sessions ──────────────────────────────────────────────────────
+  'admin.sessions.kick':      'Kick',
+  'admin.sessions.revokeAll': 'Revoke All',
+  'admin.sessions.empty':     'No active sessions.',
+  'admin.sessions.confirm':   'Revoke all sessions for {0}?',
 
   // ── Admin — users ─────────────────────────────────────────────────────────
   'admin.chart.title':        'Occupancy Overview',

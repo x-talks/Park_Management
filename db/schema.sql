@@ -89,6 +89,19 @@ CREATE TABLE IF NOT EXISTS incidents (
   "reportedAt"        TIMESTAMPTZ NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS sessions (
+  id            TEXT PRIMARY KEY,
+  "userId"      TEXT NOT NULL,
+  "createdAt"   TIMESTAMPTZ NOT NULL,
+  "lastSeenAt"  TIMESTAMPTZ NOT NULL,
+  "userAgent"   TEXT,
+  "ipAddress"   TEXT,
+  "deviceType"  TEXT,
+  "browser"     TEXT,
+  "os"          TEXT,
+  "revokedAt"   TIMESTAMPTZ
+);
+
 -- ── Helper function (avoids RLS recursion) ───────────────────────────────────
 
 CREATE OR REPLACE FUNCTION is_admin_or_master()
@@ -112,6 +125,7 @@ ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE incidents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pending_registrations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 
 -- spots
 DROP POLICY IF EXISTS "Authenticated users can read spots" ON spots;
@@ -189,6 +203,11 @@ DROP POLICY IF EXISTS "Admins and masters can delete incidents" ON incidents;
 CREATE POLICY "Admins and masters can delete incidents" ON incidents
   FOR DELETE TO authenticated
   USING (is_admin_or_master());
+
+-- sessions
+DROP POLICY IF EXISTS "Admins can manage sessions" ON sessions;
+CREATE POLICY "Admins can manage sessions" ON sessions
+  FOR ALL TO authenticated USING (is_admin_or_master());
 
 -- ── Storage ───────────────────────────────────────────────────────────────────
 

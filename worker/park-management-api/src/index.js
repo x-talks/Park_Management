@@ -156,6 +156,28 @@ function plateToEmail(plate) {
   return plate.toLowerCase().replace(/[^a-z0-9]/g, '.') + '@park.local';
 }
 
+function parseUA(ua) {
+  if (!ua) ua = '';
+  const mobile  = /Mobile|Android|iPhone|iPad/.test(ua);
+  const tablet  = /iPad|Tablet/.test(ua);
+  const browser = /Edg/.test(ua)     ? 'Edge'
+    : /Chrome/.test(ua)  ? 'Chrome'
+    : /Firefox/.test(ua) ? 'Firefox'
+    : /Safari/.test(ua)  ? 'Safari'
+    : 'Unknown';
+  const os = /iPhone|iPad/.test(ua) ? 'iOS'
+    : /Android/.test(ua)   ? 'Android'
+    : /Windows/.test(ua)   ? 'Windows'
+    : /Mac/.test(ua)       ? 'macOS'
+    : /Linux/.test(ua)     ? 'Linux'
+    : 'Unknown';
+  return {
+    deviceType: tablet ? 'tablet' : mobile ? 'mobile' : 'desktop',
+    browser,
+    os,
+  };
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 export default {
@@ -190,6 +212,28 @@ export default {
         const user = rows[0];
         if (!user.active) return err('Account is inactive', 403);
 
+        // Extract session_id from access_token JWT payload (Supabase standard claim)
+        const b64fix = s => s.replace(/-/g, '+').replace(/_/g, '/');
+        const jwtPayload = JSON.parse(atob(b64fix(authData.access_token.split('.')[1])));
+        const sessionId = jwtPayload.session_id || jwtPayload.sid || ('s' + Date.now());
+
+        const ua = request.headers.get('User-Agent') || '';
+        const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || '';
+        const { deviceType, browser, os } = parseUA(ua);
+        const now = new Date().toISOString();
+        await client.post('sessions', {
+          id: sessionId,
+          userId: user.id,
+          createdAt: now,
+          lastSeenAt: now,
+          userAgent: ua.slice(0, 512),
+          ipAddress: ip,
+          deviceType,
+          browser,
+          os,
+          revokedAt: null,
+        }, 'resolution=merge-duplicates,return=representation');
+
         // Strip sensitive fields before sending to browser
         const { passwordHash, lastPassword, authId, ...safeUser } = user;
 
@@ -202,7 +246,14 @@ export default {
 
       // POST /auth/logout
       if (method === 'POST' && path === '/auth/logout') {
-        // JWT is stateless — client clears sessionStorage. Nothing to do server-side.
+        try {
+          const logoutPayload = await verifyJWT(request, env);
+          const sid = logoutPayload.session_id || logoutPayload.sid;
+          if (sid) {
+            await sb(env).patch('sessions', `id=eq.${encodeURIComponent(sid)}`,
+              { revokedAt: new Date().toISOString() });
+          }
+        } catch (_) {}
         return json({ ok: true });
       }
 
@@ -299,6 +350,18 @@ export default {
           changes.licensePlate = changes.username;
         }
         const result = await client.patch('users', `id=eq.${encodeURIComponent(userId)}`, changes);
+
+        // Auto-revoke all sessions when deactivating a user or changing role
+        if (changes.active === false || changes.role) {
+          await client.patch('sessions', `userId=eq.${encodeURIComponent(userId)}`,
+            { revokedAt: new Date().toISOString() });
+          const authRows = await client.get('users', `id=eq.${encodeURIComponent(userId)}&limit=1`);
+          if (authRows[0]?.authId) {
+            await client.authAdmin('POST', `users/${authRows[0].authId}/logout`, { scope: 'global' })
+              .catch(() => {});
+          }
+        }
+
         return json(result);
       }
 
@@ -379,6 +442,41 @@ export default {
             app_metadata: { role }
           });
         }
+        return json({ ok: true });
+      }
+
+      // ── Sessions ────────────────────────────────────────────────────────────
+
+      // GET /sessions — admin only, all active sessions with user info
+      if (method === 'GET' && path === '/sessions') {
+        const payload = await verifyJWT(request, env);
+        requireRole(payload, 'admin');
+        const client = sb(env);
+        const [sessions, users] = await Promise.all([
+          client.get('sessions', 'revokedAt=is.null&order=lastSeenAt.desc'),
+          client.get('users', 'select=id,username,name,lastName,role,active'),
+        ]);
+        const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+        return json(sessions.map(s => ({ ...s, user: userMap[s.userId] || null })));
+      }
+
+      // DELETE /sessions/:id — admin only, revoke a single session
+      if (method === 'DELETE' && path.startsWith('/sessions/')) {
+        const payload = await verifyJWT(request, env);
+        requireRole(payload, 'admin');
+        const sid = path.slice('/sessions/'.length);
+        const client = sb(env);
+        const rows = await client.get('sessions', `id=eq.${encodeURIComponent(sid)}&limit=1`);
+        if (!rows.length) return err('Session not found', 404);
+        const sess = rows[0];
+        await client.patch('sessions', `id=eq.${encodeURIComponent(sid)}`,
+          { revokedAt: new Date().toISOString() });
+        try {
+          const userRows = await client.get('users', `id=eq.${encodeURIComponent(sess.userId)}&limit=1`);
+          if (userRows[0]?.authId) {
+            await client.authAdmin('POST', `users/${userRows[0].authId}/logout`, { scope: 'global' });
+          }
+        } catch (_) {}
         return json({ ok: true });
       }
 
