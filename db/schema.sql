@@ -161,7 +161,7 @@ CREATE POLICY "Admins and masters can modify users" ON users
 DROP POLICY IF EXISTS "Renters can update own pendingEdits" ON users;
 CREATE POLICY "Renters can update own pendingEdits" ON users
   FOR UPDATE TO authenticated
-  USING ("authId" = auth.uid());
+  USING ("authId" = auth.uid()::text);
 
 -- payments
 DROP POLICY IF EXISTS "Authenticated users can read payments" ON payments;
