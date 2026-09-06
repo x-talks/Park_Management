@@ -806,18 +806,7 @@ async function renderSpots() {
     const stateCell = document.createElement('td');
     function renderStateCell() {
       stateCell.innerHTML = '';
-      if (editMode) {
-        const sel = document.createElement('select');
-        sel.style.cssText = 'width:auto;font-size:0.8rem';
-        [['free', t('admin.spots.chip.free')], ['occupied', t('admin.spots.chip.occupied')], ['reserved', t('admin.spots.chip.reserved')]].forEach(([v, label]) => {
-          const opt = document.createElement('option');
-          opt.value = v; opt.textContent = label;
-          if ((v === 'reserved' && isReserved) || (!isReserved && s.state === v)) opt.selected = true;
-          sel.appendChild(opt);
-        });
-        sel.id = `edit-state-${s.id}`;
-        stateCell.appendChild(sel);
-      } else {
+      if (!editMode) {
         const stateClass = isReserved ? 'inactive' : (s.state === 'free' ? 'free' : 'occupied');
         const stateLabel = isReserved ? t('admin.spots.chip.reserved') : (s.state === 'free' ? t('admin.spots.chip.free') : t('admin.spots.chip.occupied'));
         stateCell.appendChild(chip(stateLabel, stateClass));
@@ -831,17 +820,21 @@ async function renderSpots() {
     function renderUserCell() {
       userCell.innerHTML = '';
       if (editMode) {
+        // Single unified dropdown: none=free, renter=occupied+assign, __extern__=reserved
         const sel = document.createElement('select');
         sel.style.cssText = 'width:auto;font-size:0.8rem';
+        sel.id = `edit-assign-${s.id}`;
         sel.appendChild(Object.assign(document.createElement('option'), {value:'',textContent:'— none —'}));
         renters.forEach(u => {
           const opt = document.createElement('option');
           opt.value = u.id;
-          opt.textContent = `${(u.name||'')} (${u.licensePlate||u.username})`.trim();
+          opt.textContent = `${u.licensePlate||u.username}`;
           if (u.id === s.assignedUserId) opt.selected = true;
           sel.appendChild(opt);
         });
-        sel.id = `edit-user-${s.id}`;
+        const extOpt = Object.assign(document.createElement('option'), {value:'__extern__',textContent:'Extern'});
+        if (isReserved) extOpt.selected = true;
+        sel.appendChild(extOpt);
         userCell.appendChild(sel);
       } else {
         userCell.textContent = renter ? (`${renter.name||''} ${renter.lastName||''}`).trim() : '—';
@@ -882,17 +875,16 @@ async function renderSpots() {
       if (editMode) {
         // Save button
         bRow.appendChild(iconBtn('💾', t('admin.btn.save'), 'success-btn', async () => {
-          const newState = document.getElementById(`edit-state-${s.id}`)?.value || 'free';
-          const newUserId = document.getElementById(`edit-user-${s.id}`)?.value || '';
+          const assignVal = document.getElementById(`edit-assign-${s.id}`)?.value || '';
           const newRent = parseFloat(document.getElementById(`edit-rent-${s.id}`)?.value);
           try {
-            if (newState === 'reserved') {
-              await setSpotReserved(s.id, true);
+            if (assignVal === '__extern__') {
+              if (!isReserved) await setSpotReserved(s.id, true);
             } else {
               if (isReserved) await setSpotReserved(s.id, false);
-              if (newUserId && newUserId !== s.assignedUserId) {
-                await assignSpot(s.id, newUserId);
-              } else if (!newUserId && s.assignedUserId) {
+              if (assignVal && assignVal !== s.assignedUserId) {
+                await assignSpot(s.id, assignVal);
+              } else if (!assignVal && s.assignedUserId) {
                 await unassignSpot(s.id);
               }
             }
@@ -910,9 +902,7 @@ async function renderSpots() {
         // Edit button
         bRow.appendChild(iconBtn('~', t('admin.btn.edit'), 'secondary', () => {
           editMode = true; renderStateCell(); renderUserCell(); renderRentCell(); renderActions();
-        }));
-
-        if (isReserved) {
+        }));        if (isReserved) {
           // Unreserve
           bRow.appendChild(iconBtn('▶', t('admin.btn.unreserve'), 'success-btn', async () => {
             await setSpotReserved(s.id, false); refreshAll();

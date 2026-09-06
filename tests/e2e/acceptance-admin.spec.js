@@ -15,6 +15,8 @@ test('Full admin journey: login → generate invite → approve pending registra
   await expect(page.locator('#stat-cards')).toBeVisible({ timeout: 10_000 });
 
   // Step 3: Generate invite for a free spot
+  await page.locator('#tab-btn-create').click();
+  await expect(page.locator('#cu-name')).toBeVisible({ timeout: 5_000 });
   await page.locator('#cu-name').fill('Acceptance');
   await page.locator('#cu-lastname').fill('Tester');
   await page.locator('#cu-phone').fill('+49300000099');

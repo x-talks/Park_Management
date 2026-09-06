@@ -1,6 +1,7 @@
 -- Park Management Database Schema
 -- Apply to staging: CI runs this before every E2E test run.
--- When you change production schema, update this file in the same commit.
+-- Apply to production: CI also runs this after staging E2E passes.
+-- All DDL is idempotent: CREATE TABLE IF NOT EXISTS + ADD COLUMN IF NOT EXISTS.
 
 -- ── Tables ────────────────────────────────────────────────────────────────────
 
@@ -14,6 +15,10 @@ CREATE TABLE IF NOT EXISTS spots (
   "rentHistory"    JSONB,
   "assignedUserId" TEXT
 );
+
+-- Idempotent column additions for existing databases
+ALTER TABLE spots ADD COLUMN IF NOT EXISTS owned BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE spots ADD COLUMN IF NOT EXISTS "rentHistory" JSONB;
 
 CREATE TABLE IF NOT EXISTS users (
   id                TEXT PRIMARY KEY,
@@ -101,6 +106,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   "os"          TEXT,
   "revokedAt"   TIMESTAMPTZ
 );
+
+-- Idempotent column additions for existing sessions rows (none needed yet)
 
 -- ── Helper function (avoids RLS recursion) ───────────────────────────────────
 

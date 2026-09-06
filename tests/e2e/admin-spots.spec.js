@@ -31,10 +31,10 @@ test.describe('Spots table', () => {
   });
 
   test('s3 shows reserved indicator', async ({ page }) => {
-    // Target s3 by its spot label "3", then verify it shows "Reserved"
+    // State chip for reserved spots shows "Extern"
     const s3Row = page.locator('#spot-list table tr').filter({ hasText: /^3[^0-9]/ }).first();
     await expect(s3Row).toBeVisible({ timeout: 10_000 });
-    await expect(s3Row).toContainText(/reserved/i);
+    await expect(s3Row).toContainText(/extern/i);
   });
 });
 
@@ -54,8 +54,8 @@ test.describe('Reserve/unreserve toggle', () => {
     await unreserveBtn.click();
     await page.waitForTimeout(1500);
 
-    // After unreserving, spot should no longer show "Reserved" chip; state chip should show Free
-    await expect(s3Row).not.toContainText(/reserved/i);
+    // After unreserving, spot should no longer show "Extern" chip; state chip should show Free
+    await expect(s3Row).not.toContainText(/extern/i);
 
     // Step 2: re-reserve — "Mark reserved" button (title="Mark reserved") should now appear
     const reserveBtn = s3Row.locator('button[title="Mark reserved"]').first();
@@ -66,7 +66,7 @@ test.describe('Reserve/unreserve toggle', () => {
     await page.waitForTimeout(1500);
 
     // Spot should be reserved again
-    await expect(s3Row).toContainText(/reserved/i);
+    await expect(s3Row).toContainText(/extern/i);
   });
 });
 

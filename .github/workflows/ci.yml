@@ -138,6 +138,29 @@ jobs:
           path: test-results/
           retention-days: 7
 
+      - name: Apply schema to production
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "Applying db/schema.sql to production Supabase..."
+          RESPONSE=$(curl -sS -w "\n%{http_code}" \
+            -X POST "https://api.supabase.com/v1/projects/fnluagvzowbcuzlblfmr/database/query" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $(jq -Rs . < db/schema.sql)}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "HTTP $HTTP_CODE: $BODY"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "Production schema apply failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "Reloading production PostgREST schema cache..."
+          curl -sS -X POST "https://api.supabase.com/v1/projects/fnluagvzowbcuzlblfmr/database/query" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"query":"NOTIFY pgrst, '\''reload schema'\''"}' || true
+          sleep 3
+
   svelte-e2e-tests:
     name: Svelte E2E Tests
     runs-on: ubuntu-latest
