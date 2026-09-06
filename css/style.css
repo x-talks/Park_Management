@@ -301,12 +301,7 @@ a:hover { text-decoration: underline; }
 /* ── Hamburger menu ───────────────────────────────────────────────────────── */
 .hamburger-wrap { position: relative; }
 
-.hamburger-btn {
-  background: rgba(255,255,255,.10);
-  border-color: rgba(255,255,255,.15);
-  color: rgba(255,255,255,.85);
-}
-.hamburger-btn:hover { background: rgba(255,255,255,.20); opacity: 1; }
+.hamburger-btn { /* color handled by [data-theme] rule above; inherits --text-primary in light */ }
 
 .hamburger-menu {
   display: none;
@@ -337,6 +332,68 @@ a:hover { text-decoration: underline; }
   border-radius: var(--radius); padding: 0.4rem 0.5rem; height: auto; min-height: 2rem;
 }
 .hamburger-menu .icon-btn:hover { background: var(--bg-card-hover); border-color: var(--border); opacity: 1; }
+
+/* ── Flag language switcher ───────────────────────────────────────────────── */
+.flag-switcher-wrap { position: relative; width: 100%; }
+
+.flag-trigger {
+  width: 100%; text-align: left;
+  background: none; border: 1px solid transparent; border-radius: var(--radius);
+  color: var(--text-primary); font-size: 1.3rem; line-height: 1;
+  padding: 0.35rem 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;
+  transition: background var(--transition), border-color var(--transition);
+}
+.flag-trigger:hover { background: var(--bg-card-hover); border-color: var(--border); }
+
+.flag-dropdown {
+  display: none; flex-direction: column;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-lg);
+  overflow: hidden; margin-top: 0.2rem;
+}
+.flag-switcher-wrap.open .flag-dropdown { display: flex; }
+.flag-dropdown button {
+  display: flex; align-items: center; gap: 0.5rem;
+  width: 100%; padding: 0.45rem 0.65rem;
+  background: none; border: none; border-radius: 0;
+  color: var(--text-primary); font-size: 0.9rem; font-weight: 500;
+  cursor: pointer; text-align: left; min-height: 0;
+  transition: background var(--transition);
+}
+.flag-dropdown button:hover { background: var(--bg-card-hover); }
+.flag-dropdown button.active { font-weight: 700; color: var(--primary); }
+.flag-emoji { font-size: 1.15rem; line-height: 1; }
+.flag-name  { font-size: 0.85rem; color: var(--text-secondary); }
+
+/* ── Theme pill toggle ────────────────────────────────────────────────────── */
+.theme-pill {
+  display: flex; width: 100%;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; background: var(--bg-input);
+}
+.theme-pill-btn {
+  flex: 1; padding: 0.35rem 0.25rem; border: none; border-radius: 0;
+  background: none; color: var(--text-secondary); font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; min-height: 0; transition: background var(--transition), color var(--transition);
+  line-height: 1.2;
+}
+.theme-pill-btn:first-child { border-right: 1px solid var(--border); }
+.theme-pill-btn.active { background: var(--primary); color: #fff; }
+.theme-pill-btn:not(.active):hover { background: var(--bg-card-hover); color: var(--text-primary); }
+
+/* ── Hamburger logout button ──────────────────────────────────────────────── */
+.hamburger-logout-btn {
+  width: 100%; display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0.5rem; border-radius: var(--radius);
+  background: none; border: 1px solid transparent;
+  color: var(--text-primary); font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; text-align: left; min-height: 0;
+  transition: background var(--transition), border-color var(--transition), opacity var(--transition);
+}
+.hamburger-logout-btn:hover { background: var(--bg-card-hover); border-color: var(--border); }
+.hamburger-logout-btn.pressed { opacity: 0.55; pointer-events: none; }
+.logout-icon { font-size: 1.05rem; line-height: 1; }
+.logout-label { font-size: 0.85rem; }
 
 /* Legacy .site-nav / .nav-links retained for other pages */
 .site-nav { display: flex; gap: 0.25rem; align-items: center; flex-wrap: nowrap; flex: 1; }
@@ -1033,18 +1090,22 @@ tr:hover td { background: var(--bg-card-hover); }
 }
 .maps-btn:hover { background: #1558b0; box-shadow: var(--shadow); text-decoration: none; color: #fff; }
 
-/* ── Theme toggle button ──────────────────────────────────────────────────── */
-#theme-toggle {
+/* ── Theme toggle button — white styling for dark headers/menus only ──────── */
+[data-theme] #theme-toggle,
+[data-theme] .hamburger-btn {
   background: rgba(255,255,255,.10);
   border-color: rgba(255,255,255,.15);
   color: rgba(255,255,255,.85);
+}
+[data-theme] #theme-toggle:hover,
+[data-theme] .hamburger-btn:hover { background: rgba(255,255,255,.20); opacity: 1; }
+#theme-toggle {
   width: 2rem;
   height: 2rem;
   min-height: 2rem;
   padding: 0;
   justify-content: center;
 }
-#theme-toggle:hover { background: rgba(255,255,255,.20); opacity: 1; }
 #theme-toggle i, #theme-toggle svg { width: 15px; height: 15px; }
 
 /* ── Stat cards ───────────────────────────────────────────────────────────── */

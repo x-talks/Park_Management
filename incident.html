@@ -123,9 +123,11 @@
         <i data-lucide="menu"></i>
       </button>
       <div class="hamburger-menu" id="hamburger-menu">
-        <div id="lang-switcher-nav"></div>
-        <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
-        <button id="logout-link" class="icon-btn" title="Logout" data-i18n-title="nav.logout" style="font-size:1.1rem">⎋</button>
+        <div id="lang-flag-nav"></div>
+        <div id="theme-pill-nav"></div>
+        <button id="logout-link" class="hamburger-logout-btn" data-i18n-title="nav.logout">
+          <span class="logout-icon">⎋</span><span class="logout-label" data-i18n="nav.logout">Logout</span>
+        </button>
       </div>
     </div>
   </div>
@@ -216,13 +218,18 @@
 <script src="js/i18n.js"></script>
 <script src="js/toast.js"></script>
 <script>
-buildSwitcher('lang-switcher-nav');
+buildFlagSwitcher('lang-flag-nav');
 applyPage();
 const currentUser = requireAuth('renter');
 buildUserChip('user-chip-nav', currentUser);
 if (!currentUser) throw new Error('not authed');
 
-document.getElementById('logout-link').addEventListener('click', () => logout());
+document.getElementById('logout-link').addEventListener('click', () => {
+  const btn = document.getElementById('logout-link');
+  btn.classList.add('pressed');
+  btn.querySelector('.logout-label').textContent = '…';
+  setTimeout(() => logout(), 1000);
+});
 
 // ── Hamburger menu ────────────────────────────────────────────────────────────
 (function() {
@@ -461,11 +468,11 @@ window.addEventListener('langchange', () => { applyPage(); buildBottomNav(); });
 
 <script type="module">
   import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
-  import { initTheme, cycleTheme } from './js/theme.js';
+  import { initTheme, buildThemePill } from './js/theme.js';
   window.lucide = { createIcons: () => createIcons({ icons }) };
   initTheme();
+  buildThemePill('theme-pill-nav');
   window.lucide.createIcons();
-  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
 </script>
 </body>
 </html>

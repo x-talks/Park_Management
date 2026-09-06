@@ -91,10 +91,13 @@
   }
 
   const LANG_LABELS = { en: '🇬🇧 EN', de: '🇩🇪 DE', tr: '🇹🇷 TR' };
+  const LANG_FLAGS  = { en: '🇬🇧', de: '🇩🇪', tr: '🇹🇷' };
+  const LANG_NAMES  = { en: 'English', de: 'Deutsch', tr: 'Türkçe' };
 
   // ── Language switcher widget ─────────────────────────────────────────────
   function _updateAllSwitchers() {
     const cur = getLang();
+    // Legacy globe switchers
     document.querySelectorAll('[data-lang-globe]').forEach(wrap => {
       const trigger = wrap.querySelector('.lang-globe-btn');
       if (trigger) trigger.textContent = '🌐 ' + cur.toUpperCase();
@@ -102,10 +105,18 @@
         btn.classList.toggle('active', btn.dataset.lang === cur);
       });
     });
+    // Flag switchers
+    document.querySelectorAll('[data-flag-switcher]').forEach(wrap => {
+      const trigger = wrap.querySelector('.flag-trigger');
+      if (trigger) trigger.textContent = LANG_FLAGS[cur] || '🌐';
+      wrap.querySelectorAll('button[data-lang]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === cur);
+      });
+    });
   }
 
   function _closeAllDropdowns() {
-    document.querySelectorAll('[data-lang-globe]').forEach(w => w.classList.remove('open'));
+    document.querySelectorAll('[data-lang-globe],[data-flag-switcher]').forEach(w => w.classList.remove('open'));
   }
 
   function buildSwitcher(containerId) {
@@ -147,11 +158,56 @@
     document.addEventListener('click', _closeAllDropdowns, { capture: false });
   }
 
+  // Flag-based language switcher for hamburger menus.
+  // Shows current flag as trigger; popover lists all 3 with flag + full name.
+  function buildFlagSwitcher(containerId) {
+    const sw = document.getElementById(containerId);
+    if (!sw) return;
+    sw.setAttribute('data-flag-switcher', '');
+    sw.className = 'flag-switcher-wrap';
+    sw.innerHTML = '';
+
+    const cur = getLang();
+    const trigger = document.createElement('button');
+    trigger.className = 'flag-trigger';
+    trigger.textContent = LANG_FLAGS[cur] || '🌐';
+    trigger.setAttribute('aria-label', 'Switch language');
+    trigger.setAttribute('title', LANG_NAMES[cur] || cur);
+    trigger.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = sw.classList.contains('open');
+      _closeAllDropdowns();
+      if (!isOpen) sw.classList.add('open');
+    });
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'flag-dropdown';
+    SUPPORTED.forEach(lang => {
+      const btn = document.createElement('button');
+      btn.dataset.lang = lang;
+      btn.className = lang === cur ? 'active' : '';
+      btn.innerHTML = `<span class="flag-emoji">${LANG_FLAGS[lang]}</span><span class="flag-name">${LANG_NAMES[lang]}</span>`;
+      btn.title = LANG_NAMES[lang];
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        setLang(lang);
+        _closeAllDropdowns();
+      });
+      dropdown.appendChild(btn);
+    });
+
+    sw.appendChild(trigger);
+    sw.appendChild(dropdown);
+
+    document.addEventListener('click', _closeAllDropdowns, { capture: false });
+  }
+
   // ── Expose globally ──────────────────────────────────────────────────────
   window.t                    = t;
   window.setLang              = setLang;
   window.applyPage            = applyPage;
   window.buildSwitcher        = buildSwitcher;
+  window.buildFlagSwitcher    = buildFlagSwitcher;
   window.applySavedLangFromProfile = applySavedLangFromProfile;
   window.getCurrentLang       = getLang;
 })();

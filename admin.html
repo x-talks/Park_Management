@@ -39,9 +39,11 @@
         <i data-lucide="menu"></i>
       </button>
       <div class="hamburger-menu" id="hamburger-menu">
-        <div id="lang-switcher-nav"></div>
-        <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
-        <button id="logout-link" class="icon-btn" title="Logout" data-i18n-title="nav.logout" style="font-size:1.1rem">⎋</button>
+        <div id="lang-flag-nav"></div>
+        <div id="theme-pill-nav"></div>
+        <button id="logout-link" class="hamburger-logout-btn" data-i18n-title="nav.logout">
+          <span class="logout-icon">⎋</span><span class="logout-label" data-i18n="nav.logout">Logout</span>
+        </button>
       </div>
     </div>
   </div>
@@ -55,6 +57,7 @@
     </button>
     <button class="tab-btn" id="tab-btn-spots" data-i18n="admin.tab.spots">Spots</button>
     <button class="tab-btn" id="tab-btn-payments" data-i18n="admin.tab.payments">Payments</button>
+    <button class="tab-btn" id="tab-btn-create" data-i18n="admin.tab.create">Create</button>
     <button class="tab-btn" id="tab-btn-sessions" data-i18n="admin.tab.sessions">Sessions</button>
   </div>
 
@@ -79,6 +82,52 @@
       </div>
       <div id="user-list"></div>
     </div>
+
+  </div><!-- end tab-renters -->
+
+  <!-- ── Spots tab ── -->
+  <div id="tab-spots" class="tab-panel" style="display:none">
+    <div class="card">
+      <div class="card-header"><h2 data-i18n="admin.spots.title">Spot Assignments</h2></div>
+      <div id="spot-list"></div>
+    </div>
+  </div>
+
+  <!-- ── Payments tab ── -->
+  <div id="tab-payments" class="tab-panel" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <h2 data-i18n="admin.pay.title">Payment Overview</h2>
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <div class="year-select-wrap" style="margin:0">
+            <label data-i18n="pay.year">Year</label>
+            <select id="payment-year"></select>
+          </div>
+          <button id="csv-export-btn" class="secondary" style="white-space:nowrap;font-size:0.82rem;padding:0.35rem 0.75rem" data-i18n="admin.csv.export">Export CSV</button>
+        </div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.75rem">
+        <span style="display:inline-block;width:10px;height:10px;background:var(--blue-bg);border:1px solid #bfdbfe;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.commission">Commission row</span> &nbsp;
+        <span style="display:inline-block;width:10px;height:10px;background:var(--green-bg);border:1px solid #b2dfca;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.paid">Paid</span> &nbsp;
+        <span style="display:inline-block;width:10px;height:10px;background:var(--red-bg);border:1px solid #f5c6c2;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.pending">Pending</span>
+      </div>
+      <div id="payment-matrix"></div>
+    </div>
+  </div>
+
+  <!-- ── Sessions tab ── -->
+  <div id="tab-sessions" class="tab-panel" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <h2 data-i18n="admin.tab.sessions">Sessions</h2>
+        <span style="font-size:0.75rem;color:var(--text-secondary)" id="sessions-refresh-time"></span>
+      </div>
+      <div id="sessions-list"></div>
+    </div>
+  </div>
+
+  <!-- ── Create tab ── -->
+  <div id="tab-create" class="tab-panel" style="display:none">
 
     <div class="card">
       <div class="card-header"><h2 data-i18n="admin.create.title">Create User &amp; Generate Invite</h2></div>
@@ -145,48 +194,7 @@
       <div id="direct-result-box" style="display:none;margin-top:0.75rem" class="alert success"></div>
     </div>
 
-  </div><!-- end tab-renters -->
-
-  <!-- ── Spots tab ── -->
-  <div id="tab-spots" class="tab-panel" style="display:none">
-    <div class="card">
-      <div class="card-header"><h2 data-i18n="admin.spots.title">Spot Assignments</h2></div>
-      <div id="spot-list"></div>
-    </div>
-  </div>
-
-  <!-- ── Payments tab ── -->
-  <div id="tab-payments" class="tab-panel" style="display:none">
-    <div class="card">
-      <div class="card-header">
-        <h2 data-i18n="admin.pay.title">Payment Overview</h2>
-        <div style="display:flex;align-items:center;gap:0.75rem">
-          <div class="year-select-wrap" style="margin:0">
-            <label data-i18n="pay.year">Year</label>
-            <select id="payment-year"></select>
-          </div>
-          <button id="csv-export-btn" class="secondary" style="white-space:nowrap;font-size:0.82rem;padding:0.35rem 0.75rem" data-i18n="admin.csv.export">Export CSV</button>
-        </div>
-      </div>
-      <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.75rem">
-        <span style="display:inline-block;width:10px;height:10px;background:var(--blue-bg);border:1px solid #bfdbfe;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.commission">Commission row</span> &nbsp;
-        <span style="display:inline-block;width:10px;height:10px;background:var(--green-bg);border:1px solid #b2dfca;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.paid">Paid</span> &nbsp;
-        <span style="display:inline-block;width:10px;height:10px;background:var(--red-bg);border:1px solid #f5c6c2;border-radius:2px;vertical-align:middle;margin-right:4px"></span><span data-i18n="admin.pay.legend.pending">Pending</span>
-      </div>
-      <div id="payment-matrix"></div>
-    </div>
-  </div>
-
-  <!-- ── Sessions tab ── -->
-  <div id="tab-sessions" class="tab-panel" style="display:none">
-    <div class="card">
-      <div class="card-header">
-        <h2 data-i18n="admin.tab.sessions">Sessions</h2>
-        <span style="font-size:0.75rem;color:var(--text-secondary)" id="sessions-refresh-time"></span>
-      </div>
-      <div id="sessions-list"></div>
-    </div>
-  </div>
+  </div><!-- end tab-create -->
 
 </div>
 
@@ -203,11 +211,16 @@
 <script src="js/i18n/tr.js"></script>
 <script src="js/i18n.js"></script>
 <script>
-buildSwitcher('lang-switcher-nav');
+buildFlagSwitcher('lang-flag-nav');
 applyPage();
 const currentUser = requireAuth('admin');
 buildUserChip('user-chip-nav', currentUser);
-document.getElementById('logout-link').addEventListener('click', () => logout());
+document.getElementById('logout-link').addEventListener('click', () => {
+  const btn = document.getElementById('logout-link');
+  btn.classList.add('pressed');
+  btn.querySelector('.logout-label').textContent = '…';
+  setTimeout(() => logout(), 1000);
+});
 
 // ── Hamburger menu ────────────────────────────────────────────────────────────
 (function() {
@@ -249,8 +262,9 @@ function showTab(name) {
   if (name === 'spots')    renderSpots();
   if (name === 'payments') renderPayments();
   if (name === 'sessions') renderSessions();
+  if (name === 'create')   loadFreeSpots();
 }
-['renters','spots','payments','sessions'].forEach(t =>
+['renters','spots','payments','sessions','create'].forEach(t =>
   document.getElementById('tab-btn-' + t).addEventListener('click', () => showTab(t))
 );
 showTab('renters');
@@ -762,96 +776,186 @@ async function renderSpots() {
   ['admin.spots.col.spot','admin.spots.col.owned','admin.spots.col.state','admin.spots.col.user','admin.spots.col.plate','admin.spots.col.rent','admin.spots.col.actions'].forEach(k => headRow.appendChild(mkTh(t(k))));
   table.appendChild(headRow);
 
+  const renters = users.filter(u => u.active && u.role === 'renter');
+
   sortSpots(spots).forEach(s => {
     const renter = users.find(u => u.id === s.assignedUserId);
+    const isReserved = !!s.reserved;
+    let editMode = false;
+
     const row = document.createElement('tr');
+
+    // Spot label cell
     row.appendChild(mkTd(s.label));
 
-    // ── Mine / Owned toggle cell ──
+    // ── Mine / Owned star ──
     const ownedCell = document.createElement('td');
     ownedCell.style.cssText = 'text-align:center;vertical-align:middle';
     const ownedBtn = document.createElement('button');
     ownedBtn.className = s.owned ? 'success-btn' : 'secondary';
     ownedBtn.style.cssText = 'font-size:1rem;padding:0.15rem 0.4rem;min-height:0;min-width:0;line-height:1';
     ownedBtn.textContent = s.owned ? '★' : '☆';
-    ownedBtn.title = s.owned ? 'Mark as not mine' : 'Mark as mine';
+    ownedBtn.title = s.owned ? t('admin.btn.unmine') : t('admin.btn.mine');
     ownedBtn.addEventListener('click', async () => {
-      await workerRequest('PATCH', `/spots/${s.id}`, { owned: !s.owned });
-      refreshAll();
+      await workerRequest('PATCH', `/spots/${s.id}`, { owned: !s.owned }); refreshAll();
     });
     ownedCell.appendChild(ownedBtn);
     row.appendChild(ownedCell);
 
+    // State cell (updated in edit mode)
     const stateCell = document.createElement('td');
-    const stateClass = s.reserved ? 'inactive' : (s.state === 'free' ? 'free' : 'occupied');
-    const stateLabel = s.reserved ? t('admin.spots.chip.reserved') : (s.state === 'free' ? t('admin.spots.chip.free') : t('admin.spots.chip.occupied'));
-    stateCell.appendChild(chip(stateLabel, stateClass));
+    function renderStateCell() {
+      stateCell.innerHTML = '';
+      if (editMode) {
+        const sel = document.createElement('select');
+        sel.style.cssText = 'width:auto;font-size:0.8rem';
+        [['free', t('admin.spots.chip.free')], ['occupied', t('admin.spots.chip.occupied')], ['reserved', t('admin.spots.chip.reserved')]].forEach(([v, label]) => {
+          const opt = document.createElement('option');
+          opt.value = v; opt.textContent = label;
+          if ((v === 'reserved' && isReserved) || (!isReserved && s.state === v)) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        sel.id = `edit-state-${s.id}`;
+        stateCell.appendChild(sel);
+      } else {
+        const stateClass = isReserved ? 'inactive' : (s.state === 'free' ? 'free' : 'occupied');
+        const stateLabel = isReserved ? t('admin.spots.chip.reserved') : (s.state === 'free' ? t('admin.spots.chip.free') : t('admin.spots.chip.occupied'));
+        stateCell.appendChild(chip(stateLabel, stateClass));
+      }
+    }
+    renderStateCell();
     row.appendChild(stateCell);
 
-    row.appendChild(mkTd(renter ? (`${renter.name||''} ${renter.lastName||''}`).trim() : '—'));
-    row.appendChild(mkTd(renter ? (renter.licensePlate || renter.username) : '—'));
-    row.appendChild(mkTd(s.monthlyRent != null ? `€${Number(s.monthlyRent).toFixed(2)}` : '€80.00'));
-
-    const ac = document.createElement('td');
-    const bRow = document.createElement('div');
-    bRow.className = 'btn-row';
-
-    // Reserve / unreserve toggle (admin only)
-    if (s.reserved) {
-      bRow.appendChild(iconBtn('▶', t('admin.btn.unreserve'), 'success-btn', async () => {
-        await setSpotReserved(s.id, false); refreshAll();
-      }));
-    } else if (!s.assignedUserId) {
-      // Free spot: can assign a user OR mark as reserved
-      const sel = document.createElement('select');
-      sel.style.cssText = 'width:auto;font-size:0.8rem';
-      sel.appendChild(Object.assign(document.createElement('option'), {value:'',textContent:t('admin.spots.user.default')}));
-      users.filter(u => u.active && u.role === 'renter').forEach(u => {
-        sel.appendChild(Object.assign(document.createElement('option'), {
-          value: u.id,
-          textContent: `${u.name||''} (${u.licensePlate||u.username})`.trim()
-        }));
-      });
-      bRow.appendChild(sel);
-      bRow.appendChild(iconBtn('✓', t('admin.btn.assign'), 'success-btn', async () => {
-        if (!sel.value) { await modalAlert(t('admin.alert.selectuser')); return; }
-        try { await assignSpot(s.id, sel.value); refreshAll(); }
-        catch(e) { await modalAlert(e.message); }
-      }));
-      bRow.appendChild(iconBtn('⛔', t('admin.btn.reserve'), 'secondary', async () => {
-        if (!await modalConfirm(t('admin.confirm.reserve', s.label))) return;
-        await setSpotReserved(s.id, true); refreshAll();
-      }));
-    } else {
-      // Occupied: can unassign
-      bRow.appendChild(iconBtn('👤', t('admin.btn.unassign'), 'secondary', async () => {
-        if (!await modalConfirm(t('admin.confirm.unassign', s.label), { danger: true })) return;
-        await unassignSpot(s.id); refreshAll();
-      }));
-    }
-
-    // Set rent inline (not shown for reserved spots) — saves on blur or Enter
-    if (!s.reserved) {
-      const rentInput = document.createElement('input');
-      rentInput.type = 'number'; rentInput.min = '0'; rentInput.step = '0.01';
-      rentInput.value = s.monthlyRent != null ? s.monthlyRent : 80;
-      rentInput.title = t('admin.btn.setrent');
-      rentInput.style.cssText = 'width:70px;display:inline-block;font-size:0.8rem';
-      async function saveRent() {
-        const val = parseFloat(rentInput.value);
-        if (isNaN(val) || val < 0) { await modalAlert(t('admin.alert.invalidrent')); return; }
-        if (val === (s.monthlyRent != null ? s.monthlyRent : 80)) return; // no change
-        try {
-          await patchRow('data/spots.json', s.id, { monthlyRent: val });
-          refreshAll();
-        } catch(e) { await modalAlert(e.message); }
+    // User cell (updated in edit mode)
+    const userCell = document.createElement('td');
+    function renderUserCell() {
+      userCell.innerHTML = '';
+      if (editMode) {
+        const sel = document.createElement('select');
+        sel.style.cssText = 'width:auto;font-size:0.8rem';
+        sel.appendChild(Object.assign(document.createElement('option'), {value:'',textContent:'— none —'}));
+        renters.forEach(u => {
+          const opt = document.createElement('option');
+          opt.value = u.id;
+          opt.textContent = `${(u.name||'')} (${u.licensePlate||u.username})`.trim();
+          if (u.id === s.assignedUserId) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        sel.id = `edit-user-${s.id}`;
+        userCell.appendChild(sel);
+      } else {
+        userCell.textContent = renter ? (`${renter.name||''} ${renter.lastName||''}`).trim() : '—';
       }
-      rentInput.addEventListener('blur', saveRent);
-      rentInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); rentInput.blur(); } });
-      bRow.appendChild(rentInput);
     }
+    renderUserCell();
+    row.appendChild(userCell);
 
-    ac.appendChild(bRow); row.appendChild(ac);
+    // Plate cell (static)
+    row.appendChild(mkTd(renter ? (renter.licensePlate || renter.username) : '—'));
+
+    // Rent cell (hidden for reserved; editable in edit mode)
+    const rentCell = document.createElement('td');
+    function renderRentCell() {
+      rentCell.innerHTML = '';
+      if (isReserved && !editMode) { rentCell.textContent = '—'; return; }
+      if (editMode) {
+        const inp = document.createElement('input');
+        inp.type = 'number'; inp.min = '0'; inp.step = '0.01';
+        inp.value = s.monthlyRent != null ? s.monthlyRent : 80;
+        inp.style.cssText = 'width:70px;font-size:0.8rem';
+        inp.id = `edit-rent-${s.id}`;
+        rentCell.appendChild(inp);
+      } else {
+        rentCell.textContent = s.monthlyRent != null ? `€${Number(s.monthlyRent).toFixed(2)}` : '€80.00';
+      }
+    }
+    renderRentCell();
+    row.appendChild(rentCell);
+
+    // Actions cell
+    const ac = document.createElement('td');
+    function renderActions() {
+      ac.innerHTML = '';
+      const bRow = document.createElement('div');
+      bRow.className = 'btn-row';
+
+      if (editMode) {
+        // Save button
+        bRow.appendChild(iconBtn('💾', t('admin.btn.save'), 'success-btn', async () => {
+          const newState = document.getElementById(`edit-state-${s.id}`)?.value || 'free';
+          const newUserId = document.getElementById(`edit-user-${s.id}`)?.value || '';
+          const newRent = parseFloat(document.getElementById(`edit-rent-${s.id}`)?.value);
+          try {
+            if (newState === 'reserved') {
+              await setSpotReserved(s.id, true);
+            } else {
+              if (isReserved) await setSpotReserved(s.id, false);
+              if (newUserId && newUserId !== s.assignedUserId) {
+                await assignSpot(s.id, newUserId);
+              } else if (!newUserId && s.assignedUserId) {
+                await unassignSpot(s.id);
+              }
+            }
+            if (!isNaN(newRent) && newRent >= 0 && newRent !== s.monthlyRent) {
+              await patchRow('data/spots.json', s.id, { monthlyRent: newRent });
+            }
+            refreshAll();
+          } catch(e) { await modalAlert(e.message); }
+        }));
+        // Cancel button
+        bRow.appendChild(iconBtn('✕', t('admin.btn.cancel'), 'secondary', () => {
+          editMode = false; renderStateCell(); renderUserCell(); renderRentCell(); renderActions();
+        }));
+      } else {
+        // Edit button
+        bRow.appendChild(iconBtn('~', t('admin.btn.edit'), 'secondary', () => {
+          editMode = true; renderStateCell(); renderUserCell(); renderRentCell(); renderActions();
+        }));
+
+        if (isReserved) {
+          // Unreserve
+          bRow.appendChild(iconBtn('▶', t('admin.btn.unreserve'), 'success-btn', async () => {
+            await setSpotReserved(s.id, false); refreshAll();
+          }));
+        } else if (!s.assignedUserId) {
+          // Free: unified dropdown (Extern at top, then renters)
+          const asgSel = document.createElement('select');
+          asgSel.className = 'icon-btn secondary';
+          asgSel.style.cssText = 'font-size:0.8rem;height:2rem;padding:0 0.4rem;cursor:pointer';
+          asgSel.appendChild(Object.assign(document.createElement('option'), {value:'',textContent:t('admin.spots.assign.default')}));
+          asgSel.appendChild(Object.assign(document.createElement('option'), {value:'__extern__',textContent:t('admin.spots.chip.reserved')}));
+          renters.forEach(u => {
+            asgSel.appendChild(Object.assign(document.createElement('option'), {
+              value: u.id,
+              textContent: `${u.name||''} (${u.licensePlate||u.username})`.trim()
+            }));
+          });
+          asgSel.addEventListener('change', async () => {
+            const val = asgSel.value;
+            if (!val) return;
+            if (val === '__extern__') {
+              if (!await modalConfirm(t('admin.confirm.reserve', s.label))) { asgSel.value = ''; return; }
+              await setSpotReserved(s.id, true); refreshAll();
+            } else {
+              try { await assignSpot(s.id, val); refreshAll(); }
+              catch(e) { await modalAlert(e.message); asgSel.value = ''; }
+            }
+          });
+          bRow.appendChild(asgSel);
+        } else {
+          // Occupied: unassign
+          bRow.appendChild(iconBtn('👤', t('admin.btn.unassign'), 'secondary', async () => {
+            if (!await modalConfirm(t('admin.confirm.unassign', s.label), { danger: true })) return;
+            await unassignSpot(s.id); refreshAll();
+          }));
+        }
+      }
+
+      ac.appendChild(bRow);
+      if (window.lucide) window.lucide.createIcons();
+    }
+    renderActions();
+    row.appendChild(ac);
     table.appendChild(row);
   });
 
@@ -1246,11 +1350,11 @@ document.getElementById('csv-export-btn').addEventListener('click', exportPaymen
 </script>
 <script type="module">
   import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
-  import { initTheme, cycleTheme } from './js/theme.js';
+  import { initTheme, buildThemePill } from './js/theme.js';
   window.lucide = { createIcons: () => createIcons({ icons }) };
   initTheme();
+  buildThemePill('theme-pill-nav');
   window.lucide.createIcons();
-  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 </body>

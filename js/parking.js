@@ -161,6 +161,22 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
   svg.appendChild(entrance);
   svg.appendChild(el('polygon', { points: '144,44 156,44 150,56', fill: 'rgba(255,255,255,0.35)' }));
 
+  // Returns true if all rent months from registration to now are paid for this spot/renter.
+  function isFullyPaid(spotData) {
+    const renter = spotData.assignedUserId ? (users || []).find(u => u.id === spotData.assignedUserId) : null;
+    if (!renter || !renter.assignedSpots) return false;
+    const payments = (typeof _payments !== 'undefined' ? _payments : []);
+    const now = new Date();
+    const regDate = renter.registeredAt ? new Date(renter.registeredAt) : null;
+    for (let mo = 0; mo < 24; mo++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - mo, 1);
+      const m = d.getMonth() + 1, y = d.getFullYear();
+      if (regDate && (y < regDate.getFullYear() || (y === regDate.getFullYear() && m < regDate.getMonth() + 1))) break;
+      if (!payments.find(p => p.spotId === spotData.id && p.type === 'rent' && p.month === m && p.year === y)) return false;
+    }
+    return true;
+  }
+
   // ── Spot factory: double polygon (shadow + face), optional glow, number ──
   function classifyStatus(spotData) {
     if (mineSpotIds.has(spotData.id)) return 'mine';
@@ -176,6 +192,7 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
     const kind = classifyStatus(spotData);
     const grad = V40_STATUS_GRADIENT[kind] || V40_STATUS_GRADIENT.free;
     const isMine = kind === 'mine';
+    const showStar = (kind === 'mine' || kind === 'occupied') && isFullyPaid(spotData);
 
     const g = el('g', { 'data-id': spotData.id, class: `spot spot-group ${kind}`, style: 'cursor:pointer' });
 
@@ -193,15 +210,28 @@ function buildSVG(spots, users, currentUser, pendingSpotIds) {
       faceParent.appendChild(el('polygon', { points: geom.facePts, fill: `url(#${grad})`, filter: 'url(#round)' }));
     }
 
-    // Spot number
+    // Spot number (shift up slightly when star is shown)
+    const numY = showStar ? geom.textY - 4 : geom.textY;
     const num = el('text', {
-      x: geom.textX, y: geom.textY,
+      x: geom.textX, y: numY,
       'text-anchor': 'middle', 'dominant-baseline': 'middle',
       fill: v40TextFill(kind), 'font-size': '9', 'font-weight': '800', 'font-family': 'system-ui',
       'pointer-events': 'none',
     });
     num.textContent = label;
     g.appendChild(num);
+
+    // ★ fully-paid indicator — small star below the number
+    if (showStar) {
+      const star = el('text', {
+        x: geom.textX, y: geom.textY + 7,
+        'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        fill: isMine ? '#fde68a' : 'rgba(255,255,255,0.9)', 'font-size': '8',
+        'pointer-events': 'none',
+      });
+      star.textContent = '★';
+      g.appendChild(star);
+    }
 
     if (currentUser) {
       g.addEventListener('click', () => {
@@ -338,16 +368,14 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
   const actionsEl = document.createElement('div');
   actionsEl.className = 'sheet-actions';
 
-  // ── Own spot ─────────────────────────────────────────────────────────────────
-  if (isMySpot) {
-    // Payment summary (current month + unpaid count)
+  // ── Payment status row — shown for own spot AND admin viewing occupied spot ──
+  if ((isMySpot || isAdmin) && renter) {
     const now = new Date();
     const payments = (typeof _payments !== 'undefined' ? _payments : []);
     const unpaidMonths = [];
     let thisMonthPaid = false;
 
-    // Walk back up to 24 months from registration to now
-    if (renter && renter.assignedSpots) {
+    if (renter.assignedSpots) {
       const spotId = spotData.id;
       const regDate = renter.registeredAt ? new Date(renter.registeredAt) : null;
       for (let mo = 0; mo < 24; mo++) {
@@ -377,7 +405,7 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
 
     actionsEl.appendChild(payRow);
 
-    // Car info
+    // Car info (always shown when renter known)
     if (renter.carModel || renter.carColor) {
       const carLine = document.createElement('div');
       carLine.style.cssText = 'font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem';

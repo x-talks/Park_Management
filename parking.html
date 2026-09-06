@@ -26,9 +26,11 @@
         <i data-lucide="menu"></i>
       </button>
       <div class="hamburger-menu" id="hamburger-menu">
-        <div id="lang-switcher-nav"></div>
-        <button id="theme-toggle" class="icon-btn" title="Light"><i data-lucide="sun"></i></button>
-        <button id="logout-link" class="icon-btn" title="Logout" data-i18n-title="nav.logout" style="font-size:1.1rem">⎋</button>
+        <div id="lang-flag-nav"></div>
+        <div id="theme-pill-nav"></div>
+        <button id="logout-link" class="hamburger-logout-btn" data-i18n-title="nav.logout">
+          <span class="logout-icon">⎋</span><span class="logout-label" data-i18n="nav.logout">Logout</span>
+        </button>
       </div>
     </div>
   </div>
@@ -89,19 +91,19 @@
 <script src="js/i18n.js"></script>
 <script src="js/toast.js"></script>
 <script>
-buildSwitcher('lang-switcher-nav');
+buildFlagSwitcher('lang-flag-nav');
 applyPage();
 const currentUser = requireAuth('renter');
 buildUserChip('user-chip-nav', currentUser);
-document.getElementById('logout-link').addEventListener('click', () => logout());
+_initHamburger();
 
 // ── Hamburger menu ────────────────────────────────────────────────────────────
-(function() {
+function _initHamburger() {
   const btn = document.getElementById('hamburger-btn');
   const wrap = document.getElementById('hamburger-wrap');
   btn.addEventListener('click', e => { e.stopPropagation(); wrap.classList.toggle('open'); });
   document.addEventListener('click', () => wrap.classList.remove('open'));
-})();
+}
 
 // Build role-aware bottom nav: Map(active) / [Admin] / Payments / Incidents / Profile
 function buildBottomNav() {
@@ -155,11 +157,18 @@ window.addEventListener('langchange', () => { applyPage(); buildBottomNav(); });
 </script>
 <script type="module">
   import { createIcons, icons } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
-  import { initTheme, cycleTheme } from './js/theme.js';
+  import { initTheme, buildThemePill } from './js/theme.js';
   window.lucide = { createIcons: () => createIcons({ icons }) };
   initTheme();
+  buildThemePill('theme-pill-nav');
   window.lucide.createIcons();
-  document.getElementById('theme-toggle').addEventListener('click', cycleTheme);
+  // Logout with 1s delay + pressed feedback
+  const logoutBtn = document.getElementById('logout-link');
+  logoutBtn.addEventListener('click', () => {
+    logoutBtn.classList.add('pressed');
+    logoutBtn.querySelector('.logout-label').textContent = '…';
+    setTimeout(() => logout(), 1000);
+  });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 </body>
