@@ -265,24 +265,24 @@ function showSpotInfo(spotData, label, users, currentUser, pendingSpotIds) {
   panel.classList.add('has-content');
 
   if (spotData.reserved) {
-    panel.textContent = `Spot ${label}: Reserved (external — not available)`;
+    panel.textContent = t('map.spot.reserved', label);
     return;
   }
 
   if (pendingSpotIds && pendingSpotIds.has(spotData.id)) {
-    panel.textContent = typeof t === 'function' ? `Spot ${label}: ${t('spot.state.pending')}` : `Spot ${label}: Pending registration`;
+    panel.textContent = t('map.spot.pending', label);
     return;
   }
 
   if (spotData.state === 'free' || !spotData.assignedUserId) {
-    panel.textContent = `Spot ${label}: Free`;
+    panel.textContent = t('map.spot.free', label);
     return;
   }
 
   const renter = users.find(u => u.id === spotData.assignedUserId);
-  if (!renter) { panel.textContent = `Spot ${label}: Occupied`; return; }
+  if (!renter) { panel.textContent = t('map.spot.occupied', label); return; }
 
-  const lines = [`Spot ${label}  ·  ${(renter.licensePlate || renter.username || '').toUpperCase()}`];
+  const lines = [`${t('map.spot.occupied', label).split(':')[0]}  ·  ${(renter.licensePlate || renter.username || '').toUpperCase()}`];
   if (currentUser.role !== 'renter') {
     const name = `${renter.name || ''} ${renter.lastName || ''}`.trim();
     if (name) lines.push(name);
@@ -319,18 +319,21 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
   const isMySpot = renter && renter.id === currentUser.id;
   const plate = renter ? (renter.licensePlate || renter.username || '').toUpperCase() : null;
 
-  let statusClass = 'free', statusText = 'Free';
-  if (spotData.reserved)                                          { statusClass = 'reserved'; statusText = 'Reserved'; }
-  else if (pendingSpotIds && pendingSpotIds.has(spotData.id))    { statusClass = 'pending';  statusText = 'Pending';  }
-  else if (spotData.state === 'occupied')                        { statusClass = 'occupied'; statusText = 'Occupied'; }
+  let statusClass = 'free', statusText = t('sheet.status.free');
+  if (spotData.reserved)                                          { statusClass = 'reserved'; statusText = t('sheet.status.reserved'); }
+  else if (pendingSpotIds && pendingSpotIds.has(spotData.id))    { statusClass = 'pending';  statusText = t('sheet.status.pending');  }
+  else if (spotData.state === 'occupied') {
+    if (!isMySpot) { statusClass = 'occupied'; statusText = t('sheet.status.occupied'); }
+    else           { statusClass = '';         statusText = ''; } // suppress — "★ Yours" is enough
+  }
 
   const titleEl = document.createElement('div');
   titleEl.className = 'sheet-title';
   titleEl.innerHTML =
     `Spot ${label}` +
     (plate ? ` <span class="sheet-plate">${plate}</span>` : '') +
-    (isMySpot ? ' <span style="font-size:0.75rem;color:var(--accent)">★ Yours</span>' : '') +
-    `<span class="sheet-status ${statusClass}">${statusText}</span>`;
+    (isMySpot ? ` <span style="font-size:0.75rem;color:var(--accent)">${t('sheet.yours')}</span>` : '') +
+    (statusText ? `<span class="sheet-status ${statusClass}">${statusText}</span>` : '');
 
   const actionsEl = document.createElement('div');
   actionsEl.className = 'sheet-actions';
@@ -362,13 +365,13 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
 
     const monthChip = document.createElement('span');
     monthChip.className = thisMonthPaid ? 'chip paid' : 'chip unpaid';
-    monthChip.textContent = thisMonthPaid ? '✓ This month paid' : '✗ This month unpaid';
+    monthChip.textContent = thisMonthPaid ? t('sheet.pay.paid') : t('sheet.pay.unpaid');
     payRow.appendChild(monthChip);
 
     if (unpaidMonths.length > 1) {
       const owed = document.createElement('span');
       owed.style.cssText = 'font-size:0.78rem;color:var(--red,#ef4444);font-weight:600';
-      owed.textContent = `${unpaidMonths.length} months overdue`;
+      owed.textContent = t('sheet.pay.overdue', unpaidMonths.length);
       payRow.appendChild(owed);
     }
 
@@ -391,14 +394,12 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
     const payBtn = document.createElement('a');
     payBtn.href = 'payments.html';
     payBtn.className = 'sheet-btn secondary';
-    payBtn.textContent = '💳 Payments';
+    payBtn.textContent = t('sheet.btn.payments');
 
     const reportBtn = document.createElement('button');
     reportBtn.className = 'sheet-btn warn';
-    reportBtn.textContent = '⚠ Report';
+    reportBtn.textContent = t('sheet.btn.report');
     reportBtn.onclick = () => { closeBottomSheet(); window.location.href = `incident.html?spot=${spotData.id}`; };
-
-    btnRow.appendChild(payBtn);
     btnRow.appendChild(reportBtn);
     actionsEl.appendChild(btnRow);
   }
@@ -410,12 +411,12 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
 
     const infoBtn = document.createElement('button');
     infoBtn.className = 'sheet-btn secondary';
-    infoBtn.textContent = 'ℹ Information';
+    infoBtn.textContent = t('sheet.btn.information');
     infoBtn.onclick = () => showSpotOccupantInfo(spotData, label, users, currentUser);
 
     const reportBtn2 = document.createElement('button');
     reportBtn2.className = 'sheet-btn warn';
-    reportBtn2.textContent = '⚠ Report';
+    reportBtn2.textContent = t('sheet.btn.report');
     reportBtn2.onclick = () => { closeBottomSheet(); window.location.href = `incident.html?spot=${spotData.id}`; };
 
     btnRow.appendChild(infoBtn);
@@ -431,8 +432,8 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
       !hasOwnSpot && !(pendingSpotIds && pendingSpotIds.has(spotData.id))) {
     const btn = document.createElement('button');
     btn.className = 'sheet-btn primary';
-    btn.textContent = 'Reserve';
-    btn.onclick = () => { closeBottomSheet(); toast('Reservation flow coming soon', 'info'); };
+    btn.textContent = t('sheet.btn.reserve');
+    btn.onclick = () => { closeBottomSheet(); toast(t('sheet.btn.reserve'), 'info'); };
     actionsEl.appendChild(btn);
   }
 
@@ -440,11 +441,11 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
   if (isAdmin && spotData.state === 'occupied' && spotData.assignedUserId) {
     const btn = document.createElement('button');
     btn.className = 'sheet-btn danger';
-    btn.textContent = 'Release';
+    btn.textContent = t('sheet.btn.release');
     btn.onclick = async () => {
       try {
         await workerRequest('POST', `/spots/${spotData.id}/release`);
-        toast('Spot released', 'success');
+        toast(t('sheet.released'), 'success');
         closeBottomSheet();
         refresh();
       } catch (err) { toast(err.message, 'error'); }
@@ -454,7 +455,7 @@ function openBottomSheet(spotData, label, users, currentUser, pendingSpotIds) {
   if (isAdmin && !spotData.assignedUserId && !spotData.reserved) {
     const btn = document.createElement('button');
     btn.className = 'sheet-btn admin';
-    btn.textContent = 'Assign';
+    btn.textContent = t('sheet.btn.assign');
     btn.onclick = () => { closeBottomSheet(); showAssignModal(spotData.id, users, refresh); };
     actionsEl.appendChild(btn);
   }
@@ -507,7 +508,7 @@ function showSpotOccupantInfo(spotData, label, users, currentUser) {
 
   const titleEl = document.createElement('div');
   titleEl.className = 'sheet-title';
-  titleEl.textContent = `Spot ${label} — Occupant`;
+  titleEl.textContent = t('sheet.occupant.title', label);
   content.appendChild(titleEl);
 
   function row(icon, val) {
@@ -538,13 +539,13 @@ function showAssignModal(spotId, users, refreshFn) {
 
   const title = document.createElement('div');
   title.className = 'sheet-title';
-  title.textContent = 'Assign Renter';
+  title.textContent = t('sheet.assign.title');
   content.appendChild(title);
 
   if (!unassigned.length) {
     const msg = document.createElement('p');
     msg.style.cssText = 'color:var(--text-muted);font-size:0.85rem;margin:0.75rem 0';
-    msg.textContent = 'No active renters found.';
+    msg.textContent = t('sheet.assign.empty');
     content.appendChild(msg);
   } else {
     unassigned.forEach(u => {
@@ -568,7 +569,7 @@ function showAssignModal(spotId, users, refreshFn) {
 
   const cancel = document.createElement('button');
   cancel.className = 'sheet-btn secondary';
-  cancel.textContent = 'Cancel';
+  cancel.textContent = t('sheet.btn.cancel');
   cancel.onclick = () => { sheet.classList.remove('open'); if (backdrop) backdrop.classList.remove('open'); };
   content.appendChild(cancel);
 

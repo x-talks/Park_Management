@@ -959,7 +959,10 @@ async function renderPayments() {
     const commPaid = payments.find(p => p.spotId === s.id && p.type === 'commission');
     if (commPaid) {
       commCell.className = 'payment-cell-paid';
-      commCell.appendChild(document.createTextNode(`✓ ${commPaid.paidDate} `));
+      const badge = document.createElement('div');
+      badge.style.cssText = 'font-size:0.72rem;font-weight:700;margin-bottom:0.2rem';
+      badge.textContent = `✓ ${commPaid.paidDate}`;
+      commCell.appendChild(badge);
       commCell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
         if (!await modalConfirm(t('admin.confirm.revert.commission'), { danger: true })) return;
         try { await unmarkPaid(commPaid.id); refreshAll(); }
@@ -1028,7 +1031,10 @@ async function renderPayments() {
 
       if (p) {
         cell.className = 'payment-cell-paid';
-        cell.appendChild(document.createTextNode(`✓ ${p.paidDate} `));
+        const badge = document.createElement('div');
+        badge.style.cssText = 'font-size:0.72rem;font-weight:700;margin-bottom:0.2rem';
+        badge.textContent = `✓ ${p.paidDate}`;
+        cell.appendChild(badge);
         cell.appendChild(iconBtn('↩', t('admin.btn.revert'), 'secondary', async () => {
           if (!await modalConfirm(t('admin.confirm.revert.rent', m.label, m.year), { danger: true })) return;
           await unmarkPaid(p.id); refreshAll();

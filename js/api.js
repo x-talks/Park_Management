@@ -324,7 +324,7 @@ async function _patch(table, filterCol, filterVal, changes) {
     const err = await res.text();
     throw new Error(`PATCH ${table}: ${res.status} ${err}`);
   }
-  return res.json();
+  return res.status === 204 ? [] : res.json();
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
