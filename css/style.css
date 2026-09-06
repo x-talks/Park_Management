@@ -991,6 +991,16 @@ tr:hover td { background: var(--bg-card-hover); }
   right: 1rem;
   z-index: 10;
 }
+/* Override white-on-white for light mode on the login page */
+:root:not([data-theme]) .login-theme-toggle {
+  background: rgba(0,0,0,.07);
+  border-color: rgba(0,0,0,.15);
+  color: var(--text-primary);
+}
+:root:not([data-theme]) .login-theme-toggle:hover {
+  background: rgba(0,0,0,.13);
+  opacity: 1;
+}
 
 /* ── Btn row ──────────────────────────────────────────────────────────────── */
 .btn-row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
