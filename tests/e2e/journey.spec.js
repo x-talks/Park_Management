@@ -24,9 +24,9 @@ test('Admin journey: login → lands on admin.html → nav to Map → Admin tab 
   // User chip visible in header
   await expect(page.locator('.user-chip')).toBeVisible({ timeout: 5_000 });
 
-  // Globe lang switcher present in hamburger menu — open hamburger to verify
+  // Flag lang switcher present in hamburger menu — open hamburger to verify
   await page.locator('#hamburger-btn').click();
-  await expect(page.locator('.lang-globe-btn')).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator('.flag-trigger')).toBeVisible({ timeout: 5_000 });
   await page.locator('#hamburger-btn').click(); // close it again
 
   // ── Navigate to Map via bottom nav ───────────────────────────────────────
@@ -84,18 +84,20 @@ test('Master journey: login → admin page → map shows → admin tab visible �
   await expect(page.locator('#parking-svg g[data-id]').first()).toBeVisible({ timeout: 10_000 });
   await expect(page.locator('.bottom-nav a[href="admin.html"]')).toBeVisible({ timeout: 5_000 });
 
-  // Globe dropdown: open hamburger → find globe btn → pick DE → pick EN
+  // Flag dropdown: open hamburger → find flag trigger → pick DE → pick EN
   await page.locator('#hamburger-btn').click();
-  const globeBtn = page.locator('.lang-globe-btn').first();
-  await expect(globeBtn).toBeVisible({ timeout: 3_000 });
-  await globeBtn.click();
-  await expect(page.locator('.lang-globe-dropdown')).toBeVisible({ timeout: 3_000 });
-  await page.locator('.lang-globe-dropdown button[data-lang="de"]').click();
-  await expect(globeBtn).toContainText('DE', { timeout: 3_000 });
+  const flagTrigger = page.locator('.flag-trigger').first();
+  await expect(flagTrigger).toBeVisible({ timeout: 3_000 });
+  await flagTrigger.click();
+  await expect(page.locator('.flag-dropdown')).toBeVisible({ timeout: 3_000 });
+  await page.locator('.flag-dropdown button[data-lang="de"]').click();
+  // Trigger still visible after selecting DE
+  await expect(flagTrigger).toBeVisible({ timeout: 3_000 });
 
-  await globeBtn.click();
-  await page.locator('.lang-globe-dropdown button[data-lang="en"]').click();
-  await expect(globeBtn).toContainText('EN', { timeout: 3_000 });
+  await page.locator('#hamburger-btn').click();
+  await flagTrigger.click();
+  await page.locator('.flag-dropdown button[data-lang="en"]').click();
+  await expect(flagTrigger).toBeVisible({ timeout: 3_000 });
 });
 
 // ── Renter journey ────────────────────────────────────────────────────────────

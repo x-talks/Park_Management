@@ -172,13 +172,10 @@ test.describe('Spot assign/unassign', () => {
     const s8RowFresh = page.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     const assignSelect = s8RowFresh.locator('select').first();
     await expect(assignSelect).toBeVisible({ timeout: 10_000 });
+    // Selecting a renter from the dropdown assigns the spot immediately (no Assign button)
     await assignSelect.selectOption({ label: 'Bob (HD-BB-002)' });
-    const assignBtn = s8RowFresh.locator('button[title="Assign"]').first();
-    await assignBtn.click();
     await page.waitForTimeout(2000);
-    // After assigning, the Assign button is replaced by an Unassign button on s8's row.
-    // Do NOT check the whole table for 'HD-BB-002' — it appears in dropdown options of
-    // every free spot row (21 matches), violating Playwright strict mode.
+    // After assigning, row now shows Unassign button (no select dropdown)
     const s8RowAssigned = page.locator('#spot-list table tr').filter({ hasText: /^8[^0-9]/ }).first();
     await expect(s8RowAssigned.locator('button[title="Unassign"]')).toBeVisible({ timeout: 10_000 });
   });
@@ -193,24 +190,18 @@ test.describe('Spot assign/unassign', () => {
     await unassignBtn.click();
     await page.locator('#pm-modal-confirm').click();
     await page.waitForTimeout(2000);
-    // Verify s1 is now free: the s1 row should no longer have an Unassign button
-    // (HD-AA-001 still appears in dropdown options for all free spots, so we cannot
-    // assert not.toContainText on the whole table — target s1 row specifically)
+    // Verify s1 is now free: Unassign button gone
     const s1RowAfter = page.locator('#spot-list table tr').filter({ hasText: /^1[^0-9]/ }).first();
     await expect(s1RowAfter.locator('button[title="Unassign"]')).toHaveCount(0);
 
-    // ── Restore state: re-assign s1 to Alice so later tests (23, 46, 47, 68, 71, 72) work ──
-    // s1 is now free — find it by spot label "1"
+    // ── Restore state: re-assign s1 to Alice (dropdown select, no button) ──
     try {
       const s1FreeRow = page.locator('#spot-list table tr').filter({ hasText: /^1[^0-9]/ }).first();
       const restoreSelect = s1FreeRow.locator('select').first();
       await expect(restoreSelect).toBeVisible({ timeout: 10_000 });
       await restoreSelect.selectOption({ label: 'Alice (HD-AA-001)' });
-      const restoreAssignBtn = s1FreeRow.locator('button[title="Assign"]').first();
-      await restoreAssignBtn.click();
       await page.waitForTimeout(2000);
     } catch (e) {
-      // Restoration is best-effort cleanup; log but do not fail the test
       console.warn('State restore for s1 failed:', e.message);
     }
   });

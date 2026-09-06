@@ -415,7 +415,7 @@ async function renderStatCards(users, spots, pendingRegs) {
   const grid = document.getElementById('stat-cards');
   if (!grid) return;
 
-  const activeRenters = users.filter(u => u.active && u.role === 'renter').length;
+  const activeRenters = users.filter(Boolean).filter(u => u.active && u.role === 'renter').length;
   const ownedSpots   = spots.filter(s => s.owned);
   const occupiedOwned = ownedSpots.filter(s => s.assignedUserId).length;
   const pendingEdits  = users.filter(u => u.pendingEdits).length;
@@ -502,7 +502,7 @@ async function renderUsers() {
   ['admin.users.col.plate','admin.users.col.name','admin.users.col.phone','admin.users.col.spots','admin.users.col.car','admin.users.col.pw','admin.users.col.status','admin.users.col.actions'].forEach(k => headRow.appendChild(mkTh(t(k))));
   table.appendChild(headRow);
 
-  users.forEach(u => {
+  users.filter(Boolean).forEach(u => {
     const spotLabels = (u.assignedSpots || [])
       .map(sid => { const s = spots.find(x => x.id === sid); return s ? s.label : sid; })
       .join(', ') || '—';
@@ -776,7 +776,7 @@ async function renderSpots() {
   ['admin.spots.col.spot','admin.spots.col.owned','admin.spots.col.state','admin.spots.col.user','admin.spots.col.plate','admin.spots.col.rent','admin.spots.col.actions'].forEach(k => headRow.appendChild(mkTh(t(k))));
   table.appendChild(headRow);
 
-  const renters = users.filter(u => u.active && u.role === 'renter');
+  const renters = users.filter(Boolean).filter(u => u.active && u.role === 'renter');
 
   sortSpots(spots).forEach(s => {
     const renter = users.find(u => u.id === s.assignedUserId);

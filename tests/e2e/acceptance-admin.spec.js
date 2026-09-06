@@ -26,9 +26,8 @@ test('Full admin journey: login → generate invite → approve pending registra
   await page.locator('#cu-carmodel').fill('Test Model');
   await page.locator('#cu-carcolor').fill('red');
   await page.locator('#create-user-form button[type=submit]').click();
-  await page.waitForTimeout(3000);
-  // Do NOT use waitForLoadState('networkidle') — refreshAll() re-triggers loadPendingRegistrations()
-  await expect(page.locator('#invite-result-box')).toBeVisible({ timeout: 10_000 });
+  // Worker cold-start can take 15-25s — give the invite call up to 30s to complete
+  await expect(page.locator('#invite-result-box')).toBeVisible({ timeout: 30_000 });
   const inviteUrl = await page.locator('#invite-url-text').textContent();
   expect(inviteUrl).toBeTruthy();
 
